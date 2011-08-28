@@ -1,1 +1,2 @@
-# Create your views here.
+def show(request):
+    return 'asd'
