@@ -37,3 +37,7 @@ class Tag(models.Model):
             # Call the "real" save() method.
             self.slug = slug
             super(Tag, self).save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['slug']
+

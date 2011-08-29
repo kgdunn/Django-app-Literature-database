@@ -9,6 +9,9 @@ class Author(models.Model):
     last_name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=510, editable=False)
 
+    class Meta:
+        ordering = ['last_name']
+
     def __unicode__(self):
         if self.middle_initials:
             return '%s, %s %s' % (self.last_name, self.first_name,
@@ -33,6 +36,13 @@ class Author(models.Model):
         self.last_name = self.last_name.strip()
         unique_slugify(self, self.full_name, 'slug')
         super(Author, self).save(*args, **kwargs)
+
+
+class AuthorGroup(models.Model):
+    """ Ensures the author order is correctly added """
+    author = models.ForeignKey(Author)
+    item = models.ForeignKey('Item')
+    order = models.IntegerField(default=0)
 
 
 class School(models.Model):
@@ -101,7 +111,7 @@ class Item(models.Model):
         """
         return 'pdf/%s/%s.pdf' % (instance.slug[0], instance.slug)
 
-    authors = models.ManyToManyField(Author)
+    authors = models.ManyToManyField(Author, through='AuthorGroup')
     title = models.TextField()
     slug = models.SlugField(max_length=100, editable=False)
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
@@ -121,6 +131,20 @@ class Item(models.Model):
                                          self.doi_link)
         else:
             return '%s (%s)' % (self.title, str(self.year))
+
+    @property
+    def author_list(self):
+        """ For display purposes only
+        """
+        auth_list = self.authors.all().order_by('authorgroup__order')
+        if len(auth_list) > 2:
+            #return ', '.join([auth.last_name for auth in auth_list])
+            return auth_list[0].last_name + ' et al.'
+        elif len(auth_list) == 2:
+            return ' and '.join([auth.last_name for auth in auth_list])
+        else:
+            return auth_list[0].last_name
+
 
     def save(self, *args, **kwargs):
         self.title = self.title.strip()
