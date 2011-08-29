@@ -1,6 +1,6 @@
 # Django settings for deploy project.
 
-DEBUG = True
+DEBUG = False
 #TEMPLATE_DEBUG = DEBUG
 TEMPLATE_DEBUG = True
 
@@ -52,12 +52,10 @@ USE_L10N = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-if DEBUG:
-    MEDIA_ROOT = os.path.dirname(__file__) + os.sep + 'media' + os.sep
-else:
-    # For production: you'll want to copy the <base>/media/* files to your
-    # static location and modify this path to match your server.
-    MEDIA_ROOT = '<your path here>'
+
+# For production: you'll want to copy the <base>/media/* files to your
+# static location and modify this path to match your server.
+MEDIA_ROOT = os.path.dirname(__file__) + os.sep + 'media' + os.sep
 
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a

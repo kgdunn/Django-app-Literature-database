@@ -125,6 +125,7 @@ class Item(models.Model):
 
     pdf_file = models.FileField(upload_to=upload_dest, max_length=255,
                                 blank=True, null=True, verbose_name='PDF file')
+    private_pdf = models.BooleanField(default=False)
 
     def __unicode__(self):
         if self.doi_link:
@@ -173,7 +174,8 @@ class Book(Item):
     volume = models.CharField(max_length=100, blank=True, null=True)
     series = models.CharField(max_length=100, blank=True, null=True)
     edition = models.CharField(max_length=100, blank=True, null=True)
-    isbn = models.CharField(max_length=20, blank=True, null=True)
+    isbn = models.CharField(max_length=20, blank=True, null=True,
+                            verbose_name='ISBN')
 
 
 class ConferenceProceeding(Item):
@@ -190,6 +192,11 @@ class ConferenceProceeding(Item):
 
 
 class Thesis(Item):
+    THESIS_CHOICES = (
+        ('masters', 'Masters thesis'),
+        ('phd',     'Ph.D thesis'),
+    )
+    thesis_type = models.CharField(max_length=50, choices=THESIS_CHOICES)
     school = models.ForeignKey(School)
     supervisors = models.ManyToManyField(Author, blank=True, null=True)
 

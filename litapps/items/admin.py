@@ -16,8 +16,8 @@ class AuthorAdmin(admin.ModelAdmin):
 
 class ItemAdmin(admin.ModelAdmin):
     inlines = (AuthorGroupInline,)
-    list_display = ('title', 'year', 'author_list', 'doi_link',
-                    'date_created', 'item_type')
+    list_display = ('title', 'author_list', 'year', 'pdf_file', 'private_pdf',
+                    'doi_link', 'item_type')
     list_display_links = ('title', )
     ordering = ['-date_created']
     filter_horizontal = ['authors', 'tags']
@@ -34,7 +34,7 @@ class JournalPubAdmin(admin.ModelAdmin):
 
 class ThesisAdmin(admin.ModelAdmin):
     inlines = (AuthorGroupInline,)
-    list_display = ('author_list', 'title', 'year', 'school')
+    list_display = ('author_list', 'title', 'thesis_type', 'year', 'school')
     list_display_links = ('title', )
     ordering = ['-date_created']
     filter_horizontal = ['authors', 'supervisors', 'tags']
