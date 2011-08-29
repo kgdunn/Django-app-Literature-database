@@ -8,7 +8,13 @@ class ItemAdmin(admin.ModelAdmin):
     ordering = ['-date_created']
 
 class JournalPubAdmin(admin.ModelAdmin):
-    list_display = ('title', 'year', 'doi_link', 'date_created')
+    list_display = ('title', 'year', 'doi_link', 'journal', 'volume',
+                    'page_start', 'page_end')
+    list_display_links = ('title', )
+    ordering = ['-date_created']
+
+class ThesisAdmin(admin.ModelAdmin):
+    list_display = ('title', 'year', 'school', )
     list_display_links = ('title', )
     ordering = ['-date_created']
 
@@ -22,4 +28,4 @@ admin.site.register(Item, ItemAdmin)
 admin.site.register(JournalPub, JournalPubAdmin)
 admin.site.register(Book)
 admin.site.register(ConferenceProceeding)
-admin.site.register(Thesis)
+admin.site.register(Thesis, ThesisAdmin)

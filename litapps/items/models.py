@@ -27,6 +27,7 @@ class Author(models.Model):
 
         super(Author, self).save(*args, **kwargs)
 
+
 class School(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, editable=False)
@@ -87,6 +88,11 @@ class Item(models.Model):
         ('book',           'Book'),
         ('conferenceproc', 'Conference proceeding'),
     )
+    def upload_dest(instance, filename):
+        """ ``instance.slug`` has already been defined at this point (from
+        self.save()), so it can be safely used.
+        """
+        return 'pdf/%s/%s.pdf' % (instance.slug[0], instance.slug)
 
     authors = models.ManyToManyField(Author)
     title = models.TextField()
@@ -99,7 +105,8 @@ class Item(models.Model):
     abstract = models.TextField(blank=True)
     date_created = models.DateTimeField(editable=False, auto_now=True)
 
-    pdf_file = models.FilePathField
+    pdf_file = models.FileField(upload_to=upload_dest, max_length=255,
+                                blank=True, null=True)
 
     def __unicode__(self):
         if self.doi_link:
@@ -148,6 +155,7 @@ class ConferenceProceeding(Item):
 
     class Meta:
         verbose_name_plural = "conference proceedings"
+
 
 class Thesis(Item):
     school = models.ForeignKey(School)
