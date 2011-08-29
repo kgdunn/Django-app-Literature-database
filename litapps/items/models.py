@@ -11,8 +11,16 @@ class Author(models.Model):
 
     def __unicode__(self):
         if self.middle_initials:
+            return '%s, %s %s' % (self.last_name, self.first_name,
+                                  self.middle_initials)
+        else:
+            return '%s, %s' % (self.last_name, self.first_name)
+
+    @property
+    def full_name(self):
+        if self.middle_initials:
             return '%s %s %s' % (self.first_name, self.middle_initials,
-                                 self.last_name)
+                                   self.last_name)
         else:
             return '%s %s' % (self.first_name, self.last_name)
 
@@ -23,8 +31,7 @@ class Author(models.Model):
         """
         self.first_name = self.first_name.strip()
         self.last_name = self.last_name.strip()
-        self.slug = slugify(str(self))
-
+        unique_slugify(self, self.full_name, 'slug')
         super(Author, self).save(*args, **kwargs)
 
 
@@ -48,7 +55,7 @@ class School(models.Model):
 
 class Journal(models.Model):
     name = models.CharField(max_length=510)
-    website = models.URLField()
+    website = models.URLField(verify_exists=False)
     slug = models.SlugField(max_length=510, editable=False)
 
     def __unicode__(self):
@@ -99,8 +106,8 @@ class Item(models.Model):
     slug = models.SlugField(max_length=100, editable=False)
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
     year = models.PositiveIntegerField()
-    doi_link = models.URLField(blank=True, null=True)
-    web_link = models.URLField(blank=True, null=True)
+    doi_link = models.URLField(blank=True, null=True, verify_exists=False)
+    web_link = models.URLField(blank=True, null=True, verify_exists=False)
     tags = models.ManyToManyField('tagging.Tag')
     abstract = models.TextField(blank=True)
     date_created = models.DateTimeField(editable=False, auto_now=True)

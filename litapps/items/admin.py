@@ -2,6 +2,12 @@ from django.contrib import admin
 from models import (Author, Journal, Publisher, Item, School,
                      JournalPub, Book, ConferenceProceeding, Thesis)
 
+class AuthorAdmin(admin.ModelAdmin):
+    list_display = ('last_name', 'first_name', 'middle_initials',)
+    list_display_links = ('last_name', )
+    ordering = ['last_name']
+
+
 class ItemAdmin(admin.ModelAdmin):
     list_display = ('title', 'year', 'doi_link', 'date_created', 'item_type')
     list_display_links = ('title', )
@@ -19,7 +25,7 @@ class ThesisAdmin(admin.ModelAdmin):
     ordering = ['-date_created']
 
 
-admin.site.register(Author)
+admin.site.register(Author, AuthorAdmin)
 admin.site.register(Journal)
 admin.site.register(Publisher)
 admin.site.register(School)
