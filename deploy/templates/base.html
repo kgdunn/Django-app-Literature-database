@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Language" content="en-us" />
+  <title>{% block title %} | SciPy Central{% endblock %}</title>
+  <link rel="stylesheet" href="{{MEDIA_URL}}literature.css?{{VERSION}}" type="text/css" media="Screen"/>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  {{ANALYTICS_SNIPPET|safe}}
+</head>
+<body>
+
+{% block extra_head %}{% endblock %}
+
+{% block body %}
+
+  <div id="lit-container">
+	<div id="lit-header">
+	  <!--<div class="lit-header-row" id="lit-site-notice">-->
+		<!--Message here-->
+	  <!--</div>-->
+
+	  <div class="lit-header-row" id="lit-site-title">
+		<h1><a href="{% url lit-main-page %}" title="Latent Variable Method Literature">Latent Variable Method Literature</a></h1>
+	  </div>
+    </div> <!--#lit-header-->
+    <div style="clear:both;"></div>
+
+    <div id="lit-contentwrap">
+      <div id="lit-content-main">
+        <div id="lit-border">
+          <div id="lit-section-body">
+            {% block content %}{% endblock %}
+          </div><!--#lit-section-body-->
+        </div><!--#lit-border-->
+      </div><!--lit-content-main-->
+    </div><!--#lit-contentwrap-->
+
+    <div id="lit-footer">
+      <div class="lit-footer-left">
+        <ul>
+          <li><a href="{% url lit-about-page %}">About this site</a></li>
+          <li>Site sponsor: <a href="http://connectmv.com/community">ConnectMV, Inc.</a>
+        </ul>
+	  </div>
+      <div class="lit-footer-right">
+        Trademarks are property of their respective owners. Code and comments are
+        owned by their respective posters. © {% now "Y"%} All Rights Reserved.
+	  </div>
+    </div> <!--#lit-footer-->
+
+  </div><!--#lit-container-->
+
+{% endblock %}
+</body>
+</html>
