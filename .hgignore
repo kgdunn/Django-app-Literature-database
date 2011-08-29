@@ -1,1 +1,6 @@
 .*\.pyc
+literature.wpr
+literature.wpu
+local_settings.py
+deploy/media/pdf
+deploy/literature.sqlite
