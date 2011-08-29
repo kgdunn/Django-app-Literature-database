@@ -116,14 +116,15 @@ class Item(models.Model):
     slug = models.SlugField(max_length=100, editable=False)
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
     year = models.PositiveIntegerField()
-    doi_link = models.URLField(blank=True, null=True, verify_exists=False)
+    doi_link = models.URLField(blank=True, null=True, verify_exists=False,
+                               verbose_name='DOI link')
     web_link = models.URLField(blank=True, null=True, verify_exists=False)
     tags = models.ManyToManyField('tagging.Tag')
     abstract = models.TextField(blank=True)
     date_created = models.DateTimeField(editable=False, auto_now=True)
 
     pdf_file = models.FileField(upload_to=upload_dest, max_length=255,
-                                blank=True, null=True)
+                                blank=True, null=True, verbose_name='PDF file')
 
     def __unicode__(self):
         if self.doi_link:
