@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+
+{% block title %}{{item.title}}{% endblock %}
+
+{% block content %}
+
+  <div id="lit-item-header">
+	<div id="lit-item-header-left">{% if item.previous_submission %}<a href="{{item.previous_submission}}">Previous<a>{% endif %}</div>
+	<div id="lit-item-header-right">{% if item.next_submission %}<a href="{{item.next_submission}}">Next<a>{% endif %}</div>
+  </div>
+
+
+  <h2>{{item.title}}</h2>
+
+  <div id="lit-itemdisp-container">
+
+    <div class="lit-item-row">
+    </div>
+
+    <div class="lit-item-row">
+      <span class="lit-item-label">Authors:</span>
+      <span class="lit-item-entry">{{item.full_author_listing}}</span>
+    </div>
+
+
+    <div class="lit-item-row">
+      <span class="lit-item-label">Publication year:</span>
+      <span class="lit-item-entry">{{ item.year }}</span>
+    </div>
+
+
+    {% if item.doi_link %}
+    <div class="lit-item-row">
+      <span class="lit-item-label">DOI link:</span>
+      <span class="lit-item-entry"><a href="{{item.doi_link}}">{{item.doi_link_cleaned}}</a></span>
+    </div>
+    {% else %}
+	  {% if item.web_link %}
+		<div class="lit-item-row">
+		  <span class="lit-item-label">External link:</span>
+		  <span class="lit-item-entry"><a href="{{item.web_link}}">Read more</a></span>
+		</div>
+	  {% endif%}
+	{% endif%}
+
+    <div class="lit-item-row">
+      <span class="lit-item-label">More information:</span>
+      <span class="lit-item-entry lit-item-description">{{item.other_details|safe}}</span>
+    </div>
+    <div class="lit-item-row">
+      <span class="lit-item-label">Tags:</span>
+      <span class="lit-item-entry">{% for tag in tag_list %}<span><a href="{% url lit-show-items what_view="tag" extra_info=tag %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}</span>
+    </div>
+    <div style="clear:both;">&nbsp;</div>
+  </div>
+
+  <div style="clear: both;"><p>&nbsp;</div>
+
+{% endblock %}

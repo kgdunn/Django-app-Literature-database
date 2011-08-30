@@ -148,6 +148,15 @@ class Item(models.Model):
             return auth_list[0].last_name
 
 
+    @property
+    def full_author_listing(self):
+        return str(self.authors.all().order_by('authorgroup__order'))
+
+
+    @property
+    def doi_link_cleaned(self):
+        return self.doi_link.lstrip('http://dx.doi.org/')
+
     def save(self, *args, **kwargs):
         self.title = self.title.strip()
         unique_slugify(self, self.title[0:100], 'slug')
@@ -164,8 +173,18 @@ class JournalPub(Item):
         return '%s (%s) [doi:%s]' % (self.title, str(self.year),
                                      self.doi_link)
 
+
+    def other_details(self):
+        """
+        Returns details about the journal publication in HTML form
+        """
+        return 'Journal HTML details'
+
+
     class Meta:
         verbose_name_plural = "journal publications"
+
+
 
 
 class Book(Item):
@@ -177,6 +196,12 @@ class Book(Item):
     isbn = models.CharField(max_length=20, blank=True, null=True,
                             verbose_name='ISBN')
 
+    def other_details(self):
+        """
+        Returns details about the book in HTML form
+        """
+        return 'Book HTML details'
+
 
 class ConferenceProceeding(Item):
     editors = models.ManyToManyField(Author, blank=True, null=True)
@@ -186,6 +211,12 @@ class ConferenceProceeding(Item):
     organization = models.CharField(blank=True, null=True, max_length=200)
     location = models.CharField(blank=True, null=True, max_length=200)
     publisher = models.ForeignKey(Publisher, blank=True, null=True)
+
+    def other_details(self):
+        """
+        Returns details about the conference in HTML form
+        """
+        return 'Conference HTML details'
 
     class Meta:
         verbose_name_plural = "conference proceedings"
@@ -199,6 +230,12 @@ class Thesis(Item):
     thesis_type = models.CharField(max_length=50, choices=THESIS_CHOICES)
     school = models.ForeignKey(School)
     supervisors = models.ManyToManyField(Author, blank=True, null=True)
+
+    def other_details(self):
+        """
+        Returns details about the thesis in HTML form
+        """
+        return 'Thesis HTML details'
 
     class Meta:
         verbose_name_plural = "theses"

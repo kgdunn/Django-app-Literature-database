@@ -135,6 +135,8 @@ INSTALLED_APPS = (
     # Local apps
     'litapps.items',
     'litapps.tagging',
+    'litapps.pages',
+
 )
 
 
