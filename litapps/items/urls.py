@@ -4,7 +4,7 @@ urlpatterns = patterns('litapps.items.views',
 
     # SHOW ITEMS in different ways
     # ============================
-    url(r'^(?P<what_view>[a-zA-Z]+)/(?P<extra_info>.+)/$', 'show_items',
+    url(r'^(?P<what_view>[-a-zA-Z]+)/(?P<extra_info>.+)/$', 'show_items',
                                                        name='lit-show-items'),
 
     # Download an item (this URL must come before the next URL rule; also see

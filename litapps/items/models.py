@@ -31,6 +31,23 @@ class Author(models.Model):
         else:
             return u'%s %s' % (self.first_name, self.last_name)
 
+
+    @property
+    def full_name_hyperlinked(self):
+        if self.middle_initials:
+            return u'%s %s %s' % (self.first_name, self.middle_initials,
+                                   self.last_name)
+        else:
+            return u'%s %s' % (self.first_name, self.last_name)
+
+
+    def get_absolute_url(self):
+        """ Create a URL to display all publications by this author
+        """
+        return reverse('lit-show-items', kwargs={'what_view': 'author',
+                                                 'extra_info': self.slug})
+
+
     def save(self, *args, **kwargs):
         """
         http://docs.djangoproject.com/en/dev/topics/db/models/
@@ -74,6 +91,19 @@ class Journal(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+    def get_absolute_url(self):
+        """
+        Create a URL to display all publications from this journal
+        """
+        return reverse('lit-show-items', kwargs={'what_view': 'journal',
+                                                 'extra_info': self.slug})
+
+    @property
+    def as_url(self):
+        return '<a href="%s">%s</a>' % (self.get_absolute_url(), self.name)
+
 
     def save(self, *args, **kwargs):
         """
@@ -138,6 +168,12 @@ class Item(models.Model):
         else:
             return '%s (%s)' % (self.title, str(self.year))
 
+    @property
+    def year_as_url(self):
+        return '<a href="%s">%s</a>' % (reverse('lit-show-items',
+                                                kwargs={'what_view': 'pub-by-year',
+                                                 'extra_info': self.year}),
+                                        self.year)
 
     @property
     def external_link_text(self):
@@ -206,40 +242,51 @@ class Item(models.Model):
             return authors[0]
 
 
-
     @property
     def author_list_all_lastnames(self):
         """
+        Provides the hyperlinked author last names in full
+
         1: Duncan
         2: Smith and Weston
         3: Joyce, Smith and Smythe
         """
         auth_list = list(self.authors.all().order_by('authorgroup__order'))
+        def urlize(author):
+            return '<a href="%s">%s</a>' % (author.get_absolute_url(),
+                                            author.last_name)
+
         if len(auth_list) >= 3:
-            out = ', '.join([auth.last_name for auth in auth_list[0:-1]])
-            out += ' and ' + auth_list[-1].last_name
+            out = ', '.join([urlize(auth) for auth in auth_list[0:-1]])
+            out += ' and ' + urlize(auth_list[-1])
         if len(auth_list) == 2:
-            out = ' and '.join([auth.last_name for auth in auth_list])
+            out = ' and '.join([urlize(auth) for auth in auth_list])
         if len(auth_list) == 1:
-            out = auth_list[0].last_name
+            out = urlize(auth_list[0])
         return out
 
 
     @property
     def full_author_listing(self):
         """
+        Provides the hyperlinked author names in full
+
         1: Duncan
         2: John R. Smith and P. Q. Weston
         3: R. W. Joyce, P. J. Smith and T. Y. Smythe
         """
         auth_list = list(self.authors.all().order_by('authorgroup__order'))
+        def urlize(author):
+            return '<a href="%s">%s</a>' % (author.get_absolute_url(),
+                                            author.full_name)
+
         if len(auth_list) >= 3:
-            out = ', '.join([auth.full_name for auth in auth_list[0:-1]])
-            out += ' and ' + auth_list[-1].full_name
+            out = ', '.join([urlize(auth) for auth in auth_list[0:-1]])
+            out += ' and ' + urlize(auth_list[-1])
         if len(auth_list) == 2:
-            out = ' and '.join([auth.full_name for auth in auth_list])
+            out = ' and '.join([urlize(auth) for auth in auth_list])
         if len(auth_list) == 1:
-            out = auth_list[0].full_name
+            out = urlize(auth_list[0])
         return out
 
 
@@ -300,11 +347,11 @@ class JournalPub(Item):
         return u'%s: "%s", <i>%s</i>, <b>%s</b>, %s-%s, %s.' %\
                                            (self.author_list,
                                             self.title,
-                                            self.journal.name,
+                                            self.journal.as_url,
                                             self.volume,
                                             self.page_start,
                                             self.page_end,
-                                            self.year)
+                                            self.year_as_url)
 
     class Meta:
         verbose_name_plural = "journal publications"
@@ -329,11 +376,11 @@ class Book(Item):
                                                        self.title,
                                                        edition,
                                                        self.publisher,
-                                                       self.year)
+                                                       self.year_as_url)
         return '%s: "<i>%s</i>", %s, %s.' %  (self.full_author_listing,
                                                self.title,
                                                self.publisher,
-                                               self.year)
+                                               self.year_as_url)
 
 
 class ConferenceProceeding(Item):
@@ -374,10 +421,10 @@ class Thesis(Item):
                     thesis_type = option_value
 
         return '%s: "<i>%s</i>", %s, %s, %s.' %  (self.full_author_listing,
-                                                   self.title,
-                                                   thesis_type,
-                                                   self.school,
-                                                   self.year)
+                                                  self.title,
+                                                  thesis_type,
+                                                  self.school,
+                                                  self.year_as_url)
 
     class Meta:
         verbose_name_plural = "theses"

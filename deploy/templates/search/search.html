@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+
+{% block title %}Search results{% endblock %}
+
+{% block content %}
+
+    {% include "search/includes/main-search-box.html" %}
+
+    {% if query %}
+
+        {% with page as entries %}
+            {% include 'items/entries_list.html' %}
+        {% endwith %}
+
+    {% else %}
+        {# Show some example queries to run, maybe advanced query syntax #}
+    {% endif %}
+
+{% endblock %}

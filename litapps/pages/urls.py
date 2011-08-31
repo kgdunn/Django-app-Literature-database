@@ -9,6 +9,6 @@ urlpatterns = patterns('litapps.pages.views',
     url(r'about', 'about_page', name='lit-about-page'),
 
     # Search views (go through our app to log search queries)
-    #url(r'search', 'search', name='haystack_search'),
+    url(r'search', 'search', name='haystack_search'),
 
 )

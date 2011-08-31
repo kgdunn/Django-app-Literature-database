@@ -137,7 +137,7 @@ INSTALLED_APPS = (
     'litapps.items',
     'litapps.tagging',
     'litapps.pages',
-
+    'litapps.pagehit',
 )
 
 
@@ -167,17 +167,54 @@ except IOError:
 # more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
+
     'disable_existing_loggers': False,
+
+    'formatters': {
+        'verbose': {
+            'format': ('%(asctime)s,%(levelname)s,%(filename)s,%(lineno)d,'
+                       '[%(funcName)s(...)] : %(message)s')
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+
     'handlers': {
+        'null': {
+            'level':'DEBUG',
+            'class':'django.utils.log.NullHandler',
+        },
+
+        'console':{
+            'level':'DEBUG',
+            'class':'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+
         'mail_admins': {
             'level': 'ERROR',
             'class': 'django.utils.log.AdminEmailHandler'
-        }
+        },
+
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'verbose',
+            # Inputs to the ``logging.handlers.RotatingFileHandler`` class
+            'filename': LIT['logfile_location'],
+        },
     },
+
     'loggers': {
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
+            'propagate': True,
+        },
+        'Literature': {
+            'handlers': ['file', 'mail_admins'],
+            'level': 'DEBUG',
             'propagate': True,
         },
     }

@@ -7,11 +7,16 @@ from django.http import HttpResponse
 
 from litapps.pages.views import page_404_error
 from litapps.utils import paginated_queryset, invalid_IP_address
+from litapps.pagehit.views import create_hit
 
 import models
 
 import re
 import unicodedata
+import logging
+
+logger = logging.getLogger('Literature')
+logger.debug('Initializing litapps::items::views.py')
 
 def get_items_or_404(view_function):
     """
@@ -79,12 +84,34 @@ def show_items(request, what_view='', extra_info=''):
     elif what_view == 'show' and extra_info == 'all-tags':
         page_title = 'All tags'
         template_name = 'items/show-tag-cloud.html'
-    elif what_view == 'show' and extra_info == 'author-list':
-        pass
-    elif what_view == 'show' and extra_info == 'top-authors':
-        page_title = 'Top authors'
-        extra_info = ''
-        #entry_order = top_authors('', 0)
+    elif what_view == 'pub-by-year':
+        all_items = models.Item.objects.all().filter(year=extra_info)
+        page_title = 'All entries published in '
+        extra_info = '%s' % extra_info
+        entry_order = list(all_items)
+    elif what_view == 'author':
+        author = models.Author.objects.filter(slug=extra_info)
+        if len(author) == 0:
+            return page_404_error(request, 'There are no publications by "%s"' % extra_info)
+
+        author_items = models.Item.objects.all().filter(authors__slug=extra_info)
+        page_title = 'All entries by author'
+        extra_info = ' "%s"' % author[0].full_name
+        entry_order = list(author_items)
+    elif what_view == 'journal':
+        journal = models.Journal.objects.filter(slug=extra_info)
+        if len(journal) == 0:
+            return page_404_error(request, 'There are no publications in "%s"' % extra_info)
+
+        journal_items = models.JournalPub.objects.all().filter(journal=journal[0])
+        page_title = 'All entries from the journal'
+        extra_info = ' "%s"' % journal[0].name
+        entry_order = list(journal_items)
+
+    #elif what_view == 'show' and extra_info == 'top-authors':
+    #    page_title = 'Top authors'
+    #    extra_info = ''
+    #    #entry_order = top_authors('', 0)
 
     entries = paginated_queryset(request, entry_order)
     return render_to_response(template_name, {},
@@ -99,6 +126,7 @@ def download_item(request, the_item):
     """
     Return the PDF to the user
     """
+    create_hit(request, the_item, extra_info="download-pdf")
     if the_item.pdf_file:
         title = unicodedata.normalize('NFKD', the_item.title).encode('ascii', 'ignore')
         title = unicode(re.sub('[^\w\s-]', '', title).strip())
@@ -140,6 +168,8 @@ def view_item(request, the_item, slug):
     # Only check IPs if we have a valid download link
     if (the_item.download_link) and invalid_IP_address(request):
         the_item.download_link = ''
+
+    create_hit(request, the_item)
 
     return render_to_response('items/item.html', {},
                               context_instance=RequestContext(request,
