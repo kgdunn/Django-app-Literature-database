@@ -2,14 +2,18 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponse
 from django.template.loader import get_template
-#from haystack.views import SearchView
+from haystack.views import SearchView
 
 from litapps.pagehit.views import create_hit
-from litapps.utils import get_IP_address
+from litapps.utils import get_IP_address, ensuredir
 
 import logging
 logger = logging.getLogger('Literature')
 logger.debug('Initializing litapps::pages::views.py')
+
+from django.conf import settings
+ensuredir(settings.HAYSTACK_XAPIAN_PATH)
+
 
 def front_page(request):
     return render_to_response('pages/front-page.html', {},

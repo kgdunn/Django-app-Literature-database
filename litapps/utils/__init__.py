@@ -1,7 +1,20 @@
 from django.template.defaultfilters import slugify
 from django.core.paginator import Paginator, InvalidPage, EmptyPage
 from django.conf import settings
-import re
+
+import re, os, errno
+
+def ensuredir(path):
+    """Ensure that a path exists."""
+    # Copied from sphinx.util.osutil.ensuredir(): BSD licensed code, so it's OK
+    # to add to this project.
+    EEXIST = getattr(errno, 'EEXIST', 0)
+    try:
+        os.makedirs(path)
+    except OSError, err:
+        # 0 for Jython/Win32
+        if err.errno not in [0, EEXIST]:
+            raise
 
 
 def get_IP_address(request):

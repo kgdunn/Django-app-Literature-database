@@ -1,0 +1,23 @@
+*   Haystack search, http://haystacksearch.org at version 1.2.0
+
+    *   git clone https://github.com/toastdriven/django-haystack.git
+    *   cd django-haystack
+    *   git checkout 00a23e0cd6ac533073c2  # version 1.2.0; not 2.0.0-alpha
+    *   python setup.py install
+    *   Edit the ``search_settings.py`` file under ``deploy`` to customize
+        the search options.
+
+    We use the Xapian backend with Haystack:
+
+    *   See the installation instructions at
+        http://docs.haystacksearch.org/dev/installing_search_engines.html
+
+        although installation in a hosted environment will require more work.
+
+        (We use Xapian version 1.2.6 on our dev and production servers)
+
+    *   After installing Xapian, also install:
+
+        *   ``git clone git://github.com/notanumber/xapian-haystack.git``
+        *   Symlink the ``xapian_backend.py`` file in the above repo to
+            ``haystack/backends/xapian_backend.py`` location.

@@ -134,6 +134,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     # 3rd party apps
+    'haystack',
 
     # Local apps
     'litapps.items',
@@ -161,6 +162,10 @@ except IOError:
     # Visitors will receive email from this address e.g. "admin@example.org"
     SERVER_EMAIL = ''
     DEFAULT_FROM_EMAIL = SERVER_EMAIL
+
+
+# Haystack search settings are imported here
+execfile(this_dir + os.sep + 'search_settings.py')
 
 
 # A sample logging configuration. The only tangible logging
