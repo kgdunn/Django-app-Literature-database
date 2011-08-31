@@ -627,11 +627,9 @@ div.lit-item-row span.lit-50-50{
 	}
 .lit-itemdisp-td{
   float: left;
-  padding-right: 1%;
+  padding-right: 0.5%;
 }
-.lit-itemdisp-description{
-  width: 50%;
-}
+
 .lit-itemdisp-link{
   float: right;
   font-size: 80%;
@@ -645,11 +643,19 @@ div .lit-itemdisp-mainlink{
   float: right;
   font-size: 80%;
 }
-.lit-itemdisp-created{
+
+/* The 4 columns; after specifying, adjust ``lit-itemdisp-td`` to get into 1 row */
+.lit-itemdisp-description{
+  width: 40%;
+}
+.lit-itemdisp-author{
   width: 23%;
 }
+.lit-itemdisp-extlink{
+  width: 10%;
+}
 .lit-itemdisp-tags{
-  width: 23%;
+  width: 25%;
 }
 .lit-itemdisp-odd{
   background: #fff8f1;

@@ -2,10 +2,16 @@ from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import slugify
+from django.core.urlresolvers import reverse
+from django.http import HttpResponse
+
+from litapps.pages.views import page_404_error
 from litapps.utils import paginated_queryset, invalid_IP_address
 
-
 import models
+
+import re
+import unicodedata
 
 def get_items_or_404(view_function):
     """
@@ -21,20 +27,16 @@ def get_items_or_404(view_function):
             # Use the Submissions manager's ``all()`` function
             the_item = models.Item.objects.all().filter(id=item_id)
         except ObjectDoesNotExist:
-            return '404'#page_404_error(request, 'You request a non-existant item')
+            return page_404_error(request, 'You request a non-existant item')
 
         if len(the_item) == 0:
-            return '404' #page_404_error(request, 'This item does not exist yet')
+            return page_404_error(request, 'This item does not exist yet')
 
         the_item = the_item[0]
         # Is the URL of the form: "..../NN/XXXX"; if so, then XXXX the item
-        #path_split = request.path.split('/')
-        #if len(path_split)>3 and path_split[3] in ['download', ]:
-            #if path_split[3] == 'download' and len(path_split)>=6:
-                #return view_function(request, the_submission, the_revision,
-                                     #filename=path_split[5:])
-            #else:
-                #return view_function(request, the_submission, the_revision)
+        path_split = request.path.split('/')
+        if len(path_split)>=4 and path_split[3] in ['download.pdf', ]:
+            return view_function(request, the_item)
 
         # Is the URL not the canonical URL for the item? .... redirect the user
         #else:
@@ -92,15 +94,42 @@ def show_items(request, what_view='', extra_info=''):
                                                  'extra_info': extra_info}))
 
 
-def download_item(request, item_id):
-    return 'PDF'
+@get_items_or_404
+def download_item(request, the_item):
+    """
+    Return the PDF to the user
+    """
+    if the_item.pdf_file:
+        title = unicodedata.normalize('NFKD', the_item.title).encode('ascii', 'ignore')
+        title = unicode(re.sub('[^\w\s-]', '', title).strip())
+        pdf_name = '%s--%s.pdf' % (the_item.author_slugs, title)
+    else:
+        return page_404_error(request, 'This item does not have a PDF file.')
+
+    if the_item.private_pdf:
+        return page_404_error(request, "This item's PDF file is not available.")
+
+    # Only check IPs if we have a valid download link
+    if invalid_IP_address(request):
+        return page_404_error(request, "This item's PDF file cannot be downloaded.")
+
+    response = HttpResponse(mimetype="application/pdf")
+    response['Content-Disposition'] = 'attachment; filename=%s' % pdf_name
+    response.write(the_item.pdf_file.read())
+    return response
+
 
 @get_items_or_404
 def view_item(request, the_item, slug):
     """
     Show the full details of one item
     """
-    the_item.download_link = the_item.pdf_file
+    if the_item.pdf_file:
+        the_item.download_link = reverse('lit-download-pdf', args=[the_item.pk])
+        the_item.downlad_size = the_item.pdf_file.size
+    else:
+        the_item.download_link = ''
+
     if the_item.private_pdf:
         the_item.download_link = ''
 

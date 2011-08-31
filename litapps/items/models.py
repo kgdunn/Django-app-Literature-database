@@ -135,6 +135,29 @@ class Item(models.Model):
         else:
             return '%s (%s)' % (self.title, str(self.year))
 
+
+    @property
+    def external_link_text(self):
+        """ Text to display for the external link """
+        if self.doi_link:
+            return 'DOI'
+        elif self.web_link:
+            return 'More info'
+        else:
+            return ''
+
+
+    @property
+    def external_link(self):
+        """ Hyperlink to use for the external link """
+        if self.doi_link:
+            return self.doi_link
+        elif self.web_link:
+            return self.web_link
+        else:
+            return None
+
+
     @property
     def author_list(self):
         """
@@ -152,20 +175,58 @@ class Item(models.Model):
 
 
     @property
+    def author_slugs(self):
+        """
+        Used to create the PDF file name. Doesn't matter if there are spaces
+        in the last name (i.e. it is not a strict slug).
+
+        1: Duncan
+        2: Smith-and-Weston
+        3: Joyce-Smith-Smythe
+        """
+        auth_list = self.authors.all().order_by('authorgroup__order')
+        if len(auth_list) >= 3:
+            return '-'.join([auth.last_name for auth in auth_list])
+        elif len(auth_list) == 2:
+            return '-and-'.join([auth.last_name for auth in auth_list])
+        else:
+            return auth_list[0].last_name
+
+
+
+    @property
+    def author_list_all_lastnames(self):
+        """
+        1: Duncan
+        2: Smith and Weston
+        3: Joyce, Smith and Smythe
+        """
+        auth_list = list(self.authors.all().order_by('authorgroup__order'))
+        if len(auth_list) >= 3:
+            out = ', '.join([auth.last_name for auth in auth_list[0:-1]])
+            out += ' and ' + auth_list[-1].last_name
+        if len(auth_list) == 2:
+            out = ' and '.join([auth.last_name for auth in auth_list])
+        if len(auth_list) == 1:
+            out = auth_list[0].last_name
+        return out
+
+
+    @property
     def full_author_listing(self):
         """
         1: Duncan
         2: John R. Smith and P. Q. Weston
         3: R. W. Joyce, P. J. Smith and T. Y. Smythe
         """
-        auths = list(self.authors.all().order_by('authorgroup__order'))
-        if len(auths) >= 3:
-            out = ', '.join(auth.full_name for auth in auths[0:-1])
-            out += ' and ' + auths[-1].full_name
-        if len(auths) == 2:
-            out = ' and '.join(auth.full_name for auth in auths)
-        if len(auths) == 1:
-            out = auths[0].full_name
+        auth_list = list(self.authors.all().order_by('authorgroup__order'))
+        if len(auth_list) >= 3:
+            out = ', '.join([auth.full_name for auth in auth_list[0:-1]])
+            out += ' and ' + auth_list[-1].full_name
+        if len(auth_list) == 2:
+            out = ' and '.join([auth.full_name for auth in auth_list])
+        if len(auth_list) == 1:
+            out = auth_list[0].full_name
         return out
 
 
@@ -182,6 +243,7 @@ class Item(models.Model):
             return item[0].get_absolute_url()
         else:
             return None
+
 
     @property
     def next_item(self):
@@ -259,7 +321,6 @@ class Book(Item):
                                                self.title,
                                                self.publisher,
                                                self.year)
-
 
 
 class ConferenceProceeding(Item):

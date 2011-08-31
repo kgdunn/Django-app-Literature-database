@@ -8,7 +8,7 @@ urlpatterns = patterns('litapps.items.views',
                                                        name='lit-show-items'),
 
     # Download an item (this URL must come before the next URL rule; also see
-    url(r'^(?P<item_id>\d+)/download/$', 'download_item', name='lit-download-pdf'),
+    url(r'^(?P<item_id>\d+)/download.pdf$', 'download_item', name='lit-download-pdf'),
 
     # View an existing item: both versions of accessing the item are valid
     # Maximum information:   http://..../23/draw-an-ellipse/

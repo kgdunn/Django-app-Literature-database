@@ -6,8 +6,8 @@
 {% block content %}
 
   <div id="lit-item-header">
-	<div id="lit-item-header-left">{% if item.previous_item %}<a href="{{item.previous_item}}">Previous<a>{% endif %}</div>
-	<div id="lit-item-header-right">{% if item.next_item %}<a href="{{item.next_item}}">Next<a>{% endif %}</div>
+	<div id="lit-item-header-left">{% if item.previous_item %}<a href="{{item.previous_item}}">Previous</a>{% endif %}</div>
+	<div id="lit-item-header-right">{% if item.next_item %}<a href="{{item.next_item}}">Next</a>{% endif %}</div>
   </div>
 
 
@@ -44,14 +44,6 @@
 	  {% endif%}
 	{% endif%}
 
-	{% if item.download_link %}
-	<div class="lit-item-row">
-      <span class="lit-item-label">Download PDF:</span>
-      <span class="lit-item-entry"><a href="{{item.download_link.name}}">{{item.download_link.name}}</a></span>
-    </div>
-	{% endif %}
-
-
     <div class="lit-item-row">
       <span class="lit-item-label">Citation:</span>
       <span class="lit-item-entry lit-item-description">{{item.full_citation|safe}}</span>
@@ -61,6 +53,16 @@
       <span class="lit-item-entry">{% for tag in tag_list %}<span><a href="{% url lit-show-items what_view="tag" extra_info=tag %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}</span>
     </div>
     <div style="clear:both;">&nbsp;</div>
+
+    <div class="lit-item-row">
+      <span class="lit-item-label">Download PDF:</span>
+      {% if item.download_link %}
+		<span class="lit-item-entry"><a href="{{item.download_link}}">PDF icon</a> [{{item.downlad_size|filesizeformat}}]</span>
+	  {% else %}
+	    No PDF available
+	  {% endif %}
+    </div>
+
   </div>
 
   <div style="clear: both;"><p>&nbsp;</div>
