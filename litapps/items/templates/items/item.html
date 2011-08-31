@@ -57,7 +57,9 @@
     <div class="lit-item-row">
       <span class="lit-item-label">Download PDF:</span>
       {% if item.download_link %}
-		<span class="lit-item-entry"><a href="{{item.download_link}}">PDF icon</a> [{{item.downlad_size|filesizeformat}}]</span>
+
+	    <img src="{{MEDIA_URL}}nuvola_mimetypes_pdf.png" width="24">
+		<span class="lit-item-entry"><a href="{{item.download_link}}">Get PDF</a> [{{item.download_size|filesizeformat}}]</span>
 	  {% else %}
 	    No PDF available
 	  {% endif %}

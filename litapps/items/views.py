@@ -102,7 +102,7 @@ def download_item(request, the_item):
     if the_item.pdf_file:
         title = unicodedata.normalize('NFKD', the_item.title).encode('ascii', 'ignore')
         title = unicode(re.sub('[^\w\s-]', '', title).strip())
-        pdf_name = '%s--%s.pdf' % (the_item.author_slugs, title)
+        pdf_name = '%s -- %s.pdf' % (the_item.author_slugs, title)
     else:
         return page_404_error(request, 'This item does not have a PDF file.')
 
@@ -126,7 +126,11 @@ def view_item(request, the_item, slug):
     """
     if the_item.pdf_file:
         the_item.download_link = reverse('lit-download-pdf', args=[the_item.pk])
-        the_item.downlad_size = the_item.pdf_file.size
+        try:
+            the_item.download_size = the_item.pdf_file.size
+        except OSError:
+            # We couldn't find the file: has been removed from storage?
+            the_item.download_link = ''
     else:
         the_item.download_link = ''
 

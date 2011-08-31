@@ -4,6 +4,9 @@ from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 from litapps.utils import unique_slugify
 
+import re
+import unicodedata
+
 class Author(models.Model):
     first_name = models.CharField(max_length=255)
     middle_initials = models.CharField(max_length=31, blank=True, null=True)
@@ -178,19 +181,29 @@ class Item(models.Model):
     def author_slugs(self):
         """
         Used to create the PDF file name. Doesn't matter if there are spaces
-        in the last name (i.e. it is not a strict slug).
+        in the last name (i.e. it is not a strict slug), but it does ensure
+        the last names only contain normalized unicode characters.
 
         1: Duncan
         2: Smith-and-Weston
         3: Joyce-Smith-Smythe
         """
         auth_list = self.authors.all().order_by('authorgroup__order')
+        authors = []
+        for auth in auth_list:
+            author = unicodedata.normalize('NFKD', auth.last_name).encode(\
+                                                              'ascii', 'ignore')
+            author = unicode(re.sub('[^\w\s-]', '', author).strip())
+            authors.append(author)
+
         if len(auth_list) >= 3:
-            return '-'.join([auth.last_name for auth in auth_list])
+            out = ', '.join([auth for auth in authors[0:-1]])
+            out += ' and ' + authors[-1]
+            return out
         elif len(auth_list) == 2:
-            return '-and-'.join([auth.last_name for auth in auth_list])
+            return ' and '.join(authors)
         else:
-            return auth_list[0].last_name
+            return authors[0]
 
 
 
