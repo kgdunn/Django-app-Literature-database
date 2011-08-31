@@ -1,0 +1,29 @@
+{# The ``entry`` object must be from the ``items.Item`` sub-class #}
+{% if entry %}
+<div class="lit-itemdisp-row-container">
+  <div class="lit-itemdisp-row lit-itemdisp-{% if forloop.counter|divisibleby:2 %}even{% else %}odd{% endif %}">
+	<li>
+	  <div class="lit-itemdisp-description lit-itemdisp-td" id="lit-item-{{entry.pk}}">
+		<div style="width: 42px; float: left;">
+		  {% if entry.entry.sub_type == 'snippet' %}<img src="{{MEDIA_URL}}single-file-list-icon-tiny.png">{% endif %}
+		  {% if entry.entry.sub_type == 'package' %}<img src="{{MEDIA_URL}}multiple-file-list-icon-tiny.png">{% endif %}
+		  {% if entry.entry.sub_type == 'link' %}<img src="{{MEDIA_URL}}external-link-list-icon-tiny.png">{% endif %}
+		</div>
+		<div style="width: 85%; float: left;">
+		  <a class="lit-itemdisp-mainlink" href="{{entry.get_absolute_url}}">{{ entry.title}}</a>
+		  {{ entry.description_html|truncatewords_html:"30"|safe|removetags:"p li ul ol img a math h1 h2 h3 h4 h5 h6"}}
+		</div>
+	  </div>
+	  <div class="lit-itemdisp-created lit-itemdisp-td">
+		Show author links here
+	  </div>
+	  <div class="lit-itemdisp-created lit-itemdisp-td">
+		Show hyperlinks here
+	  </div>
+	  <div class="lit-itemdisp-tags lit-itemdisp-td">
+		{% for tag in entry.tags.all %}<span><a href="{% url lit-show-items what_view="tag" extra_info=tag %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}
+	  </div>
+	</li>
+  </div>
+</div>
+{% endif %}

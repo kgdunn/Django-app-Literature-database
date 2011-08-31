@@ -1,6 +1,10 @@
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
-from django.http import HttpResponse
+#from django.http import HttpResponse
+from django.core.exceptions import ObjectDoesNotExist
+from django.template.defaultfilters import slugify
+from litapps.utils import paginated_queryset
+
 import models
 
 def get_items_or_404(view_function):
@@ -23,9 +27,8 @@ def get_items_or_404(view_function):
             return '404' #page_404_error(request, 'This item does not exist yet')
 
         the_item = the_item[0]
-
         # Is the URL of the form: "..../NN/XXXX"; if so, then XXXX the item
-        path_split = request.path.split('/')
+        #path_split = request.path.split('/')
         #if len(path_split)>3 and path_split[3] in ['download', ]:
             #if path_split[3] == 'download' and len(path_split)>=6:
                 #return view_function(request, the_submission, the_revision,
@@ -42,15 +45,54 @@ def get_items_or_404(view_function):
                             permanent=True)
 
 
+        if the_item.item_type == 'conferenceproc':
+            the_item = models.ConferenceProceeding.objects.get(id=item_id)
+        if the_item.item_type == 'thesis':
+            the_item = models.Thesis.objects.get(id=item_id)
+        if the_item.item_type == 'journalpub':
+            the_item = models.JournalPub.objects.get(id=item_id)
+        if the_item.item_type == 'book':
+            the_item = models.Book.objects.get(id=item_id)
+
         return view_function(request, the_item, slug)
 
     return decorator
 
 
 
-def show_items(request, what_view, extra_info):
-    return 'show_items'#render_to_response('pages/front-page.html', {},
+def show_items(request, what_view='', extra_info=''):
+   # return 'show_items'#render_to_response('pages/front-page.html', {},
            #                   context_instance=RequestContext(request))
+
+    what_view = what_view.lower()
+    extra_info = extra_info.lower()
+    entry_order = []
+    page_title = ''
+    template_name = 'items/show-entries.html'
+    if what_view == 'tag':
+        all_items = models.Item.objects.all().\
+                                        filter(tags__slug=slugify(extra_info))
+        page_title = 'All entries tagged'
+        extra_info = ': "%s"' % extra_info
+        entry_order = list(all_items)
+    elif what_view == 'show' and extra_info == 'all-tags':
+        page_title = 'All tags'
+        template_name = 'items/show-tag-cloud.html'
+    elif what_view == 'show' and extra_info == 'author-list':
+        pass
+    elif what_view == 'show' and extra_info == 'top-authors':
+        page_title = 'Top authors'
+        extra_info = ''
+        #entry_order = top_authors('', 0)
+
+    entries = paginated_queryset(request, entry_order)
+    return render_to_response(template_name, {},
+                              context_instance=RequestContext(request,
+                                                {'entries': entries,
+                                                 'page_title': page_title,
+                                                 'extra_info': extra_info}))
+
+
 
 def download_item(request, item_id):
     return 'PDF'

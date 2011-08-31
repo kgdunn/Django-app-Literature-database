@@ -1,6 +1,6 @@
 # Django settings for deploy project.
 
-DEBUG = False
+DEBUG = True
 #TEMPLATE_DEBUG = DEBUG
 TEMPLATE_DEBUG = True
 
@@ -16,9 +16,10 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+# Configured in ``local_settings.py``
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.',
         'NAME': '',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
@@ -138,6 +139,11 @@ INSTALLED_APPS = (
     'litapps.pages',
 
 )
+
+
+LIT = {}
+# Number of items shown per page before previous/next links are shown
+LIT['entries_per_page'] = 20
 
 
 this_dir = __file__[0:__file__.find('settings.py')]

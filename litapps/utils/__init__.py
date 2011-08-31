@@ -1,5 +1,35 @@
 from django.template.defaultfilters import slugify
+from django.core.paginator import Paginator, InvalidPage, EmptyPage
+from django.conf import settings
 import re
+
+
+def get_IP_address(request):
+    """
+    Returns the visitor's IP address as a string given the Django ``request``.
+    """
+    # Catchs the case when the user is on a proxy
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if ip == '' or ip.lower() == 'unkown':
+        ip = request.META.get('REMOTE_ADDR', '')   # User is not on a proxy
+    return ip
+
+
+def paginated_queryset(request, queryset):
+    """
+    Show items in a paginated table.
+    """
+    queryset = list(queryset)
+    paginator = Paginator(queryset, settings.LIT['entries_per_page'])
+    try:
+        page = int(request.GET.get('page', '1'))
+    except ValueError:
+        page = 1
+    try:
+        return paginator.page(page)
+    except (EmptyPage, InvalidPage):
+        return paginator.page(paginator.num_pages)
+
 # From: http://djangosnippets.org/snippets/690/
 def unique_slugify(instance, value, slug_field_name='slug', queryset=None,
                    slug_separator='-'):

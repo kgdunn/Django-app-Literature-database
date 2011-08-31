@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib import admin
+from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 from litapps.utils import unique_slugify
 
@@ -22,10 +23,10 @@ class Author(models.Model):
     @property
     def full_name(self):
         if self.middle_initials:
-            return '%s %s %s' % (self.first_name, self.middle_initials,
+            return u'%s %s %s' % (self.first_name, self.middle_initials,
                                    self.last_name)
         else:
-            return '%s %s' % (self.first_name, self.last_name)
+            return u'%s %s' % (self.first_name, self.last_name)
 
     def save(self, *args, **kwargs):
         """
@@ -140,8 +141,7 @@ class Item(models.Model):
         """
         auth_list = self.authors.all().order_by('authorgroup__order')
         if len(auth_list) > 2:
-            #return ', '.join([auth.last_name for auth in auth_list])
-            return auth_list[0].last_name + ' et al.'
+            return auth_list[0].last_name + ' <i>et al</i>.'
         elif len(auth_list) == 2:
             return ' and '.join([auth.last_name for auth in auth_list])
         else:
@@ -150,12 +150,29 @@ class Item(models.Model):
 
     @property
     def full_author_listing(self):
-        return str(self.authors.all().order_by('authorgroup__order'))
+        auths = list(self.authors.all().order_by('authorgroup__order'))
+        if len(auths) >= 3:
+            out = ', '.join(auth.full_name for auth in auths[0:-1])
+            out += ' and ' + auths[-1].full_name
+        if len(auths) == 2:
+            out = ' and '.join(auth.full_name for auth in auths)
+        if len(auths) == 1:
+            out = auths[0].full_name
+        return out
 
 
     @property
     def doi_link_cleaned(self):
         return self.doi_link.lstrip('http://dx.doi.org/')
+
+
+    def get_absolute_url(self):
+        """ I can't seem to find a way to use the "reverse" or "permalink"
+        functions to create this URL: do it manually, to match ``urls.py``
+        """
+        return reverse('lit-view-item', args=[0]).rstrip('0') + \
+                '%d/%s' % (self.pk, self.slug)
+
 
     def save(self, *args, **kwargs):
         self.title = self.title.strip()
@@ -174,17 +191,21 @@ class JournalPub(Item):
                                      self.doi_link)
 
 
-    def other_details(self):
+    def full_citation(self):
         """
         Returns details about the journal publication in HTML form
         """
-        return 'Journal HTML details'
-
+        return u'%s: "%s", <i>%s</i>, <b>%s</b>, %s-%s, %s.' %\
+                                           (self.author_list,
+                                            self.title,
+                                            self.journal.name,
+                                            self.volume,
+                                            self.page_start,
+                                            self.page_end,
+                                            self.year)
 
     class Meta:
         verbose_name_plural = "journal publications"
-
-
 
 
 class Book(Item):
@@ -196,7 +217,7 @@ class Book(Item):
     isbn = models.CharField(max_length=20, blank=True, null=True,
                             verbose_name='ISBN')
 
-    def other_details(self):
+    def full_citation(self):
         """
         Returns details about the book in HTML form
         """
@@ -212,7 +233,7 @@ class ConferenceProceeding(Item):
     location = models.CharField(blank=True, null=True, max_length=200)
     publisher = models.ForeignKey(Publisher, blank=True, null=True)
 
-    def other_details(self):
+    def full_citation(self):
         """
         Returns details about the conference in HTML form
         """
@@ -231,7 +252,7 @@ class Thesis(Item):
     school = models.ForeignKey(School)
     supervisors = models.ManyToManyField(Author, blank=True, null=True)
 
-    def other_details(self):
+    def full_citation(self):
         """
         Returns details about the thesis in HTML form
         """
