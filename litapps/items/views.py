@@ -104,7 +104,7 @@ def show_items(request, what_view='', extra_info=''):
             return page_404_error(request, 'There are no publications in "%s"' % extra_info)
 
         journal_items = models.JournalPub.objects.all().filter(journal=journal[0])
-        page_title = 'All entries from the journal'
+        page_title = 'All entries in '
         extra_info = ' "%s"' % journal[0].name
         entry_order = list(journal_items)
 

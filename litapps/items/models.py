@@ -353,6 +353,7 @@ class JournalPub(Item):
                                             self.page_end,
                                             self.year_as_url)
 
+
     class Meta:
         verbose_name_plural = "journal publications"
 
@@ -377,7 +378,7 @@ class Book(Item):
                                                        edition,
                                                        self.publisher,
                                                        self.year_as_url)
-        return '%s: "<i>%s</i>", %s, %s.' %  (self.full_author_listing,
+        return '%s: "<i>%s</i>", %s, %s.' %  (self.author_list,
                                                self.title,
                                                self.publisher,
                                                self.year_as_url)
@@ -396,7 +397,19 @@ class ConferenceProceeding(Item):
         """
         Returns details about the conference in HTML form
         """
-        return 'Conference HTML details'
+        first =  '%s: "<i>%s</i>, "'%  (self.author_list, self.title)
+        rest = (item for item in [self.conference_name, self.organization,
+                                  self.location, self.publisher] if item)
+        rest = ', '.join(rest)
+
+        final = ', %s.' % self.year
+        if self.page_start and self.page_end:
+            final = ', %s-%s, %s.' % (self.page_start, self.page_end,
+                                      self.year)
+        elif self.page_start:
+            final = ', %s, %s.' % (self.page_start, self.year)
+
+        return first + rest + final
 
     class Meta:
         verbose_name_plural = "conference proceedings"
@@ -420,7 +433,7 @@ class Thesis(Item):
             if self.thesis_type == option_key:
                     thesis_type = option_value
 
-        return '%s: "<i>%s</i>", %s, %s, %s.' %  (self.full_author_listing,
+        return '%s: "<i>%s</i>", %s, %s, %s.' %  (self.author_list,
                                                   self.title,
                                                   thesis_type,
                                                   self.school,
