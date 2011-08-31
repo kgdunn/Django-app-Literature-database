@@ -6,8 +6,8 @@
 {% block content %}
 
   <div id="lit-item-header">
-	<div id="lit-item-header-left">{% if item.previous_submission %}<a href="{{item.previous_submission}}">Previous<a>{% endif %}</div>
-	<div id="lit-item-header-right">{% if item.next_submission %}<a href="{{item.next_submission}}">Next<a>{% endif %}</div>
+	<div id="lit-item-header-left">{% if item.previous_item %}<a href="{{item.previous_item}}">Previous<a>{% endif %}</div>
+	<div id="lit-item-header-right">{% if item.next_item %}<a href="{{item.next_item}}">Next<a>{% endif %}</div>
   </div>
 
 
@@ -39,13 +39,21 @@
 	  {% if item.web_link %}
 		<div class="lit-item-row">
 		  <span class="lit-item-label">External link:</span>
-		  <span class="lit-item-entry"><a href="{{item.web_link}}">Read more</a></span>
+		  <span class="lit-item-entry"><a href="{{item.web_link}}">{{item.web_link}}</a></span>
 		</div>
 	  {% endif%}
 	{% endif%}
 
+	{% if item.download_link %}
+	<div class="lit-item-row">
+      <span class="lit-item-label">Download PDF:</span>
+      <span class="lit-item-entry"><a href="{{item.download_link.name}}">{{item.download_link.name}}</a></span>
+    </div>
+	{% endif %}
+
+
     <div class="lit-item-row">
-      <span class="lit-item-label">Proper citation:</span>
+      <span class="lit-item-label">Citation:</span>
       <span class="lit-item-entry lit-item-description">{{item.full_citation|safe}}</span>
     </div>
     <div class="lit-item-row">

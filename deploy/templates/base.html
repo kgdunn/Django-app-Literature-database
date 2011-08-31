@@ -5,6 +5,7 @@
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Language" content="en-us" />
   <title>{% block title %} | Multivariate Literature{% endblock %}</title>
+  <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata">
   <link rel="stylesheet" href="{{MEDIA_URL}}literature.css?{{VERSION}}" type="text/css" media="Screen"/>
   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   {{ANALYTICS_SNIPPET|safe}}
@@ -21,11 +22,21 @@
 		<!--Message here-->
 	  <!--</div>-->
 
+
+	  <div class="lit-header-row" id="lit-top-menu">
+		<div class="lit-header-left">
+		  <a href="{% url lit-main-page %}" accesskey="h">Home</a>
+		</div>
+		<div class="lit-header-right">
+
+		</div>
+	  </div>
 	  <div class="lit-header-row" id="lit-site-title">
 		<h1><a href="{% url lit-main-page %}" title="Latent Variable Method Literature">Latent Variable Method Literature</a></h1>
 	  </div>
     </div> <!--#lit-header-->
     <div style="clear:both;"></div>
+
 
     <div id="lit-contentwrap">
       <div id="lit-content-main">

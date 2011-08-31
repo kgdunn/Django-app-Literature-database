@@ -144,6 +144,7 @@ INSTALLED_APPS = (
 LIT = {}
 # Number of items shown per page before previous/next links are shown
 LIT['entries_per_page'] = 20
+LIT['valid_IP_addresses'] = []
 
 
 this_dir = __file__[0:__file__.find('settings.py')]

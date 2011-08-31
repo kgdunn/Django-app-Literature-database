@@ -15,6 +15,19 @@ def get_IP_address(request):
     return ip
 
 
+def invalid_IP_address(request):
+    """
+    Used to determine whether a user can download the item
+    """
+    ip = get_IP_address(request)
+    for valid_ip in settings.LIT['valid_IP_addresses']:
+        if ip.startswith(valid_ip):
+            return False
+
+    # User's IP address not found in list
+    return True
+
+
 def paginated_queryset(request, queryset):
     """
     Show items in a paginated table.
@@ -30,7 +43,7 @@ def paginated_queryset(request, queryset):
     except (EmptyPage, InvalidPage):
         return paginator.page(paginator.num_pages)
 
-# From: http://djangosnippets.org/snippets/690/
+
 def unique_slugify(instance, value, slug_field_name='slug', queryset=None,
                    slug_separator='-'):
     """
@@ -41,6 +54,8 @@ def unique_slugify(instance, value, slug_field_name='slug', queryset=None,
 
     ``queryset`` usually doesn't need to be explicitly provided - it'll default
     to using the ``.all()`` queryset from the model's default manager.
+
+    From: http://djangosnippets.org/snippets/690/
     """
     slug_field = instance._meta.get_field(slug_field_name)
 

@@ -1,9 +1,9 @@
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
-#from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import slugify
-from litapps.utils import paginated_queryset
+from litapps.utils import paginated_queryset, invalid_IP_address
+
 
 import models
 
@@ -59,11 +59,10 @@ def get_items_or_404(view_function):
     return decorator
 
 
-
 def show_items(request, what_view='', extra_info=''):
-   # return 'show_items'#render_to_response('pages/front-page.html', {},
-           #                   context_instance=RequestContext(request))
-
+    """
+    Shows a paginated list of items
+    """
     what_view = what_view.lower()
     extra_info = extra_info.lower()
     entry_order = []
@@ -93,15 +92,21 @@ def show_items(request, what_view='', extra_info=''):
                                                  'extra_info': extra_info}))
 
 
-
 def download_item(request, item_id):
     return 'PDF'
 
 @get_items_or_404
 def view_item(request, the_item, slug):
     """
-    Show the full details of the article
+    Show the full details of one item
     """
+    the_item.download_link = the_item.pdf_file
+    if the_item.private_pdf:
+        the_item.download_link = ''
+
+    # Only check IPs if we have a valid download link
+    if (the_item.download_link) and invalid_IP_address(request):
+        the_item.download_link = ''
 
     return render_to_response('items/item.html', {},
                               context_instance=RequestContext(request,

@@ -137,7 +137,10 @@ class Item(models.Model):
 
     @property
     def author_list(self):
-        """ For display purposes only
+        """
+        1: Duncan
+        2: Smith and Weston
+        3: Joyce et al.
         """
         auth_list = self.authors.all().order_by('authorgroup__order')
         if len(auth_list) > 2:
@@ -150,6 +153,11 @@ class Item(models.Model):
 
     @property
     def full_author_listing(self):
+        """
+        1: Duncan
+        2: John R. Smith and P. Q. Weston
+        3: R. W. Joyce, P. J. Smith and T. Y. Smythe
+        """
         auths = list(self.authors.all().order_by('authorgroup__order'))
         if len(auths) >= 3:
             out = ', '.join(auth.full_name for auth in auths[0:-1])
@@ -164,6 +172,25 @@ class Item(models.Model):
     @property
     def doi_link_cleaned(self):
         return self.doi_link.lstrip('http://dx.doi.org/')
+
+
+    @property
+    def previous_item(self):
+        n = 1
+        item = Item.objects.all().filter(pk=self.pk-n)
+        if len(item):
+            return item[0].get_absolute_url()
+        else:
+            return None
+
+    @property
+    def next_item(self):
+        n = 1
+        item = Item.objects.all().filter(pk=self.pk+n)
+        if len(item):
+            return item[0].get_absolute_url()
+        else:
+            return None
 
 
     def get_absolute_url(self):
@@ -221,7 +248,18 @@ class Book(Item):
         """
         Returns details about the book in HTML form
         """
-        return 'Book HTML details'
+        edition = self.edition.lower().rstrip('edition')
+        if self.edition:
+            return '%s: "<i>%s</i>", %s, %s, %s.' %  (self.full_author_listing,
+                                                       self.title,
+                                                       edition,
+                                                       self.publisher,
+                                                       self.year)
+        return '%s: "<i>%s</i>", %s, %s.' %  (self.full_author_listing,
+                                               self.title,
+                                               self.publisher,
+                                               self.year)
+
 
 
 class ConferenceProceeding(Item):
@@ -256,7 +294,16 @@ class Thesis(Item):
         """
         Returns details about the thesis in HTML form
         """
-        return 'Thesis HTML details'
+        thesis_type = ''
+        for option_key, option_value in self.THESIS_CHOICES:
+            if self.thesis_type == option_key:
+                    thesis_type = option_value
+
+        return '%s: "<i>%s</i>", %s, %s, %s.' %  (self.full_author_listing,
+                                                   self.title,
+                                                   thesis_type,
+                                                   self.school,
+                                                   self.year)
 
     class Meta:
         verbose_name_plural = "theses"
