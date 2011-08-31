@@ -17,8 +17,8 @@ urlpatterns = patterns('',
     url(r'', include('litapps.urls')),
 )
 
-#handler404 = 'scipy_central.pages.views.page_404_error'
-#handler500 = 'scipy_central.pages.views.page_500_error'
+handler404 = 'litapps.pages.views.page_404_error'
+handler500 = 'litapps.pages.views.page_500_error'
 
 if settings.DEBUG:
     # Small problem: cannot show 404 templates /media/....css file, because
