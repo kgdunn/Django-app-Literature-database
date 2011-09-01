@@ -5,12 +5,10 @@
 
 {% block content %}
 
-    {% include "search/includes/main-search-box.html" %}
-
     {% if query %}
 
         <div id="lit-search-results-note">
-            Some search results may be from the full article text and abstract, not only  words in the article's title.
+            Search results may come from the full article text and abstract, not only  words in the article's title.
         </div>
         {% with page as entries %}
 
@@ -20,5 +18,7 @@
     {% else %}
         {# Show some example queries to run, maybe advanced query syntax #}
     {% endif %}
+
+    {# include "search/includes/main-search-box.html" #}
 
 {% endblock %}

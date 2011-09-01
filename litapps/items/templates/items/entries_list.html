@@ -32,8 +32,8 @@
   {#  The ``entry`` objects must be from the ``submission.Revision`` class   #}
   {#  or from the ``person.UserProfile`` class                               #}
   {% for entry in entries.object_list %}
-	{# It's a search query result #}
-	{% if entry.django_CT %}
+	{# It's a search query result; used to be ``entry.django_CT`` #}
+	{% if entry.object %}
 	  {% with entry.object as entry %}
 		{% include 'search/includes/one-item-result.html' %}
 	  {% endwith %}
