@@ -198,28 +198,34 @@ def __extract_extra__(request):
 
     for item in models.Item.objects.all():
 
-        if not item.pdf_file:
+        # Don't extract if no PDF; or if we already have search text
+        if not item.pdf_file or item.other_search_text:
             continue
 
-        print 'Dealing with item: "%s" ... ' % item.title,
+        print 'Item: "%s" ... ' % item.title,
         rsrcmgr = PDFResourceManager(caching=caching)
         outfp = StringIO()
         device = TextConverter(rsrcmgr, outfp, codec=codec, laparams=laparams)
         fp = item.pdf_file.file
-        process_pdf(rsrcmgr, device, fp, pagenos=set(), maxpages=0, password='',
-                    caching=caching, check_extractable=True)
-        fp.close()
-        device.close()
-        outfp.seek(0)
-        page_text = outfp.read()
-        outfp.close()
+        try:
+            process_pdf(rsrcmgr, device, fp, pagenos=set(), maxpages=0, password='',
+                        caching=caching, check_extractable=True)
+        except AssertionError:
+            print 'FAILED.'
+        else:
+            print 'done.'
+        finally:
+            fp.close()
+            device.close()
+            outfp.seek(0)
+            page_text = outfp.read()
+            outfp.close()
+
+            #''.join([line[0:-1] for line in r])
+            item.other_search_text = page_text
+            item.save()
 
 
-        #cleaned = unicodedata.normalize('NFKD', page_text.decode('utf-8')).encode('ascii','ignore')
-        item.other_search_text = page_text
-        item.save()
-        print 'done.'
 
-
-    return HttpResponse('Done')
+    return HttpResponse('Done. You should rebuild the index again.')
 
