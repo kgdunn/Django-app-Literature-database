@@ -28,9 +28,9 @@ def about_page(request):
 def page_404_error(request, extra_info=''):
     """ Override Django's 404 handler, because we want to log this also.
     """
-    #ip = get_IP_address(request)
-    #logger.info('404 from %s for request "%s"; extra info=%s' %\
-    #                                      (ip, request.path, str(extra_info)))
+    ip = get_IP_address(request)
+    logger.info('404 from %s for request "%s"; extra info=%s' %\
+                                          (ip, request.path, str(extra_info)))
     t = get_template('404.html')
     c = RequestContext(request)
     c.update({'extra_info': extra_info})
@@ -42,7 +42,7 @@ def page_500_error(request):
     """ Override Django's 500 handler, because we want to log this also.
     """
     #ip = get_IP_address(request)
-    #logger.error('500 from %s for request "%s"' % (ip, request.path))
+    logger.error('500 from %s for request "%s"' % (ip, request.path))
     t = get_template('500.html')
     html = t.render(RequestContext(request))
     return HttpResponse(html, status=500)

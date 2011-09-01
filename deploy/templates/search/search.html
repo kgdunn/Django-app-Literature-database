@@ -9,7 +9,11 @@
 
     {% if query %}
 
+        <div id="lit-search-results-note">
+            Some search results may be from the full article text and abstract, not only  words in the article's title.
+        </div>
         {% with page as entries %}
+
             {% include 'items/entries_list.html' %}
         {% endwith %}
 

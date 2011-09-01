@@ -1,4 +1,5 @@
 {% if entries.object_list%}
+
 <div style="clear:both;"></div>
 <div id="lit-itemdisp-container" class="lit-entries-list">
 
@@ -49,3 +50,5 @@
   <p>{% if no_entries_message %}{{no_entries_message}}{% else %}There are no items matching your criteria.{% endif %}
 
 {% endif %}
+
+{% include "search/includes/main-search-box.html" %}

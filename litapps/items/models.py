@@ -155,11 +155,16 @@ class Item(models.Model):
     web_link = models.URLField(blank=True, null=True, verify_exists=False)
     tags = models.ManyToManyField('tagging.Tag')
     abstract = models.TextField(blank=True)
+    show_abstract = models.BooleanField(default=False)
     date_created = models.DateTimeField(editable=False, auto_now=True)
 
     pdf_file = models.FileField(upload_to=upload_dest, max_length=255,
                                 blank=True, null=True, verbose_name='PDF file')
     private_pdf = models.BooleanField(default=False)
+
+    # Contains unstructured text (auto-extracted from PDF, cut/paste, whatever)
+    # to improve the user's search
+    other_search_text = models.TextField(null=True, blank=True)
 
     def __unicode__(self):
         if self.doi_link:
@@ -397,7 +402,7 @@ class ConferenceProceeding(Item):
         """
         Returns details about the conference in HTML form
         """
-        first =  '%s: "<i>%s</i>, "'%  (self.author_list, self.title)
+        first =  '%s: "<i>%s</i>", '%  (self.author_list, self.title)
         rest = (item for item in [self.conference_name, self.organization,
                                   self.location, self.publisher] if item)
         rest = ', '.join(rest)

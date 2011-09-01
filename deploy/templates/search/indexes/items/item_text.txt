@@ -1,0 +1,9 @@
+{{object.title}}
+{{object.doi_link}}
+{{object.web_link}}
+{{object.abstract}}
+{{object.other_search_text}}
+{{object.year}}
+{% for author in object.authors.all %}{{author}}, {% endfor %}
+{% for tag    in object.tags.all    %}{{tag}},    {% endfor %}
+
