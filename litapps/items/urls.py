@@ -15,4 +15,8 @@ urlpatterns = patterns('litapps.items.views',
     # Minimal working link:  http://..../23/    <-- shows latest revision
     url(r'^(?P<item_id>\d+)+(/)?(?P<slug>[-\w]+)?(/)?',
                                            'view_item', name='lit-view-item'),
+
+
+    # Extract PDF text to add to the Item object
+    url(r'__extract_extra__', '__extract_extra__', name='lit-extract-extra'),
 )

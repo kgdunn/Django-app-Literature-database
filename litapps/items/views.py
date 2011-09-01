@@ -176,3 +176,50 @@ def view_item(request, the_item, slug):
                                     {'item': the_item,
                                      'tag_list': the_item.tags.all(),
                                     }))
+
+
+def __extract_extra__(request):
+    if not request.user.is_authenticated():
+        return HttpResponse('Please sign in first')
+
+    from pdfminer.layout import LAParams
+    from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter, process_pdf
+    from pdfminer.pdfdevice import PDFDevice, TagExtractor
+    from pdfminer.converter import TextConverter
+    from cStringIO import StringIO
+
+    laparams = LAParams()
+    outtype = 'text'
+    laparams.char_margin = 1.0
+    laparams.line_margin = 0.3
+    laparams.word_margin = 0.2
+    codec = 'utf-8'
+    caching = True
+
+    for item in models.Item.objects.all():
+
+        if not item.pdf_file:
+            continue
+
+        print 'Dealing with item: "%s" ... ' % item.title,
+        rsrcmgr = PDFResourceManager(caching=caching)
+        outfp = StringIO()
+        device = TextConverter(rsrcmgr, outfp, codec=codec, laparams=laparams)
+        fp = item.pdf_file.file
+        process_pdf(rsrcmgr, device, fp, pagenos=set(), maxpages=0, password='',
+                    caching=caching, check_extractable=True)
+        fp.close()
+        device.close()
+        outfp.seek(0)
+        page_text = outfp.read()
+        outfp.close()
+
+
+        #cleaned = unicodedata.normalize('NFKD', page_text.decode('utf-8')).encode('ascii','ignore')
+        item.other_search_text = page_text
+        item.save()
+        print 'done.'
+
+
+    return HttpResponse('Done')
+
