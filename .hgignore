@@ -6,3 +6,4 @@ deploy/media/pdf
 deploy/literature.sqlite
 logfile.log
 xapian_index
+whoosh_index

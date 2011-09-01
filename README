@@ -7,6 +7,12 @@
     *   Edit the ``search_settings.py`` file under ``deploy`` to customize
         the search options.
 
+
+    Use the Whoosh backend (for now), because it's pure Python
+
+    *   easy_install whoosh
+
+
     We use the Xapian backend with Haystack:
 
     *   See the installation instructions at
