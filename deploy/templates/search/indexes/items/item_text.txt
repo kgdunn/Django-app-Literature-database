@@ -4,6 +4,7 @@
 {{object.abstract}}
 {{object.other_search_text}}
 {{object.year}}
+{{object.isbn}}
 {% for author in object.authors.all %}{{author}}, {% endfor %}
 {% for tag    in object.tags.all    %}{{tag}},    {% endfor %}
 

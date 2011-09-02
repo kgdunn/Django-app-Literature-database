@@ -29,7 +29,7 @@
 HAYSTACK_SEARCH_ENGINE = 'whoosh' #'xapian'
 HAYSTACK_XAPIAN_PATH = os.path.join(os.path.dirname(__file__), 'xapian_index')
 HAYSTACK_WHOOSH_PATH = os.path.join(os.path.dirname(__file__), 'whoosh_index')
-HAYSTACK_SITECONF = 'search_sites'  # refers to <project_root>/search_sites.py
+HAYSTACK_SITECONF = 'litapps.search_sites'  # refers to <project_root>/search_sites.py
 HAYSTACK_DEFAULT_OPERATOR = 'AND'
 HAYSTACK_INCLUDE_SPELLING = True
 HAYSTACK_SEARCH_RESULTS_PER_PAGE = LIT['entries_per_page']

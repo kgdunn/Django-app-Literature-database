@@ -144,7 +144,7 @@ class Item(models.Model):
         """ ``instance.slug`` has already been defined at this point (from
         self.save()), so it can be safely used.
         """
-        return 'pdf/%s/%s.pdf' % (instance.slug[0], instance.slug)
+        return 'literature/pdf/%s/%s.pdf' % (instance.slug[0], instance.slug)
 
     authors = models.ManyToManyField(Author, through='AuthorGroup')
     title = models.TextField()

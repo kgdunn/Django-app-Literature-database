@@ -1,4 +1,4 @@
-# Django settings for deploy project.
+import django.conf.global_settings as DEFAULT_SETTINGS
 
 DEBUG = True
 #TEMPLATE_DEBUG = DEBUG
@@ -121,6 +121,12 @@ TEMPLATE_DIRS = (
     os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates')),
 )
 
+
+# To get access to some global variables used in the templates
+TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS + (
+    'litapps.context_processors.global_template_variables',
+)
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -149,7 +155,9 @@ LIT = {}
 LIT['entries_per_page'] = 20
 LIT['valid_IP_addresses'] = []
 LIT['logfile_location'] = 'logfile.log'
+LIT['version'] = 0.1
 
+ANALYTICS_SNIPPET = """<script></script>"""
 
 this_dir = __file__[0:__file__.find('settings.py')]
 try:
