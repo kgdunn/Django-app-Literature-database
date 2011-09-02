@@ -157,8 +157,7 @@ LIT['valid_IP_addresses'] = []
 LIT['logfile_location'] = 'logfile.log'
 LIT['version'] = 0.1
 
-ANALYTICS_SNIPPET = ''
-
+ANALYTICS_SNIPPET = """<script></script>"""
 
 this_dir = __file__[0:__file__.find('settings.py')]
 try:
