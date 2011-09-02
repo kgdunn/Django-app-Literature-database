@@ -42,11 +42,15 @@
 			  <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:10}}</a></li>
 			{% endfor %}
 			</ul>
-			<p><a href="{# url lit-show-items what_view="sort" extra_info="most-viewed"  #}">Show all</a>
+			<p><a href="{% url lit-show-items what_view="sort" extra_info="most-viewed" %}">Show all</a>
 		</div>
 		<div class="lit-portal-right">
 		  <h3>Top search terms</h3>
-
+			<ul>
+		  	{% for item in "item"|most_searched:10 %}
+			  <li><a href="{% url haystack_search %}?q={{item}}">{{item}}</a></li>
+			{% endfor %}
+			</ul>
 		</div>
 	  </div>
 	</div>

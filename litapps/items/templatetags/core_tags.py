@@ -5,7 +5,7 @@ from django.db.models.query import QuerySet
 from django.db.models.fields import DateTimeField, DateField
 from django import template
 
-from litapps.pagehit.views import get_pagehits
+from litapps.pagehit.views import get_pagehits, get_search_hits
 from litapps.items.models import Item
 from litapps.tagging.models import Tag
 from litapps.tagging.views import get_tag_uses
@@ -15,24 +15,16 @@ from math import log
 
 register = template.Library()
 
-#@register.filter
-#def top_authors(field, num=5):
-    #""" Get the top authors from the Revision model """
-    #manager = Revision._default_manager
 
-    ## Only return query set instances where the score exceeds 0
-    ## and the user is validated
-    #candidates = manager.top_authors().filter(score__gt=0)
-    #entries = [user.profile for user in candidates \
-                                                 #if user.profile.is_validated]
-    ## Used in the template
-    #for entry in entries:
-        #entry.verbose_name = 'User profile'
-
-    #if num > 0:
-        #return entries[:num]
-    #else:
-        #return entries
+@register.filter
+def most_searched(field, num=5):
+    """ Get the most viewed items from the Submission model """
+    top_items = get_search_hits()
+    top_items.sort(reverse=True)
+    out = []
+    for score, search_term in top_items[:num]:
+        out.append(search_term)
+    return out
 
 
 @register.filter
@@ -96,17 +88,3 @@ def latest(model_or_obj, num=5):
     items = manager.all().order_by('-%s' % field_name)
     return [item for item in items][:num]
 
-#@register.filter
-#def call_manager(model_or_obj, method):
-    ## load up the model if we were given a string
-    #if isinstance(model_or_obj, basestring):
-        #model_or_obj = get_model(*model_or_obj.split('.'))
-
-    ## figure out the manager to query
-    #if isinstance(model_or_obj, QuerySet):
-        #manager = model_or_obj
-        #model_or_obj = model_or_obj.model
-    #else:
-        #manager = model_or_obj._default_manager
-
-    #return getattr(manager, method)()

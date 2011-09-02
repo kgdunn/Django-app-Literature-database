@@ -1,15 +1,20 @@
 # Built-in imports
+import unicodedata
 from datetime import date
 from collections import defaultdict
 
 # Imports from other apps
 from litapps.utils import get_IP_address
-
 import models
+
+from django.conf import settings
 
 static_items = {'lit-main-page': -1,
                 'haystack_search': -2,
                }
+
+PROFANITIES_LIST = ('asshat', 'asshead', 'asshole', 'cunt', 'fuck',
+                    'gook', 'nigger', 'shit')
 
 def create_hit(request, item, extra_info=None):
     """
@@ -33,6 +38,28 @@ def create_hit(request, item, extra_info=None):
 
     page_hit.save()
 
+
+def get_search_hits():
+    """
+    Returns a list of tuples of the form:  [(n_hits, "search term"), ....]
+    This allows one to use the builtin ``list.sort()`` function where Python
+    orders the list based on the first entry in the tuple.
+    """
+    page_hits = models.PageHit.objects.filter(item_pk=-2)
+    hits_by_search = defaultdict(int)
+
+    for hit in page_hits:
+        term = unicodedata.normalize('NFKD', hit.extra_info).encode(\
+                                                              'ascii', 'ignore')
+        term = term.strip().lower()
+        if term not in PROFANITIES_LIST:
+            hits_by_search[term] += 1
+
+    hit_counts = []
+    for key, val in hits_by_search.iteritems():
+        hit_counts.append((val, key))
+
+    return hit_counts
 
 def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     """
