@@ -10,7 +10,7 @@
 
     Use the Whoosh backend (for now), because it's pure Python
 
-    *   easy_install whoosh
+    *   easy_install -U Whoosh
 
 
     We use the Xapian backend with Haystack:
