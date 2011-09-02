@@ -7,8 +7,8 @@ from litapps.utils import get_IP_address
 
 import models
 
-static_items = {'lit-main-page': 1,
-                'haystack_search': 2,
+static_items = {'lit-main-page': -1,
+                'haystack_search': -2,
                }
 
 def create_hit(request, item, extra_info=None):
@@ -22,16 +22,17 @@ def create_hit(request, item, extra_info=None):
     ua_string = request.META.get('HTTP_USER_AGENT', '')
     if extra_info is None:
         extra_info = request.META.get('HTTP_REFERER', None)
-    try:
+    if isinstance(item, int):
         page_hit = models.PageHit(ip_address=ip_address, ua_string=ua_string,
-                                 item=item._meta.module_name, item_pk=item.pk,
+                                 item='item', item_pk=item,
                                  extra_info=extra_info)
-    except AttributeError:
+    elif isinstance(item, basestring):
         page_hit = models.PageHit(ip_address=ip_address, ua_string=ua_string,
                                  item=item, item_pk=static_items.get(item, 0),
                                  extra_info=extra_info)
 
     page_hit.save()
+
 
 def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     """
@@ -53,16 +54,14 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
 
     # extra_info=None to avoid counting download hits
     if item_pk is None:
-        page_hits = models.PageHit.objects.filter(item=item).\
+        page_hits = models.PageHit.objects.filter(item='item').\
                                        filter(datetime__gte=start_date).\
-                                       filter(datetime__lte=end_date).\
-                                       filter(extra_info=None)
+                                       filter(datetime__lte=end_date)
     else:
         page_hits = models.PageHit.objects.filter(item=item).\
                                        filter(datetime__gte=start_date).\
                                        filter(datetime__lte=end_date).\
-                                       filter(item_pk=item_pk).\
-                                       filter(extra_info=None)
+                                       filter(item_pk=item_pk)
 
         return len(page_hits)
 

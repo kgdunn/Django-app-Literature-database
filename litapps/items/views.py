@@ -81,14 +81,23 @@ def show_items(request, what_view='', extra_info=''):
         page_title = 'All entries tagged'
         extra_info = ': "%s"' % extra_info
         entry_order = list(all_items)
+
     elif what_view == 'show' and extra_info == 'all-tags':
         page_title = 'All tags'
         template_name = 'items/show-tag-cloud.html'
+
+    elif what_view == 'show' and extra_info == 'all-items':
+        all_items = models.Item.objects.all().order_by('-year')
+        page_title = 'All items in our database '
+        extra_info = '(reverse publication date order)'
+        entry_order = list(all_items)
+
     elif what_view == 'pub-by-year':
         all_items = models.Item.objects.all().filter(year=extra_info)
         page_title = 'All entries published in '
         extra_info = '%s' % extra_info
         entry_order = list(all_items)
+
     elif what_view == 'author':
         author = models.Author.objects.filter(slug=extra_info)
         if len(author) == 0:
@@ -98,6 +107,7 @@ def show_items(request, what_view='', extra_info=''):
         page_title = 'All entries by author'
         extra_info = ' "%s"' % author[0].full_name
         entry_order = list(author_items)
+
     elif what_view == 'journal':
         journal = models.Journal.objects.filter(slug=extra_info)
         if len(journal) == 0:
@@ -126,7 +136,7 @@ def download_item(request, the_item):
     """
     Return the PDF to the user
     """
-    create_hit(request, the_item, extra_info="download-pdf")
+    create_hit(request, the_item.pk, extra_info="download-pdf")
     if the_item.pdf_file:
         title = unicodedata.normalize('NFKD', the_item.title).encode('ascii', 'ignore')
         title = unicode(re.sub('[^\w\s-]', '', title).strip())
@@ -169,7 +179,7 @@ def view_item(request, the_item, slug):
     if (the_item.download_link) and invalid_IP_address(request):
         the_item.download_link = ''
 
-    create_hit(request, the_item)
+    create_hit(request, the_item.pk)
 
     return render_to_response('items/item.html', {},
                               context_instance=RequestContext(request,

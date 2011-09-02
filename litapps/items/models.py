@@ -217,6 +217,7 @@ class Item(models.Model):
             return ' and '.join([auth.last_name for auth in auth_list])
         else:
             return auth_list[0].last_name
+    #author_list.allow_tags = True
 
 
     @property

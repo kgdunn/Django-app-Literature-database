@@ -10,4 +10,47 @@
 
 {% include "search/includes/main-search-box.html" %}
 
+{% load core_tags %}
+  <div class="lit-portal-container">
+	<div class="lit-portal-row-container">
+	  <div class="lit-portal-row">
+		<div class="lit-portal-left lit-portal">
+		  <h3>Recently added</h3>
+			<ul>
+			{% for item in "items.item"|latest:7 %}
+			    <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:10 }}</a></li>
+			{% endfor %}
+			</ul>
+			<a href="{% url lit-show-items what_view="show" extra_info="all-items" %}">Show all</a>
+		</div>
+		<div class="lit-portal-right">
+  		  <h3>Tag cloud</h3>
+            {% for item in "item"|cloud:20 %}
+			  <span><a href="{% url lit-show-items what_view="tag" extra_info=item.tag %}" class="lit-tag-cloud" style="font-size: {{item.score}}%">{{item.tag.name}}</a></span>
+			{% endfor %}
+			<p><a href="{% url lit-show-items what_view="show" extra_info="all-tags" %}">Show complete tag cloud</a>
+		</div>
+	  </div>
+	</div>
+	<div style="clear: both;"></div>
+	<div class="lit-portal-row-container">
+	  <div class="lit-portal-row">
+		<div class="lit-portal-left">
+		  <h3>Most viewed</h3>
+			<ul>
+		  	{% for item in "item"|most_viewed:7 %}
+			  <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:10}}</a></li>
+			{% endfor %}
+			</ul>
+			<p><a href="{# url lit-show-items what_view="sort" extra_info="most-viewed"  #}">Show all</a>
+		</div>
+		<div class="lit-portal-right">
+		  <h3>Top search terms</h3>
+
+		</div>
+	  </div>
+	</div>
+  </div>
+
+
 {% endblock %}
