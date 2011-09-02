@@ -5,9 +5,9 @@
 	<li>
 	  <div class="lit-itemdisp-description lit-itemdisp-td" id="lit-item-{{entry.pk}}">
 		<div style="width: 42px; float: left;">
-		  {% if entry.entry.sub_type == 'snippet' %}<img src="{{MEDIA_URL}}single-file-list-icon-tiny.png">{% endif %}
-		  {% if entry.entry.sub_type == 'package' %}<img src="{{MEDIA_URL}}multiple-file-list-icon-tiny.png">{% endif %}
-		  {% if entry.entry.sub_type == 'link' %}<img src="{{MEDIA_URL}}external-link-list-icon-tiny.png">{% endif %}
+		  {% if entry.entry.sub_type == 'snippet' %}<img src="{{MEDIA_URL}}literature/single-file-list-icon-tiny.png">{% endif %}
+		  {% if entry.entry.sub_type == 'package' %}<img src="{{MEDIA_URL}}literature/multiple-file-list-icon-tiny.png">{% endif %}
+		  {% if entry.entry.sub_type == 'link' %}<img src="{{MEDIA_URL}}literature/external-link-list-icon-tiny.png">{% endif %}
 		</div>
 		<div style="width: 85%; float: left;">
 		  <a class="lit-itemdisp-mainlink" href="{{entry.get_absolute_url}}">{{ entry.title}}</a>{{entry.year}}
