@@ -152,7 +152,7 @@ INSTALLED_APPS = (
 
 LIT = {}
 # Number of items shown per page before previous/next links are shown
-LIT['entries_per_page'] = 20
+LIT['entries_per_page'] = 15
 LIT['valid_IP_addresses'] = []
 LIT['logfile_location'] = 'logfile.log'
 LIT['version'] = 0.1

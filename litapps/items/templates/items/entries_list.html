@@ -6,7 +6,7 @@
   <div class="lit-itemdisp-pagination">
 	<span class="step-links">
 	  {% if entries.has_previous %}
-		<a href="?page={{ entries.previous_page_number }}">&laquo; Previous</a> |
+		<a href="?q={{query}}&page={{ entries.previous_page_number }}">&laquo; Previous</a> |
 	  {% endif %}
 	  {% if entries.has_previous or entries.has_next %}
 		<span class="current">
@@ -14,7 +14,7 @@
 		</span>
 	  {% endif %}
 	  {% if entries.has_next %}
-	   | <a href="?page={{ entries.next_page_number }}">Next &raquo;</a>
+	   | <a href="?q={{query}}&page={{ entries.next_page_number }}">Next &raquo;</a>
 	  {% endif %}
 	</span>
   </div>
