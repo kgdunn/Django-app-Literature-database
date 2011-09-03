@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from litapps.pages.views import page_404_error
 from litapps.utils import paginated_queryset, invalid_IP_address
 from litapps.pagehit.views import create_hit
+from templatetags.core_tags import most_viewed
 
 import models
 
@@ -91,6 +92,11 @@ def show_items(request, what_view='', extra_info=''):
         page_title = 'All items in our database '
         extra_info = '(reverse publication date order)'
         entry_order = list(all_items)
+
+    elif what_view == 'sort' and extra_info == 'most-viewed':
+        page_title = 'All references (in order of most viewed)'
+        extra_info = ''
+        entry_order = most_viewed('item', models.Item.objects.count())
 
     elif what_view == 'pub-by-year':
         all_items = models.Item.objects.all().filter(year=extra_info)
