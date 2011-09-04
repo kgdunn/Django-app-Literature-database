@@ -17,7 +17,8 @@ class AuthorAdmin(admin.ModelAdmin):
 class ItemAdmin(admin.ModelAdmin):
     inlines = (AuthorGroupInline,)
     list_display = ('id', 'title', 'author_list', 'year', 'pdf_file',
-                    'private_pdf', 'doi_link', 'item_type', 'date_created')
+                    'private_pdf', 'doi_link', 'item_type', 'date_created',
+                    'has_extra')
     list_display_links = ('title', )
     ordering = ['-id']
     filter_horizontal = ['authors', 'tags']

@@ -161,7 +161,8 @@ class Item(models.Model):
 
     pdf_file = models.FileField(upload_to=upload_dest, max_length=255,
                                 blank=True, null=True, verbose_name='PDF file')
-    private_pdf = models.BooleanField(default=False)
+    private_pdf = models.BooleanField(default=False,
+                                      verbose_name='Private PDF')
 
     # Contains unstructured text (auto-extracted from PDF, cut/paste, whatever)
     # to improve the user's search
@@ -173,6 +174,12 @@ class Item(models.Model):
                                          self.doi_link)
         else:
             return '%s (%s)' % (self.title, str(self.year))
+
+
+    @property
+    def has_extra(self):
+        return bool(self.other_search_text)
+
 
     @property
     def year_as_url(self):
