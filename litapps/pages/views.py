@@ -41,7 +41,7 @@ def page_404_error(request, extra_info=''):
 def page_500_error(request):
     """ Override Django's 500 handler, because we want to log this also.
     """
-    #ip = get_IP_address(request)
+    ip = get_IP_address(request)
     logger.error('500 from %s for request "%s"' % (ip, request.path))
     t = get_template('500.html')
     html = t.render(RequestContext(request))

@@ -18,5 +18,6 @@ urlpatterns = patterns('litapps.items.views',
 
 
     # Extract PDF text to add to the Item object
-    url(r'__extract_extra__', '__extract_extra__', name='lit-extract-extra'),
+    url(r'__extract_extra__/(?P<item_id>\d+)', '__extract_extra__',
+        name='lit-extract-extra'),
 )

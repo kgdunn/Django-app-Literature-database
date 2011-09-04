@@ -124,11 +124,6 @@ def show_items(request, what_view='', extra_info=''):
         extra_info = ' "%s"' % journal[0].name
         entry_order = list(journal_items)
 
-    #elif what_view == 'show' and extra_info == 'top-authors':
-    #    page_title = 'Top authors'
-    #    extra_info = ''
-    #    #entry_order = top_authors('', 0)
-
     entries = paginated_queryset(request, entry_order)
     return render_to_response(template_name, {},
                               context_instance=RequestContext(request,
@@ -194,7 +189,7 @@ def view_item(request, the_item, slug):
                                     }))
 
 
-def __extract_extra__(request):
+def __extract_extra__(request, item_id=None):
     if not request.user.is_authenticated():
         return HttpResponse('Please sign in first')
 
@@ -212,13 +207,17 @@ def __extract_extra__(request):
     codec = 'utf-8'
     caching = True
 
-    for item in models.Item.objects.all():
+    if item_id:
+        all_items = models.Item.objects.filter(id=item_id)
+    else:
+        all_items = models.Item.objects.all()
 
-        # Don't extract if no PDF; or if we already have search text
+    for item in all_items:
+
+        # Don't extract if no PDF exists; or if we already have search text
         if not item.pdf_file or item.other_search_text:
             continue
 
-        print 'Item: "%s" ... ' % item.title,
         rsrcmgr = PDFResourceManager(caching=caching)
         outfp = StringIO()
         device = TextConverter(rsrcmgr, outfp, codec=codec, laparams=laparams)
@@ -227,9 +226,11 @@ def __extract_extra__(request):
             process_pdf(rsrcmgr, device, fp, pagenos=set(), maxpages=0, password='',
                         caching=caching, check_extractable=True)
         except AssertionError:
-            print 'FAILED.'
+            logger.warning('FAILED in completely PDF index "%s"' % item.title)
+            return HttpResponse('FAILED in completely PDF index "%s"' \
+                                % item.title)
         else:
-            print 'done.'
+            logger.debug('Full PDF index of item "%s"' % item.title)
         finally:
             fp.close()
             device.close()
@@ -237,11 +238,12 @@ def __extract_extra__(request):
             page_text = outfp.read()
             outfp.close()
 
-            #''.join([line[0:-1] for line in r])
             item.other_search_text = page_text
             item.save()
 
+    return HttpResponse('Full PDF indexed for item "%s"' % item.title)
 
 
-    return HttpResponse('Done. You should rebuild the index again.')
+
+
 
