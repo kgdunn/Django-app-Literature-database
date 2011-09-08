@@ -149,17 +149,16 @@ INSTALLED_APPS = (
     'litapps.pagehit',
 )
 
-
+this_dir = __file__[0:__file__.find('settings.py')]
 LIT = {}
 # Number of items shown per page before previous/next links are shown
 LIT['entries_per_page'] = 15
 LIT['valid_IP_addresses'] = []
-LIT['logfile_location'] = 'logfile.log'
+LIT['logfile_location'] = this_dir + os.sep + 'logfile.log'
 LIT['version'] = 0.1
 
 ANALYTICS_SNIPPET = """<script></script>"""
 
-this_dir = __file__[0:__file__.find('settings.py')]
 try:
     execfile(this_dir + os.sep + 'local_settings.py')
 except IOError:

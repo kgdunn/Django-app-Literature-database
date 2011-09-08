@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     # Note: you may have to change the ``python`` entry below to something like
     #       python2.7 if you've multiple Python versions on your machine
-    command = ['python', 'manage.py', 'dumpdata', '-v0', '--format=json',
+    command = ['python2.7', 'manage.py', 'dumpdata', '-v0', '--format=json',
                '--indent=2', 'items', 'tagging', 'pagehit']
     try:
         out = subprocess.Popen(command, stdout=subprocess.PIPE,
