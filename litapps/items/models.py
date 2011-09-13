@@ -148,7 +148,7 @@ class Item(models.Model):
 
     authors = models.ManyToManyField(Author, through='AuthorGroup')
     title = models.TextField()
-    slug = models.SlugField(max_length=100, editable=False)
+    slug = models.SlugField(max_length=255, editable=False)
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
     year = models.PositiveIntegerField()
     doi_link = models.URLField(blank=True, null=True, verify_exists=False,
@@ -339,7 +339,7 @@ class Item(models.Model):
 
     def save(self, *args, **kwargs):
         self.title = self.title.strip()
-        unique_slugify(self, self.title[0:100], 'slug')
+        unique_slugify(self, self.title[0:255], 'slug')
         super(Item, self).save(*args, **kwargs)
 
 
