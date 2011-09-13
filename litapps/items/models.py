@@ -161,8 +161,17 @@ class Item(models.Model):
 
     pdf_file = models.FileField(upload_to=upload_dest, max_length=255,
                                 blank=True, null=True, verbose_name='PDF file')
+
+    # This PDF should never be shown because it contains personal notes or is
+    # not authorized for distributions
     private_pdf = models.BooleanField(default=False,
                                       verbose_name='Private PDF')
+
+    # If ``private_pdf`` is False and this field is True, and there actually
+    # exists a PDF, then show the PDF available for download. Usually set
+    # True for theses.
+    #can_show_pdf = models.BooleanField(default=False,
+    #                                   verbose_name='Can show PDF')
 
     # Contains unstructured text (auto-extracted from PDF, cut/paste, whatever)
     # to improve the user's search
