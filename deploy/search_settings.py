@@ -25,10 +25,15 @@
 # See: http://docs.haystacksearch.org/dev/settings.html for details
 # Many of the settings below are just their default values (to be explicit)
 
+from litapps.utils import ensuredir
+
 # Most of these settings will go away when using haystack 2.0.0
-HAYSTACK_SEARCH_ENGINE = 'xapian' #'whoosh' #'xapian'
+HAYSTACK_SEARCH_ENGINE = 'whoosh' #'whoosh' #'xapian'
 HAYSTACK_XAPIAN_PATH = os.path.join(os.path.dirname(__file__), 'xapian_index')
 HAYSTACK_WHOOSH_PATH = os.path.join(os.path.dirname(__file__), 'whoosh_index')
+ensuredir(HAYSTACK_XAPIAN_PATH)
+ensuredir(HAYSTACK_XAPIAN_PATH)
+
 HAYSTACK_SITECONF = 'litapps.search_sites'  # refers to <project_root>/search_sites.py
 HAYSTACK_DEFAULT_OPERATOR = 'AND'
 HAYSTACK_INCLUDE_SPELLING = True

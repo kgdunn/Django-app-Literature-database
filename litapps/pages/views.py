@@ -1,18 +1,16 @@
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.http import HttpResponse
 from django.template.loader import get_template
 from haystack.views import SearchView
 
 from litapps.pagehit.views import create_hit
-from litapps.utils import get_IP_address, ensuredir
+from litapps.utils import get_IP_address
+from litapps.items.models import Item
 
 import logging
 logger = logging.getLogger('Literature')
 logger.debug('Initializing litapps::pages::views.py')
-
-from django.conf import settings
-ensuredir(settings.HAYSTACK_XAPIAN_PATH)
 
 
 def front_page(request):
@@ -54,6 +52,18 @@ def search(request):
     """
     if request.GET['q'].strip() == '':
         return redirect(front_page)
+
+    try:
+        item_id = int(request.GET['q'])
+    except ValueError:
+        pass
+    else:
+        items = Item.objects.filter(id=item_id)
+        if items:
+            return redirect('lit-view-item', item_id=item_id)
+        else:
+            pass
+
 
     # Avoid duplicate logging if search request results in more than 1 page
     if 'page' not in request.GET:
