@@ -147,13 +147,13 @@ INSTALLED_APPS = (
     'litapps.tagging',
     'litapps.pages',
     'litapps.pagehit',
+    'litapps.utils',
 )
 
 this_dir = __file__[0:__file__.find('settings.py')]
 LIT = {}
 # Number of items shown per page before previous/next links are shown
 LIT['entries_per_page'] = 15
-LIT['valid_IP_addresses'] = []
 LIT['logfile_location'] = this_dir + os.sep + 'logfile.log'
 LIT['version'] = 0.1
 

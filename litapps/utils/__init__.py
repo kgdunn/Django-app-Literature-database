@@ -33,8 +33,10 @@ def invalid_IP_address(request):
     Used to determine whether a user can download the item
     """
     ip = get_IP_address(request)
-    for valid_ip in settings.LIT['valid_IP_addresses']:
-        if ip.startswith(valid_ip):
+
+    import models
+    for valid_ip in models.ValidIP.objects.all():
+        if ip.startswith(valid_ip.valid_ip_address):
             return False
 
     # User's IP address not found in list
