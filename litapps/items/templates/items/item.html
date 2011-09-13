@@ -42,6 +42,13 @@
 	  {% endif%}
 	{% endif%}
 
+	{% if item.show_abstract %}
+    <div class="lit-item-row">
+      <span class="lit-item-label">Abstract:</span>
+      <span class="lit-item-entry">{{item.abstract}}</span>
+    </div>
+	{% endif%}
+
     <div class="lit-item-row">
       <span class="lit-item-label">Citation:</span>
       <span class="lit-item-entry lit-item-description">{{item.full_citation|safe}}</span>
