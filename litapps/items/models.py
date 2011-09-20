@@ -279,6 +279,7 @@ class Item(models.Model):
             return '<a href="%s">%s</a>' % (author.get_absolute_url(),
                                             author.last_name)
 
+        out = ''
         if len(auth_list) >= 3:
             out = ', '.join([urlize(auth) for auth in auth_list[0:-1]])
             out += ' and ' + urlize(auth_list[-1])
@@ -286,6 +287,7 @@ class Item(models.Model):
             out = ' and '.join([urlize(auth) for auth in auth_list])
         if len(auth_list) == 1:
             out = urlize(auth_list[0])
+
         return out
 
 
@@ -303,6 +305,7 @@ class Item(models.Model):
             return '<a href="%s">%s</a>' % (author.get_absolute_url(),
                                             author.full_name)
 
+        out = ''
         if len(auth_list) >= 3:
             out = ', '.join([urlize(auth) for auth in auth_list[0:-1]])
             out += ' and ' + urlize(auth_list[-1])

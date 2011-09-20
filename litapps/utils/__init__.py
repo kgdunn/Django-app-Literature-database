@@ -34,9 +34,9 @@ def invalid_IP_address(request):
     """
     ip = get_IP_address(request)
 
-    import models
-    for valid_ip in models.ValidIP.objects.all():
-        if ip.startswith(valid_ip.valid_ip_address):
+    #import models
+    for valid_ip in ['127.0.0.1', '206.248.139.164', '130.113']:# models.ValidIP.objects.all():
+        if ip.startswith(valid_ip):#.valid_ip_address):
             return False
 
     # User's IP address not found in list
