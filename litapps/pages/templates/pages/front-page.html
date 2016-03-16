@@ -18,14 +18,14 @@
 		  <h3>Recently added</h3>
 			<ul>
 			{% for item in "items.item"|latest:7 %}
-			    <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:12 }}</a></li>
+			    <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:16 }}</a></li>
 			{% endfor %}
 			</ul>
 			<a href="{% url lit-show-items what_view="show" extra_info="all-items" %}">Show all</a>
 		</div>
 		<div class="lit-portal-right">
   		  <h3>Tag cloud</h3>
-            {% for item in "item"|cloud:20 %}
+            {% for item in "item"|cloud:28 %}
 			  <span><a href="{% url lit-show-items what_view="tag" extra_info=item.tag %}" class="lit-tag-cloud" style="font-size: {{item.score}}%">{{item.tag.name}}</a></span>
 			{% endfor %}
 			<p><a href="{% url lit-show-items what_view="show" extra_info="all-tags" %}">Show complete tag cloud</a>
@@ -47,7 +47,7 @@
 		<div class="lit-portal-right">
 		  <h3>Top search terms</h3>
 			<ul>
-		  	{% for item in "item"|most_searched:10 %}
+		  	{% for item in "item"|most_searched:12 %}
 			  <li><a href="{% url haystack_search %}?q={{item}}">{{item}}</a></li>
 			{% endfor %}
 			</ul>

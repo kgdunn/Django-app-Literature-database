@@ -556,21 +556,21 @@ li.lit-even tt {
 div.lit-item-row {
 	clear: both;
 	padding-top: 10px;
+        width: 96%;
 }
 
 div.lit-item-row span.lit-item-label {
 	float: left;
-	width: 200px;
+        width: 20%;
 	text-align: left;
-	padding-right: 20px;
+/*	padding-right: 20px; */
 	padding-bottom: 4px;
 	font-weight: bold;
 }
 
 div.lit-item-row span.lit-item-entry {
-	/*float: left; to avoid citations from floating all the way to the left*/
-	min-width: 500px;
-	max-width: 1000px;
+        float: right;
+	width: 80%;
 	text-align: left;
 }
 

@@ -28,7 +28,7 @@
 from litapps.utils import ensuredir
 
 # Most of these settings will go away when using haystack 2.0.0
-HAYSTACK_SEARCH_ENGINE = 'whoosh' #'whoosh' #'xapian'
+HAYSTACK_SEARCH_ENGINE = 'xapian'
 HAYSTACK_XAPIAN_PATH = os.path.join(os.path.dirname(__file__), 'xapian_index')
 HAYSTACK_WHOOSH_PATH = os.path.join(os.path.dirname(__file__), 'whoosh_index')
 ensuredir(HAYSTACK_XAPIAN_PATH)

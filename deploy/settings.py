@@ -1,8 +1,8 @@
 import django.conf.global_settings as DEFAULT_SETTINGS
 
-DEBUG = True
-#TEMPLATE_DEBUG = DEBUG
-TEMPLATE_DEBUG = True
+DEBUG = False
+TEMPLATE_DEBUG = DEBUG
+#TEMPLATE_DEBUG = True
 
 # Add the parent to the path, to access files in ``../scipy_central/``
 import os, sys
@@ -155,7 +155,7 @@ LIT = {}
 # Number of items shown per page before previous/next links are shown
 LIT['entries_per_page'] = 15
 LIT['logfile_location'] = this_dir + os.sep + 'logfile.log'
-LIT['version'] = 0.1
+LIT['version'] = 0.11
 
 ANALYTICS_SNIPPET = """<script></script>"""
 

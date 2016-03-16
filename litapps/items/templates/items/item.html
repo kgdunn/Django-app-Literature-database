@@ -45,7 +45,7 @@
 	{% if item.show_abstract %}
     <div class="lit-item-row">
       <span class="lit-item-label">Abstract:</span>
-      <span class="lit-item-entry">{{item.abstract}}</span>
+      <span class="lit-item-entry">{{item.abstract|safe}}</span>
     </div>
 	{% endif%}
 
@@ -63,9 +63,10 @@
     <div class="lit-item-row">
       <span class="lit-item-label">Download PDF:</span>
       {% if item.download_link %}
-
-	    <img src="{{MEDIA_URL}}literature/nuvola_mimetypes_pdf.png" width="24">
-		<span class="lit-item-entry"><a href="{{item.download_link}}">Get PDF</a> [{{item.download_size|filesizeformat}}]</span>
+	<span class="lit-item-entry">
+		<img src="{{MEDIA_URL}}literature/nuvola_mimetypes_pdf.png" width="24">
+		<a href="{{item.download_link}}">Get PDF</a> [{{item.download_size|filesizeformat}}]
+	</span>
 	  {% else %}
 	    No PDF available
 	  {% endif %}
