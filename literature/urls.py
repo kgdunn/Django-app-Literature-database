@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, include, url
+from django.conf.urls import url, include
 from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
@@ -25,14 +25,14 @@ urlpatterns = [
     #url(r'', include('litapps.urls')),
 #)
 
-handler404 = 'litapps.pages.views.page_404_error'
-handler500 = 'litapps.pages.views.page_500_error'
+handler404 = 'pages.views.page_404_error'
+handler500 = 'pages.views.page_500_error'
 
-if settings.DEBUG:
-    # Small problem: cannot show 404 templates /media/....css file, because
-    # 404 gets overridden by Django when in debug mode
-    urlpatterns += patterns(
-        '',
-        (r'^media/(?P<path>.*)$',
-         'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
-    )
+#if settings.DEBUG:
+#    # Small problem: cannot show 404 templates /media/....css file, because
+#    # 404 gets overridden by Django when in debug mode
+#    urlpatterns += patterns(
+#        '',
+#        (r'^media/(?P<path>.*)$',
+#         'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
+#    )

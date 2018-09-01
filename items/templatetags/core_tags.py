@@ -5,25 +5,22 @@ from django import template
 register = template.Library()
 
 
-#from django.db.models import loading# import get_model
 from django.apps import apps
 from django.db.models.query import QuerySet
 from django.db.models.fields import DateTimeField, DateField
 
-from pagehit.views import get_pagehits, get_search_hits
 from items.models import Item
 from tagging.models import Tag
-from tagging.views import get_tag_uses
 
 from collections import namedtuple
 from math import log
 
 
-
-
 @register.filter(name='most_searched')
 def most_searched(field, num=5):
     """ Get the most viewed items from the Submission model """
+    assert(False) # how can we avoid this import; or place it outside the filter?
+    from pagehit.views import get_search_hits
     top_items = get_search_hits()
     top_items.sort(reverse=True)
     out = []
@@ -35,6 +32,9 @@ def most_searched(field, num=5):
 @register.filter
 def most_viewed(field, num=5):
     """ Get the most viewed items from the Submission model """
+
+    assert(False) # how can we avoid this import; or place it outside the filter?
+    from pagehit.views import get_pagehits
     top_items = get_pagehits(field)
     top_items.sort(reverse=True)
     out = []
@@ -47,6 +47,9 @@ def most_viewed(field, num=5):
 @register.filter
 def cloud(model_or_obj, num=5):
     """ Get a tag cloud """
+
+    from tagging.views import get_tag_uses
+
     tag_uses = get_tag_uses()
     if not(tag_uses):
         return []
@@ -92,4 +95,3 @@ def latest(model_or_obj, num=5):
             break
     items = manager.all().order_by('-%s' % field_name)
     return [item for item in items][:num]
-
