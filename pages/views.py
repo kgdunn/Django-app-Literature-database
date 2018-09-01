@@ -4,13 +4,14 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 from haystack.views import SearchView
 
-from litapps.pagehit.views import create_hit
-from litapps.utils import get_IP_address
-from litapps.items.models import Item
+from pagehit.views import create_hit
+from utils import get_IP_address
+from items.models import Item
+
 
 import logging
 logger = logging.getLogger('Literature')
-logger.debug('Initializing litapps::pages::views.py')
+logger.debug('Initializing pages::views.py')
 
 
 def front_page(request):

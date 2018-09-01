@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import patterns, url
 
-urlpatterns = patterns('litapps.pages.views',
+urlpatterns = patterns('literature.pages.views',
 
     # Front page
     url(r'^$', 'front_page', name='lit-main-page'),
