@@ -16,7 +16,7 @@ class Tag(models.Model):
     # descriptions
     description = models.CharField(max_length=255, blank=True, null=True)
     # and perhaps an image
-    image = models.ImageField(upload_to='tags/', blank=True)
+#    image = models.ImageField(upload_to='tags/', blank=True)
 
     def __unicode__(self):
         return self.name
