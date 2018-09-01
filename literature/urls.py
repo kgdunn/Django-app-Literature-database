@@ -5,17 +5,25 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
-urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'deploy.views.home', name='home'),
-    # url(r'^deploy/', include('deploy.foo.urls')),
 
-    # Uncomment the next line to enable the admin:
-    url(r'^admin/', include(admin.site.urls)),
+urlpatterns = [
+    url(r'^admin/', admin.site.urls),
+]
 
-    # Include the URLs for the website
-    url(r'', include('litapps.urls')),
-)
+
+
+
+#urlpatterns = patterns('',
+    ## Examples:
+    ## url(r'^$', 'deploy.views.home', name='home'),
+    ## url(r'^deploy/', include('deploy.foo.urls')),
+
+    ## Uncomment the next line to enable the admin:
+    #url(r'^admin/', include(admin.site.urls)),
+
+    ## Include the URLs for the website
+    #url(r'', include('litapps.urls')),
+#)
 
 handler404 = 'litapps.pages.views.page_404_error'
 handler500 = 'litapps.pages.views.page_500_error'
