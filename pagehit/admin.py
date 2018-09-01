@@ -1,5 +1,5 @@
 from django.contrib import admin
-from models import PageHit
+from pagehit.models import PageHit
 
 class PageHitAdmin(admin.ModelAdmin):
     list_display = ('datetime', 'ip_address', 'item', 'item_pk', 'ua_string',

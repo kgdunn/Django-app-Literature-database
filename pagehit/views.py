@@ -4,7 +4,7 @@ from datetime import date
 from collections import defaultdict
 
 # Imports from other apps
-from litapps.utils import get_IP_address
+from utils import get_IP_address
 import models
 
 from django.conf import settings
