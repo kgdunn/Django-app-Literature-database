@@ -5,10 +5,10 @@ from django.template.defaultfilters import slugify
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 
-from litapps.pages.views import page_404_error
-from litapps.utils import paginated_queryset, invalid_IP_address
-from litapps.pagehit.views import create_hit
-from templatetags.core_tags import most_viewed
+from pages.views import page_404_error
+from utils import paginated_queryset, invalid_IP_address
+from pagehit.views import create_hit
+#from templatetags.core_tags import most_viewed
 
 import models
 
@@ -17,7 +17,7 @@ import unicodedata
 import logging
 
 logger = logging.getLogger('Literature')
-logger.debug('Initializing litapps::items::views.py')
+logger.debug('Initializing items::views.py')
 
 def get_items_or_404(view_function):
     """
@@ -96,6 +96,7 @@ def show_items(request, what_view='', extra_info=''):
     elif what_view == 'sort' and extra_info == 'most-viewed':
         page_title = 'All references (in order of most viewed)'
         extra_info = ''
+        assert(False)
         entry_order = most_viewed('item', models.Item.objects.count())
 
     elif what_view == 'pub-by-year':

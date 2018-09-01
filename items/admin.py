@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from models import (Author, AuthorGroup, Journal, Publisher, Item, School,
+from items.models import (Author, AuthorGroup, Journal, Publisher, Item, School,
                      JournalPub, Book, ConferenceProceeding, Thesis)
 
 

@@ -1,22 +1,27 @@
 # BSD-licensed code used here:
 # https://github.com/coleifer/djangosnippets.org/blob/master/cab/templatetags/core_tags.py
-from django.db.models.loading import get_model
+
+from django import template
+register = template.Library()
+
+
+#from django.db.models import loading# import get_model
+from django.apps import apps
 from django.db.models.query import QuerySet
 from django.db.models.fields import DateTimeField, DateField
-from django import template
 
-from litapps.pagehit.views import get_pagehits, get_search_hits
-from litapps.items.models import Item
-from litapps.tagging.models import Tag
-from litapps.tagging.views import get_tag_uses
+from pagehit.views import get_pagehits, get_search_hits
+from items.models import Item
+from tagging.models import Tag
+from tagging.views import get_tag_uses
 
 from collections import namedtuple
 from math import log
 
-register = template.Library()
 
 
-@register.filter
+
+@register.filter(name='most_searched')
 def most_searched(field, num=5):
     """ Get the most viewed items from the Submission model """
     top_items = get_search_hits()
@@ -70,7 +75,7 @@ def cloud(model_or_obj, num=5):
 def latest(model_or_obj, num=5):
     # load up the model if we were given a string
     if isinstance(model_or_obj, basestring):
-        model_or_obj = get_model(*model_or_obj.split('.'))
+        model_or_obj = apps.get_model(*model_or_obj.split('.'))
 
     # figure out the manager to query
     if isinstance(model_or_obj, QuerySet):

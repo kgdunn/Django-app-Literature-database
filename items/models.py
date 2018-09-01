@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
-from litapps.utils import unique_slugify
+from utils import unique_slugify
 
 # Standard library imports
 import re
@@ -87,7 +87,7 @@ class School(models.Model):
 
 class Journal(models.Model):
     name = models.CharField(max_length=510)
-    website = models.URLField(verify_exists=False)
+    website = models.URLField()
     slug = models.SlugField(max_length=510, editable=False)
 
     def __unicode__(self):
@@ -151,9 +151,9 @@ class Item(models.Model):
     slug = models.SlugField(max_length=255, editable=False)
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
     year = models.PositiveIntegerField()
-    doi_link = models.URLField(blank=True, null=True, verify_exists=False,
+    doi_link = models.URLField(blank=True, null=True,
                                verbose_name='DOI link')
-    web_link = models.URLField(blank=True, null=True, verify_exists=False)
+    web_link = models.URLField(blank=True, null=True, )
     tags = models.ManyToManyField('tagging.Tag')
     abstract = models.TextField(blank=True)
     show_abstract = models.BooleanField(default=False)
@@ -386,7 +386,7 @@ class JournalPub(Item):
 
 class Book(Item):
     publisher = models.ForeignKey(Publisher)
-    editors = models.ManyToManyField(Author, blank=True, null=True)
+    editors = models.ManyToManyField(Author, blank=True)
     volume = models.CharField(max_length=100, blank=True, null=True)
     series = models.CharField(max_length=100, blank=True, null=True)
     edition = models.CharField(max_length=100, blank=True, null=True)
@@ -411,7 +411,7 @@ class Book(Item):
 
 
 class ConferenceProceeding(Item):
-    editors = models.ManyToManyField(Author, blank=True, null=True)
+    editors = models.ManyToManyField(Author, blank=True)
     conference_name = models.CharField(max_length=255, blank=True, null=True)
     page_start = models.CharField(max_length=10, blank=True, null=True)
     page_end = models.CharField(max_length=10, blank=True, null=True)
@@ -448,7 +448,7 @@ class Thesis(Item):
     )
     thesis_type = models.CharField(max_length=50, choices=THESIS_CHOICES)
     school = models.ForeignKey(School)
-    supervisors = models.ManyToManyField(Author, blank=True, null=True)
+    supervisors = models.ManyToManyField(Author, blank=True)
 
     def full_citation(self):
         """
