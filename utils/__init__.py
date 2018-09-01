@@ -11,7 +11,7 @@ def ensuredir(path):
     EEXIST = getattr(errno, 'EEXIST', 0)
     try:
         os.makedirs(path)
-    except OSError, err:
+    except OSError as err:
         # 0 for Jython/Win32
         if err.errno not in [0, EEXIST]:
             raise
