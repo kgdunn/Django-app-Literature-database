@@ -8,6 +8,16 @@ admin.autodiscover()
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+
+    # Major pages in the site: front page, about page, search, etc
+    url(r'', include('pages.urls')),
+
+    # Submissions: new and existing, including previous revisions
+    url(r'item/', include('items.urls')),
+
+    ## Tagging
+    #(r'^tagging/', include('tagging.urls')),
+
 ]
 
 

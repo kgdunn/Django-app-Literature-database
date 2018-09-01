@@ -5,7 +5,7 @@ from collections import defaultdict
 
 # Imports from other apps
 from utils import get_IP_address
-import models
+from .models import PageHit
 
 from django.conf import settings
 

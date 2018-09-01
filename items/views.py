@@ -10,7 +10,7 @@ from utils import paginated_queryset, invalid_IP_address
 from pagehit.views import create_hit
 #from templatetags.core_tags import most_viewed
 
-import models
+from .models import Item, ConferenceProceeding, Thesis, JournalPub, Book
 
 import re
 import unicodedata

@@ -2,7 +2,7 @@ from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.http import HttpResponse
 from django.template.loader import get_template
-from haystack.views import SearchView
+#from haystack.views import SearchView
 
 from pagehit.views import create_hit
 from utils import get_IP_address
