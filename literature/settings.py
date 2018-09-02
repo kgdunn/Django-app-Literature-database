@@ -28,18 +28,6 @@ DEBUG = True  # will also turn on template debugging
 
 ALLOWED_HOSTS = []
 
-# Default settings for the app
-DEFAULTS = {}
-# Number of items shown per page before previous/next links are shown
-DEFAULTS['version'] = 0.20
-DEFAULTS['entries_per_page'] = 15
-DEFAULTS['analytics_snippet'] = """<script></script>"""
-
-#LIT['logfile_location'] = this_dir + os.sep + 'logfile.log'
-
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -48,7 +36,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
 
     # My applications
     'items',
@@ -81,17 +68,21 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+
+                # To use MEDIA_URL in templates
+                'django.template.context_processors.media'
             ],
         },
     },
 ]
+
+
 
 WSGI_APPLICATION = 'literature.wsgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -137,3 +128,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# Import local settings that override the above, and should not be in the RCS.
+try:
+    from local_settings import *
+except ImportError:
+    pass

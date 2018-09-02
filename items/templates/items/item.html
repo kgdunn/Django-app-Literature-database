@@ -56,7 +56,7 @@
 
     <div class="lit-item-row">
       <span class="lit-item-label">Tags:</span>
-      <span class="lit-item-entry">{% for tag in tag_list %}<span><a href="{% url "lit-show-items" what_view="tag" extra_info=tag %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}</span>
+      <span class="lit-item-entry">{% for tag in tag_list %}<span><a href="{% url "lit-show-items" what_view="tag" extra_info=tag.slug %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}</span>
     </div>
     <div style="clear:both;">&nbsp;</div>
 
