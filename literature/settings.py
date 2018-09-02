@@ -23,7 +23,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'd_f&!d@2!@=^=o2j)+w^&d#qigs3qtw3&cbbc2exk3#9g_*w7%'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True  # will also turn on template debugging
+
 
 ALLOWED_HOSTS = []
 
@@ -71,7 +72,7 @@ ROOT_URLCONF = 'literature.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR + '/templates/',],
         'APP_DIRS': True,
         'OPTIONS': {
             'debug': True,
@@ -82,6 +83,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
             ],
         },
+        'DEBUG': DEBUG
     },
 ]
 
