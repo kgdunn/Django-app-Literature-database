@@ -25,14 +25,14 @@
 
 	  <div class="lit-header-row" id="lit-top-menu">
 		<div class="lit-header-left">
-		  <a href="{% url lit-main-page %}" accesskey="h">Home</a>
+		  <a href="{% url "lit-main-page" %}" accesskey="h">Home</a>
 		</div>
 		<div class="lit-header-right">
 
 		</div>
 	  </div>
 	  <div class="lit-header-row" id="lit-site-title">
-		<h1><a href="{% url lit-main-page %}" title="Latent Variable Method Literature">Latent Variable Method Literature</a></h1>
+		<h1><a href="{% url "lit-main-page" %}" title="Latent Variable Method Literature">Latent Variable Method Literature</a></h1>
 	  </div>
     </div> <!--#lit-header-->
     <div style="clear:both;"></div>
@@ -51,8 +51,8 @@
     <div id="lit-footer">
       <div class="lit-footer-left">
         <ul>
-          <li><a href="{% url lit-about-page %}">About this site</a></li>
-          <li>Site sponsor: <a href="https://learnche.org">ConnectMV, Inc.</a>
+          <li><a href="{% url "lit-about-page" %}">About this site</a></li>
+          <li>Site sponsor: <a href="https://learnche.org">LearnChe.org</a>
         </ul>
 	  </div>
       <div class="lit-footer-right">

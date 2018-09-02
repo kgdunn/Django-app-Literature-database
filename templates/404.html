@@ -1,4 +1,4 @@
-{% extends "core.html" %}
+{% extends "base.html" %}
 
 {% block title %}Invalid item requested{% endblock %}
 
@@ -10,7 +10,7 @@
 {% if extra_info %}<div style="border: 1px dashed;padding: 10px;clear: both;float: left;">Additional information: <i>{{extra_info}}</i></div>{% endif %}
 <br>
 <br>
-<p>Try <a href="{% url lit-main-page %}">searching for it</a> on the main page.
+<p>Try <a href="{% url "lit-main-page" %}">searching for it</a> on the main page.
 </div>
 
 {% endblock %}
