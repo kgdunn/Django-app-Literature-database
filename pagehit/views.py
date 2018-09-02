@@ -28,13 +28,13 @@ def create_hit(request, item, extra_info=None):
     if extra_info is None:
         extra_info = request.META.get('HTTP_REFERER', None)
     if isinstance(item, int):
-        page_hit = models.PageHit(ip_address=ip_address, ua_string=ua_string,
-                                 item='item', item_pk=item,
-                                 extra_info=extra_info)
+        page_hit = PageHit(ip_address=ip_address, ua_string=ua_string,
+                           item='item', item_pk=item,
+                           extra_info=extra_info)
     elif isinstance(item, basestring):
-        page_hit = models.PageHit(ip_address=ip_address, ua_string=ua_string,
-                                 item=item, item_pk=static_items.get(item, 0),
-                                 extra_info=extra_info)
+        page_hit = PageHit(ip_address=ip_address, ua_string=ua_string,
+                           item=item, item_pk=static_items.get(item, 0),
+                           extra_info=extra_info)
 
     page_hit.save()
 
@@ -45,7 +45,7 @@ def get_search_hits():
     This allows one to use the builtin ``list.sort()`` function where Python
     orders the list based on the first entry in the tuple.
     """
-    page_hits = models.PageHit.objects.filter(item_pk=-2)
+    page_hits = PageHit.objects.filter(item_pk=-2)
     hits_by_search = defaultdict(int)
 
     for hit in page_hits:
@@ -81,11 +81,11 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
 
     # extra_info=None to avoid counting download hits
     if item_pk is None:
-        page_hits = models.PageHit.objects.filter(item='item').\
+        page_hits = PageHit.objects.filter(item='item').\
                                        filter(datetime__gte=start_date).\
                                        filter(datetime__lte=end_date)
     else:
-        page_hits = models.PageHit.objects.filter(item=item).\
+        page_hits = PageHit.objects.filter(item=item).\
                                        filter(datetime__gte=start_date).\
                                        filter(datetime__lte=end_date).\
                                        filter(item_pk=item_pk)

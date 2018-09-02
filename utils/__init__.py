@@ -33,9 +33,7 @@ def invalid_IP_address(request):
     Used to determine whether a user can download the item
     """
     ip = get_IP_address(request)
-
-    #import models
-    for valid_ip in ['127.0.0.1', '206.248.139.164', '130.113']:# models.ValidIP.objects.all():
+    for valid_ip in ['127.0.0.1', '130.113']:# models.ValidIP.objects.all():
         if ip.startswith(valid_ip):#.valid_ip_address):
             return False
 
@@ -48,7 +46,8 @@ def paginated_queryset(request, queryset):
     Show items in a paginated table.
     """
     queryset = list(queryset)
-    paginator = Paginator(queryset, settings.LIT['entries_per_page'])
+    paginator = Paginator(queryset,
+                          per_page=settings.DEFAULTS['entries_per_page'])
     try:
         page = int(request.GET.get('page', '1'))
     except ValueError:

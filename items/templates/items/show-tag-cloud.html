@@ -8,7 +8,7 @@
 <h3>All tags</h3>
   <div id="lit-itemdisp-container">
 	{% for item in "submission.TagCreation"|cloud:0 %}
-	  <span><a href="{% url lit-show-items what_view="tag" extra_info=item.tag %}" class="lit-tag-cloud" style="font-size: {{item.score}}%">{{item.tag.name}}</a></span>
+	  <span><a href="{% url 'lit-show-items' what_view="tag" extra_info=item.tag %}" class="lit-tag-cloud" style="font-size: {{item.score}}%">{{item.tag.name}}</a></span>
 	{% endfor %}
   </div>
 {% endblock %}

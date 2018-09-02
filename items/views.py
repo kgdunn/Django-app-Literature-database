@@ -10,7 +10,7 @@ from utils import paginated_queryset, invalid_IP_address
 from pagehit.views import create_hit
 #from templatetags.core_tags import most_viewed
 
-from .models import Item, ConferenceProceeding, Thesis, JournalPub, Book
+from .models import Item, ConferenceProceeding, Thesis, JournalPub, Book, Author
 
 import re
 import unicodedata
@@ -54,13 +54,13 @@ def get_items_or_404(view_function):
 
 
         if the_item.item_type == 'conferenceproc':
-            the_item = models.ConferenceProceeding.objects.get(id=item_id)
+            the_item = ConferenceProceeding.objects.get(id=item_id)
         if the_item.item_type == 'thesis':
-            the_item = models.Thesis.objects.get(id=item_id)
+            the_item = Thesis.objects.get(id=item_id)
         if the_item.item_type == 'journalpub':
-            the_item = models.JournalPub.objects.get(id=item_id)
+            the_item = JournalPub.objects.get(id=item_id)
         if the_item.item_type == 'book':
-            the_item = models.Book.objects.get(id=item_id)
+            the_item = Book.objects.get(id=item_id)
 
         return view_function(request, the_item, slug)
 
@@ -77,7 +77,7 @@ def show_items(request, what_view='', extra_info=''):
     page_title = ''
     template_name = 'items/show-entries.html'
     if what_view == 'tag':
-        all_items = models.Item.objects.all().\
+        all_items = Item.objects.all().\
                                         filter(tags__slug=slugify(extra_info))
         page_title = 'All entries tagged'
         extra_info = ': "%s"' % extra_info
@@ -88,7 +88,7 @@ def show_items(request, what_view='', extra_info=''):
         template_name = 'items/show-tag-cloud.html'
 
     elif what_view == 'show' and extra_info == 'all-items':
-        all_items = models.Item.objects.all().order_by('-year')
+        all_items = Item.objects.all().order_by('-year')
         page_title = 'All items in our database '
         extra_info = '(reverse publication date order)'
         entry_order = list(all_items)
@@ -97,40 +97,39 @@ def show_items(request, what_view='', extra_info=''):
         page_title = 'All references (in order of most viewed)'
         extra_info = ''
         assert(False)
-        entry_order = most_viewed('item', models.Item.objects.count())
+        entry_order = most_viewed('item', Item.objects.count())
 
     elif what_view == 'pub-by-year':
-        all_items = models.Item.objects.all().filter(year=extra_info)
+        all_items = Item.objects.all().filter(year=extra_info)
         page_title = 'All entries published in '
         extra_info = '%s' % extra_info
         entry_order = list(all_items)
 
     elif what_view == 'author':
-        author = models.Author.objects.filter(slug=extra_info)
+        author = Author.objects.filter(slug=extra_info)
         if len(author) == 0:
             return page_404_error(request, 'There are no publications by "%s"' % extra_info)
 
-        author_items = models.Item.objects.all().filter(authors__slug=extra_info)
+        author_items = Item.objects.all().filter(authors__slug=extra_info)
         page_title = 'All entries by author'
         extra_info = ' "%s"' % author[0].full_name
         entry_order = list(author_items)
 
     elif what_view == 'journal':
-        journal = models.Journal.objects.filter(slug=extra_info)
+        journal = Journal.objects.filter(slug=extra_info)
         if len(journal) == 0:
             return page_404_error(request, 'There are no publications in "%s"' % extra_info)
 
-        journal_items = models.JournalPub.objects.all().filter(journal=journal[0])
+        journal_items = JournalPub.objects.all().filter(journal=journal[0])
         page_title = 'All entries in '
         extra_info = ' "%s"' % journal[0].name
         entry_order = list(journal_items)
 
     entries = paginated_queryset(request, entry_order)
-    return render_to_response(template_name, {},
-                              context_instance=RequestContext(request,
-                                                {'entries': entries,
-                                                 'page_title': page_title,
-                                                 'extra_info': extra_info}))
+    return render_to_response(template_name,
+                              context={'entries': entries,
+                                       'page_title': page_title,
+                                       'extra_info': extra_info})
 
 
 @get_items_or_404
@@ -182,12 +181,10 @@ def view_item(request, the_item, slug):
         the_item.download_link = ''
 
     create_hit(request, the_item.pk)
-
-    return render_to_response('items/item.html', {},
-                              context_instance=RequestContext(request,
-                                    {'item': the_item,
-                                     'tag_list': the_item.tags.all(),
-                                    }))
+    ctx = {'item': the_item,
+           'tag_list': the_item.tags.all(),
+           }
+    return render_to_response('items/item.html', context=ctx)
 
 
 def __extract_extra__(request, item_id=None):
@@ -209,9 +206,9 @@ def __extract_extra__(request, item_id=None):
     caching = True
 
     if item_id:
-        all_items = models.Item.objects.filter(id=item_id)
+        all_items = Item.objects.filter(id=item_id)
     else:
-        all_items = models.Item.objects.all()
+        all_items = Item.objects.all()
 
     for item in all_items:
 

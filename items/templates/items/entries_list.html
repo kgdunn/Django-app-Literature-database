@@ -1,54 +1,54 @@
 {% if entries.object_list%}
 
-<div style="clear:both;"></div>
-<div id="lit-itemdisp-container" class="lit-entries-list">
+  <div style="clear:both;"></div>
+  <div id="lit-itemdisp-container" class="lit-entries-list">
 
-  <div class="lit-itemdisp-pagination">
-	<span class="step-links">
-	  {% if entries.has_previous %}
-		<a href="?q={{query}}&page={{ entries.previous_page_number }}">&laquo; Previous</a> |
-	  {% endif %}
-	  {% if entries.has_previous or entries.has_next %}
-		<span class="current">
-		  Page {{ entries.number }} of {{ entries.paginator.num_pages }}
-		</span>
-	  {% endif %}
-	  {% if entries.has_next %}
-	   | <a href="?q={{query}}&page={{ entries.next_page_number }}">Next &raquo;</a>
-	  {% endif %}
-	</span>
-  </div>
-
-  <div class="lit-itemdisp-row-container">
-	<div class="lit-itemdisp-row lit-itemdisp-header">
-		<div class="lit-itemdisp-description lit-itemdisp-td">Title, Year<span class="lit-itemdisp-link "></span></div>
-		<div class="lit-itemdisp-author lit-itemdisp-td">Author(s)</div>
-		<div class="lit-itemdisp-extlink lit-itemdisp-td">External link</div>
-		<div class="lit-itemdisp-tags lit-itemdisp-td">Tags</div>
+	<div class="lit-itemdisp-pagination">
+	  <span class="step-links">
+		{% if entries.has_previous %}
+		  <a href="?q={{query}}&page={{ entries.previous_page_number }}">&laquo; Previous</a> |
+		{% endif %}
+		{% if entries.has_previous or entries.has_next %}
+		  <span class="current">
+			Page {{ entries.number }} of {{ entries.paginator.num_pages }}
+		  </span>
+		{% endif %}
+		{% if entries.has_next %}
+		 | <a href="?q={{query}}&page={{ entries.next_page_number }}">Next &raquo;</a>
+		{% endif %}
+	  </span>
 	</div>
-  </div>
 
-<ul>
-  {#  The ``entry`` objects must be from the ``submission.Revision`` class   #}
-  {#  or from the ``person.UserProfile`` class                               #}
-  {% for entry in entries.object_list %}
-	{# It's a search query result; used to be ``entry.django_CT`` #}
-	{% if entry.object %}
-	  {% with entry.object as entry %}
+	<div class="lit-itemdisp-row-container">
+	  <div class="lit-itemdisp-row lit-itemdisp-header">
+		  <div class="lit-itemdisp-description lit-itemdisp-td">Title, Year<span class="lit-itemdisp-link "></span></div>
+		  <div class="lit-itemdisp-author lit-itemdisp-td">Author(s)</div>
+		  <div class="lit-itemdisp-extlink lit-itemdisp-td">External link</div>
+		  <div class="lit-itemdisp-tags lit-itemdisp-td">Tags</div>
+	  </div>
+	</div>
+
+  <ul>
+	{#  The ``entry`` objects must be from the ``submission.Revision`` class   #}
+	{% for entry in entries.object_list %}
+	  {# It's a search query result; used to be ``entry.django_CT`` #}
+	  {% if entry.object %}
+		{% with entry.object as entry %}
+		  {% include 'search/includes/one-item-result.html' %}
+		{% endwith %}
+
+	  {# It's just a list of objects #}
+	  {% else %}
 		{% include 'search/includes/one-item-result.html' %}
-	  {% endwith %}
-
-	{# It's just a list of objects #}
-	{% else %}
-	  {% include 'search/includes/one-item-result.html' %}
-	{% endif %}
-  {% endfor %}
-</ul>
-<div style="clear:both;"></div>
-</div>
-{% else %}
-  <p>{% if no_entries_message %}{{no_entries_message}}{% else %}There are no items matching your criteria.{% endif %}
+	  {% endif %}
+	{% endfor %}
+  </ul>
+  <div style="clear:both;"></div>
+  </div>
+  {% else %}
+	<p>{% if no_entries_message %}{{no_entries_message}}{% else %}There are no items matching your criteria.
+  {% endif %}
 
 {% endif %}
 
-{% include "search/includes/main-search-box.html" %}
+{# include "search/includes/main-search-box.html" #}

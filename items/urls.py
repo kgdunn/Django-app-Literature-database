@@ -1,7 +1,19 @@
-from django.conf.urls import url, include
-from .views import show_items, download_item, view_item, __extract_extra__
+from django.conf.urls import url
+from items.views import show_items, download_item, view_item, __extract_extra__
 
 urlpatterns = [
+
+    url(r'^show-all$',
+        show_items,
+        {'what_view': 'all'},
+        name='show-items--all'),
+
+    url(r'^pub-by-year/(?P<extra_info>.+)/$',
+        show_items,
+        {'what_view': 'pub-by-year'},
+        name='show-items--pub-by-year'),
+
+
 
     # SHOW ITEMS in different ways
     # ============================

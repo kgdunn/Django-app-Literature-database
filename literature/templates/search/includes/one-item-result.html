@@ -1,28 +1,28 @@
 {# The ``entry`` object must be from the ``items.Item`` sub-class #}
 {% if entry %}
-<div class="lit-itemdisp-row-container">
-  <div class="lit-itemdisp-row lit-itemdisp-{% if forloop.counter|divisibleby:2 %}even{% else %}odd{% endif %}">
-	<li>
-	  <div class="lit-itemdisp-description lit-itemdisp-td" id="lit-item-{{entry.pk}}">
-		<div style="width: 42px; float: left;">
-		  {% if entry.entry.sub_type == 'snippet' %}<img src="{{MEDIA_URL}}literature/single-file-list-icon-tiny.png">{% endif %}
-		  {% if entry.entry.sub_type == 'package' %}<img src="{{MEDIA_URL}}literature/multiple-file-list-icon-tiny.png">{% endif %}
-		  {% if entry.entry.sub_type == 'link' %}<img src="{{MEDIA_URL}}literature/external-link-list-icon-tiny.png">{% endif %}
+  <div class="lit-itemdisp-row-container">
+	<div class="lit-itemdisp-row lit-itemdisp-{% if forloop.counter|divisibleby:2 %}even{% else %}odd{% endif %}">
+	  <li>
+		<div class="lit-itemdisp-description lit-itemdisp-td" id="lit-item-{{entry.pk}}">
+		  <div style="width: 42px; float: left;">
+			{% if entry.entry.sub_type == 'snippet' %}<img src="{{MEDIA_URL}}literature/single-file-list-icon-tiny.png">{% endif %}
+			{% if entry.entry.sub_type == 'package' %}<img src="{{MEDIA_URL}}literature/multiple-file-list-icon-tiny.png">{% endif %}
+			{% if entry.entry.sub_type == 'link' %}<img src="{{MEDIA_URL}}literature/external-link-list-icon-tiny.png">{% endif %}
+		  </div>
+		  <div style="width: 85%; float: left;">
+			<a class="lit-itemdisp-mainlink" href="{{entry.get_absolute_url}}">{{ entry.title}}</a>{{entry.year}}
+		  </div>
 		</div>
-		<div style="width: 85%; float: left;">
-		  <a class="lit-itemdisp-mainlink" href="{{entry.get_absolute_url}}">{{ entry.title}}</a>{{entry.year}}
+		<div class="lit-itemdisp-author lit-itemdisp-td">
+		  {{entry.author_list_all_lastnames|safe}}
 		</div>
-	  </div>
-	  <div class="lit-itemdisp-author lit-itemdisp-td">
-		{{entry.author_list_all_lastnames|safe}}
-	  </div>
-	  <div class="lit-itemdisp-extlink lit-itemdisp-td">
-		{% if entry.external_link %}<a href="{{entry.external_link}}">{{entry.external_link_text}}</a>{% else %}&nbsp;{% endif %}
-	  </div>
-	  <div class="lit-itemdisp-tags lit-itemdisp-td">
-		{% for tag in entry.tags.all %}<span><a href="{% url lit-show-items what_view="tag" extra_info=tag %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}
-	  </div>
-	</li>
+		<div class="lit-itemdisp-extlink lit-itemdisp-td">
+		  {% if entry.external_link %}<a href="{{entry.external_link}}">{{entry.external_link_text}}</a>{% else %}&nbsp;{% endif %}
+		</div>
+		<div class="lit-itemdisp-tags lit-itemdisp-td">
+		  {% for tag in entry.tags.all %}<span><a href="{% url 'lit-show-items' what_view="tag" extra_info=tag %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}
+		</div>
+	  </li>
+	</div>
   </div>
-</div>
 {% endif %}

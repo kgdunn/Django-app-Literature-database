@@ -2,6 +2,7 @@ from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 from django.http import HttpResponse
 from django.template.loader import get_template
+from django.urls import reverse
 #from haystack.views import SearchView
 
 from pagehit.views import create_hit
@@ -14,17 +15,13 @@ logger = logging.getLogger('Literature')
 logger.debug('Initializing pages::views.py')
 
 
-
-
 def front_page(request):
     """Assembles the front page with predefined defaults"""
     ctx = {'latest_items': Item.latest_items.get_latest(n=10)}
     return render_to_response('pages/front-page.html',
                               context=ctx)
 
-
 def about_page(request):
-    items = Item.objects.all().order_by('-date_created')
     return render_to_response('pages/about-page.html')
 
 

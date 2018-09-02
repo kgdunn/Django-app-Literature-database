@@ -27,6 +27,16 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Default settings for the app
+DEFAULTS = {}
+# Number of items shown per page before previous/next links are shown
+DEFAULTS['version'] = 0.20
+DEFAULTS['entries_per_page'] = 15
+DEFAULTS['analytics_snippet'] = """<script></script>"""
+
+#LIT['logfile_location'] = this_dir + os.sep + 'logfile.log'
+
+
 
 # Application definition
 

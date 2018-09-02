@@ -21,8 +21,8 @@
 			    <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:16 }}</a></li>
 			{% endfor %}
 			</ul>
-			URL Here
-			{# }<a href="{% url lit-show-items %}">Show all</a> #}
+
+			<a href="{% url 'show-items--all' %}">Show all</a>
 		</div>
 	  </div>
 	</div>
