@@ -14,14 +14,18 @@ logger = logging.getLogger('Literature')
 logger.debug('Initializing pages::views.py')
 
 
+
+
 def front_page(request):
-    return render_to_response('pages/front-page.html', {},
-                              context_instance=RequestContext(request))
+    """Assembles the front page with predefined defaults"""
+    ctx = {'latest_items': Item.latest_items.get_latest(n=10)}
+    return render_to_response('pages/front-page.html',
+                              context=ctx)
 
 
 def about_page(request):
-    return render_to_response('pages/about-page.html', {},
-                              context_instance=RequestContext(request))
+    items = Item.objects.all().order_by('-date_created')
+    return render_to_response('pages/about-page.html')
 
 
 def page_404_error(request, extra_info=''):

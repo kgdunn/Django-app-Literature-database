@@ -31,7 +31,7 @@ def get_items_or_404(view_function):
         """
         try:
             # Use the Submissions manager's ``all()`` function
-            the_item = models.Item.objects.all().filter(id=item_id)
+            the_item = Item.objects.all().filter(id=item_id)
         except ObjectDoesNotExist:
             return page_404_error(request, 'You request a non-existant item')
 

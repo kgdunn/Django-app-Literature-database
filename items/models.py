@@ -8,6 +8,15 @@ from utils import unique_slugify
 import re
 import unicodedata
 
+# Custom manager for the items
+class LatestItemManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().order_by('-date_created')
+
+    def get_latest(self, n=5):
+        return self.get_queryset()[0:n]
+
+
 class Author(models.Model):
     first_name = models.CharField(max_length=255)
     middle_initials = models.CharField(max_length=31, blank=True, null=True)
@@ -134,6 +143,11 @@ class Publisher(models.Model):
 
 
 class Item(models.Model):
+
+
+    objects = models.Manager() # The default manager: 'Item.objects.all()'
+    latest_items = LatestItemManager()  #'Item.latest_items.all()'
+
     ITEM_CHOICES = (
         ('thesis',         'Thesis'),
         ('journalpub',     'Journal publication'),
