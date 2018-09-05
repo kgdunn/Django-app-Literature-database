@@ -1,7 +1,9 @@
-from django.conf.urls import url, include
+from django.conf.urls import url, include, static
 from django.conf import settings
 
-# Uncomment the next two lines to enable the admin:
+
+
+# Enable the admin:
 from django.contrib import admin
 admin.autodiscover()
 
@@ -24,6 +26,5 @@ handler404 = 'pages.views.page_404_error'
 handler500 = 'pages.views.page_500_error'
 
 
-
-from django.conf.urls.static import static
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static.static(settings.MEDIA_URL,
+                             document_root=settings.MEDIA_ROOT)
