@@ -3,9 +3,10 @@
 literature.wpr
 literature.wpu
 local_settings.py
-#media/literature/pdf
+media/pdf
 #deploy/literature.sqlite
 logfile.log
 xapian_index
 whoosh_index
 .*\.sqlite3
+media/*

@@ -27,7 +27,7 @@ DEBUG = True  # will also turn on template debugging
 
 
 ALLOWED_HOSTS = []
-
+import django.contrib.staticfiles
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+
+    # For static files
     'django.contrib.staticfiles',
 
     # My applications
@@ -126,7 +128,10 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'literature/static/')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+
+# Additional static files (CSS, etc) are found here:
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'literature/static/'), ]
 
 
 # Import local settings that override the above, and should not be in the RCS.
@@ -134,3 +139,8 @@ try:
     from local_settings import *
 except ImportError:
     pass
+
+# Sanity tests at the end
+assert(os.path.exists(STATIC_ROOT))
+assert(os.path.exists(MEDIA_ROOT))
+assert(MEDIA_ROOT != STATIC_ROOT)

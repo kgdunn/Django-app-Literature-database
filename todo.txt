@@ -1,0 +1,3 @@
+Clean up unnecessary project files
+Move the footer to the bottom of the page always
+Mobile friendly test?

@@ -1,3 +1,5 @@
+{% load static from staticfiles %}
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -6,7 +8,7 @@
   <meta http-equiv="Content-Language" content="en-us" />
   <title>{% block title %}{% endblock %} | Latent Variable Literature</title>
   <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata">
-  <link rel="stylesheet" href="{{MEDIA_URL}}/literature/literature.css?{{VERSION}}" type="text/css" media="Screen"/>
+  <link rel="stylesheet" href="{% static "literature/literature.css" %}" type="text/css" media="Screen"/>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
 
   {{ANALYTICS_SNIPPET|safe}}
