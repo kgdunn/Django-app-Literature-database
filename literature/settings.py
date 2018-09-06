@@ -39,6 +39,11 @@ INSTALLED_APPS = [
     # For static files
     'django.contrib.staticfiles',
 
+    # 3rd party applications
+    # sudo pip uninstall haystack
+    # sudo pip install django-haystack
+    'haystack',
+
     # My applications
     'items',
     'tagging',
@@ -61,6 +66,8 @@ ROOT_URLCONF = 'literature.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+
+        # Add this extra directory with templates
         'DIRS': [BASE_DIR + '/templates/',],
         'APP_DIRS': True,
         'OPTIONS': {

@@ -3,7 +3,7 @@ from django.template import RequestContext
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.urls import reverse
-#from haystack.views import SearchView
+from haystack.views import SearchView
 
 from pagehit.views import create_hit
 from utils import get_IP_address

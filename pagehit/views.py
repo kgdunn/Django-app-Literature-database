@@ -31,7 +31,7 @@ def create_hit(request, item, extra_info=None):
         page_hit = PageHit(ip_address=ip_address, ua_string=ua_string,
                            item='item', item_pk=item,
                            extra_info=extra_info)
-    elif isinstance(item, basestring):
+    elif isinstance(item, str):
         page_hit = PageHit(ip_address=ip_address, ua_string=ua_string,
                            item=item, item_pk=static_items.get(item, 0),
                            extra_info=extra_info)
