@@ -77,8 +77,7 @@ def show_items(request, what_view='', extra_info=''):
     page_title = ''
     template_name = 'items/show-entries.html'
     if what_view == 'tag':
-        all_items = Item.objects.all().\
-                                        filter(tags__slug=slugify(extra_info))
+        all_items = Item.objects.all().filter(tags__slug=slugify(extra_info))
         page_title = 'All entries tagged'
         extra_info = ': "%s"' % extra_info
         entry_order = list(all_items)

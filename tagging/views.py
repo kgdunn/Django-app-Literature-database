@@ -1,4 +1,4 @@
-import models
+from .models import Tag
 from collections import defaultdict
 
 def get_tag_uses():
@@ -12,13 +12,11 @@ def get_tag_uses():
     sorting using Python's ``sort`` method.
     """
     uses_by_pk = defaultdict(int)
-    for tag in models.Tag.objects.all():
+    for tag in Tag.objects.all():
         for item in tag.item_set.all():
             uses_by_pk[tag.pk] += 1
 
-    # Finally, create a list of hit counts, which can be used for sorting
-    hit_counts = []
-    for key, val in uses_by_pk.iteritems():
-        hit_counts.append((val, key))
+    hit_counts = sorted((value, key) for (key,value) in uses_by_pk.items())
+    hit_counts.reverse()
 
     return hit_counts

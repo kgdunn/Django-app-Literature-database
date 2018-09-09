@@ -45,7 +45,7 @@ def get_search_hits():
     This allows one to use the builtin ``list.sort()`` function where Python
     orders the list based on the first entry in the tuple.
     """
-    page_hits = PageHit.objects.filter(item_pk=-2)
+    page_hits = PageHit.objects.filter(item_pk=static_items['haystack_search'])
     hits_by_search = defaultdict(int)
 
     for hit in page_hits:
@@ -55,10 +55,8 @@ def get_search_hits():
         if term not in PROFANITIES_LIST:
             hits_by_search[term] += 1
 
-    hit_counts = []
-    for key, val in hits_by_search.iteritems():
-        hit_counts.append((val, key))
-
+    hit_counts = sorted((value, key) for (key,value) in hits_by_search.items())
+    hit_counts.reverse()
     return hit_counts
 
 def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
@@ -96,8 +94,7 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     for hit in page_hits:
         hits_by_pk[hit.item_pk] += 1
 
-    hit_counts = []
-    for key, val in hits_by_pk.iteritems():
-        hit_counts.append((val, key))
-
+    hit_counts = sorted((value, key) for (key,value) in hits_by_pk.items())
+    hit_counts.reverse()
     return hit_counts
+

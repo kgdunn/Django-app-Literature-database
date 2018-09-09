@@ -3,3 +3,7 @@ Move the footer to the bottom of the page always
 Mobile friendly test?
 
 Make the index realtime
+
+Complete the homepage
+
+Push onto my server
