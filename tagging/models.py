@@ -18,7 +18,7 @@ class Tag(models.Model):
     # and perhaps an image
 #    image = models.ImageField(upload_to='tags/', blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):

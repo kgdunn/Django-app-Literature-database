@@ -26,7 +26,7 @@ class Author(models.Model):
     class Meta:
         ordering = ['last_name']
 
-    def __unicode__(self):
+    def __str__(self):
         if self.middle_initials:
             return '%s, %s %s' % (self.last_name, self.first_name,
                                   self.middle_initials)
@@ -80,7 +80,7 @@ class School(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, editable=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
@@ -99,7 +99,7 @@ class Journal(models.Model):
     website = models.URLField()
     slug = models.SlugField(max_length=510, editable=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
@@ -129,7 +129,7 @@ class Publisher(models.Model):
     name = models.CharField(max_length=510)
     slug = models.SlugField(max_length=510, editable=False)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
@@ -191,7 +191,7 @@ class Item(models.Model):
     # to improve the user's search
     other_search_text = models.TextField(null=True, blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.doi_link:
             return '%s (%s) [doi:%s]' % (self.title, str(self.year),
                                          self.doi_link)
@@ -375,7 +375,7 @@ class JournalPub(Item):
     page_start = models.CharField(max_length=10, blank=True, null=True)
     page_end = models.CharField(max_length=10, blank=True, null=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s (%s) [doi:%s]' % (self.title, str(self.year),
                                      self.doi_link)
 
