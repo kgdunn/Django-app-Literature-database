@@ -239,8 +239,3 @@ def __extract_extra__(request, item_id=None):
             item.save()
 
     return HttpResponse('Full PDF indexed for item "%s"' % item.title)
-
-
-
-
-

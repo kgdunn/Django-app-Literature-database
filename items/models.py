@@ -481,5 +481,3 @@ class Thesis(Item):
 
     class Meta:
         verbose_name_plural = "theses"
-
-

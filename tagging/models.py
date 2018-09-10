@@ -40,4 +40,3 @@ class Tag(models.Model):
 
     class Meta:
         ordering = ['slug']
-

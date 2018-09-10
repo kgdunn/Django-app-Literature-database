@@ -17,7 +17,7 @@
 		  {{entry.author_list_all_lastnames|safe}}
 		</div>
 		<div class="lit-itemdisp-extlink lit-itemdisp-td">
-		  {% if entry.external_link %}<a href="{{entry.external_link}}">{{entry.external_link_text}}</a>{% else %}&nbsp;{% endif %}
+		  {% if entry.external_link %}<a href="{{entry.external_link}}" target="_blank">{{entry.external_link_text}}</a>{% else %}&nbsp;{% endif %}
 		</div>
 		<div class="lit-itemdisp-tags lit-itemdisp-td">
 		  {% for tag in entry.tags.all %}<span><a href="{% url 'lit-show-items' what_view="tag" extra_info=tag %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}

@@ -22,10 +22,7 @@ from math import log
 @register.filter(name='most_searched')
 def most_searched(field, num=5):
     """ Get the most viewed items from the Submission model """
-
-
     top_items = get_search_hits()
-    #top_items.sort(reverse=True)
     out = []
     for score, search_term in top_items[:num]:
         out.append(search_term)
@@ -35,7 +32,6 @@ def most_searched(field, num=5):
 @register.filter
 def most_viewed(field, num=5):
     """ Get the most viewed items from the Submission model """
-
     top_items = get_pagehits(field)
     #top_items.sort(reverse=True)
     out = []
@@ -73,4 +69,3 @@ def cloud(model_or_obj, num=5):
 
     out.sort()
     return out
-
