@@ -1,11 +1,5 @@
-Clean up unnecessary project files
 Move the footer to the bottom of the page always
 Mobile friendly test?
 
 Make the index realtime
-
-Complete the homepage
-
-Push onto my server
-
 Move the static media to the appropriate static root folder

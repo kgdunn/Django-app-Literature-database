@@ -31,7 +31,7 @@
     {% if item.doi_link %}
     <div class="lit-item-row">
       <span class="lit-item-label">DOI link:</span>
-      <span class="lit-item-entry"><a href="{{item.doi_link}}">{{item.doi_link_cleaned}}</a></span>
+      <span class="lit-item-entry"><a href="{{item.doi_link}}" target="_blank">{{item.doi_link_cleaned}}</a></span>
     </div>
     {% else %}
 	  {% if item.web_link %}
