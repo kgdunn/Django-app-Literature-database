@@ -11,7 +11,7 @@ from items.models import Item
 
 
 import logging
-logger = logging.getLogger('Literature')
+logger = logging.getLogger(__name__)
 logger.debug('Initializing pages::views.py')
 
 
