@@ -12,7 +12,6 @@ from items.models import Item
 
 import logging
 logger = logging.getLogger(__name__)
-logger.debug('Initializing pages::views.py')
 
 
 def front_page(request):

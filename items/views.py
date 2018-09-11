@@ -17,8 +17,6 @@ import unicodedata
 import logging
 
 logger = logging.getLogger(__name__)
-logger.debug('Initializing items::views.py')
-
 
 def get_items_or_404(view_function):
     """
