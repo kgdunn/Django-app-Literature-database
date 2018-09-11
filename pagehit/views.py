@@ -1,6 +1,6 @@
 # Built-in imports
 import unicodedata
-from datetime import date
+from datetime import datetime
 from collections import defaultdict
 
 # Imports from other apps
@@ -8,6 +8,7 @@ from utils import get_IP_address
 from .models import PageHit
 
 from django.conf import settings
+from django.utils import timezone
 
 static_items = {'lit-main-page': -1,
                 'haystack_search': -2,
@@ -73,9 +74,10 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     number of page views for that item, as an integer.
     """
     if start_date is None:
-        start_date = date.min
+        start_date = datetime(1, 1, 1, tzinfo=timezone.utc)
+
     if end_date is None:
-        end_date = date.max
+        end_date = datetime(9999, 12, 31, tzinfo=timezone.utc)
 
     # extra_info=None to avoid counting download hits
     if item_pk is None:
