@@ -179,6 +179,8 @@ def view_item(request, the_item, slug):
     if (the_item.download_link) and invalid_IP_address(request):
         the_item.download_link = ''
 
+    logger.debug('Viewing: {}'.format(the_item))
+
     create_hit(request, the_item.pk)
     ctx = {'item': the_item,
            'tag_list': the_item.tags.all(),
