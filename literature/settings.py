@@ -133,9 +133,9 @@ USE_L10N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+# Static files (CSS, JavaScript, Images): specified elsewhere
+#STATIC_URL = '/static/'
+#STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 # Additional static files (CSS, etc) are found here:
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'literature/static/'), ]
