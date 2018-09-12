@@ -9,10 +9,8 @@
   <title>{% block title %}{% endblock %} | Latent Variable Literature</title>
   <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
-  <link rel="stylesheet" href="{% static "literature/literature.css" %}" type="text/css" media="Screen"/>
+  <link rel="stylesheet" href="{% static "literature/literature.css" %}?{{VERSION}}" type="text/css" media="Screen"/>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
-
-  {{ANALYTICS_SNIPPET|safe}}
 </head>
 <body>
 
@@ -67,5 +65,7 @@
   </div><!--#lit-container-->
 
 {% endblock %}
+
+{{ANALYTICS_SNIPPET|safe}}
 </body>
 </html>

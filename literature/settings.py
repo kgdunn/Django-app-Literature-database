@@ -79,11 +79,16 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
 
                 # To use MEDIA_URL in templates
-                'django.template.context_processors.media'
+                'django.template.context_processors.media',
+
+                # Context processors:
+                'literature.context_processors.global_template_variables',
+
             ],
         },
     },
 ]
+
 
 
 

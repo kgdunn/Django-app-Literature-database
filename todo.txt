@@ -1,4 +1,8 @@
-Have a check to force allow PDF to be downloaded in the data model
+Code up the use of ""allow PDF"" to be downloaded in the data model
+
+Put a link to bitbucket source of this application
+Add a License file to the add
+Add a requirements file to the app, with the right version of haystack install
 
 Move the footer to the bottom of the page always
 Mobile friendly test?
@@ -8,4 +12,11 @@ Make the top N pages, top tags, etc in a django queue that runs daily; save that
 
 
 Make the index realtime
-Move the static media to the appropriate static root folder
+
+Check if you can add new items now
+
+Correct all references in PID to the new site
+
+Redirect all old literature.connectmv.com -> learnche.org/literature
+
+Add Google analytics

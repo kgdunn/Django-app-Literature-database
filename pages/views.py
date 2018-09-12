@@ -1,4 +1,4 @@
-from django.shortcuts import render_to_response, redirect
+from django.shortcuts import render, render_to_response, redirect
 from django.template import RequestContext
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -16,9 +16,8 @@ logger = logging.getLogger(__name__)
 
 def front_page(request):
     """Assembles the front page with predefined defaults"""
-    ctx = {'latest_items': Item.latest_items.get_latest(n=10)}
-    return render_to_response('pages/front-page.html',
-                              context=ctx)
+    return render(request, template_name='pages/front-page.html',
+                  context={'latest_items': Item.latest_items.get_latest(n=10)})
 
 def about_page(request):
     return render_to_response('pages/about-page.html')
