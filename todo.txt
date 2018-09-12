@@ -1,3 +1,5 @@
+Have a check to force allow PDF to be downloaded in the data model
+
 Move the footer to the bottom of the page always
 Mobile friendly test?
 Log the page visits to the logfile too
