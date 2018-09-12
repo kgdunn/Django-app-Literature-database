@@ -33,7 +33,7 @@ def invalid_IP_address(request):
     Used to determine whether a user can download the item
     """
     ip = get_IP_address(request)
-    for valid_ip in ['127.0.0.1', '130.113']:# models.ValidIP.objects.all():
+    for valid_ip in ['127.0.0.1', '130.113', '86.91.182.154']:# models.ValidIP.objects.all():
         if ip.startswith(valid_ip):#.valid_ip_address):
             return False
 
