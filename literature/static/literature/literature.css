@@ -16,6 +16,7 @@ body {
 	border:0;			/* This removes the border around the viewport in old versions of IE */
 	width:100%;
 	background:#ffffff;
+	font-family: 'Lato', arial, sans-serif;
 	min-width:600px;	/* Minimum width of layout - remove line if not required */
 					/* The min-width property does not work in old versions of Internet Explorer */
 }
@@ -68,7 +69,7 @@ body {
 
 /* Document container */
 #lit-document-container {
-    font: 13px/1.5 'Lucida Grande','Lucida Sans Unicode','Geneva','Verdana',sans-serif;
+    /*font: 13px/1.5;*/
     background: #FFFFFF;
 	margin: auto;              /* display container in the center of the page */
 	padding-top: 12px;
@@ -88,7 +89,6 @@ body {
 	text-align: right;
 }
 #lit-site-notice{
-	/*display: none;*/
 	color: #aaf;
 	font-weight: bold;
 	padding: 6px 0px;
@@ -150,7 +150,7 @@ body {
 /* Styling for the headers */
 div#lit-section-body h1, h2, h3, h4, h5, h6{
 	color: #20435C;
-	font-family: 'Trebuchet MS', sans-serif;
+	font-family: 'Lato', sans-serif;
     font-weight: normal;
     border-bottom: 0px solid #ccc;
 	margin-bottom: 0.5em;
@@ -304,6 +304,7 @@ tt {
 	position: relative;
 	display: block;
 	margin: 0 auto;
+	font-family: 'Lato', Arial, Sans-Serif;
 }
 .lit-portal-row-container {
 	clear:both;
@@ -340,8 +341,8 @@ tt {
 }
 .lit-portal-container a{
 	text-decoration: none;
-	font-weight: bold;
-	font: 14px sans-serif;
+	/*font-weight: bold;*/
+	font: 14px;
 }
 .lit-portal-container a:hover{
 	text-decoration: underline;
@@ -617,6 +618,7 @@ div.lit-item-row span.lit-50-50{
 	padding-top: 1em;
 	margin: 0 auto;
 	width: 85%;
+	font-family: 'Lato', Arial, Sans-Serif;
 }
 
 .lit-itemdisp-row-container {
@@ -662,7 +664,7 @@ div .lit-itemdisp-mainlink{
   width: 25%;
 }
 .lit-itemdisp-odd{
-  background: #fff8f1;
+  background: rgb(240,240,240);
 }
 .lit-itemdisp-even{
   background: #fff;

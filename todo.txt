@@ -2,6 +2,8 @@ Move the footer to the bottom of the page always
 Mobile friendly test?
 Log the page visits to the logfile too
 
+Make the top N pages, top tags, etc in a django queue that runs daily; save that to DB; front page rendering speed will improve then
+
 
 Make the index realtime
 Move the static media to the appropriate static root folder
