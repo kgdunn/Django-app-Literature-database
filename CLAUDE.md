@@ -119,7 +119,7 @@ Cloudflare (proxied, orange cloud) ──HTTPS──> Caddy on Hetzner host (TLS
 ```
 
 - **VPS**: same Hetzner Cloud Ubuntu 24.04 host that runs openmv.net and Factori.al. The literature stack coexists via offset ports (gunicorn `:8002`, postgres `:5435` — openmv uses `:8001/:5434`) and the shared host-installed Caddy.
-- **Code path**: `/home/deploy/literature/repo/` — git checkout of `master`.
+- **Code path**: `/home/deploy/literature/repo/` — git checkout of `main`.
 - **Compose file**: `docker-compose.prod.yml` runs two services bound to loopback only — `web` (gunicorn on `127.0.0.1:8002`) and `db` (`postgres:16-alpine` on `127.0.0.1:5435`). Phase 14 adds `meilisearch` on `127.0.0.1:7701`.
 - **Bind-mounted data dirs** (under `/home/deploy/literature/repo/data/`):
   - `media/` — Django uploads served by Caddy and mounted into the container as `/app/media`. **This is the PDF library — irreplaceable.** Always backed up to S3.
@@ -132,7 +132,7 @@ Cloudflare (proxied, orange cloud) ──HTTPS──> Caddy on Hetzner host (TLS
   - `literature.learnche.org` uses a **Cloudflare Origin Certificate** at `/etc/caddy/origin-certs/literature.learnche.org/`. Cloudflare's edge serves a public-trusted cert to visitors and re-encrypts to origin in `Full (strict)` mode. The `learnche.org` apex points at a different server entirely; only the `literature` subdomain record sits on Hetzner.
   - `test.literature.learnche.org` uses Caddy-managed Let's Encrypt. It must stay **DNS-only** (grey cloud) in Cloudflare so the HTTP/TLS challenge can reach origin directly.
 - **DNS**: `learnche.org` is a Cloudflare-hosted zone. Add A/AAAA `literature` (proxied) and `test.literature` (DNS-only) pointing at the Hetzner IPs `178.104.167.195` / `2a01:4f8:1c19:2380::1`.
-- **Auto-deploy**: every push to `master` fires `.github/workflows/deploy.yml`, which SSHes into Hetzner via a forced-command key and triggers `bin/deploy-impl.sh`. The deploy script runs `docker compose -f docker-compose.prod.yml up -d --build` (which in turn runs `migrate --noinput` + `collectstatic --noinput` on container start, then boots gunicorn) and sanity-curls `127.0.0.1:8002/healthz`.
+- **Auto-deploy**: every push to `main` fires `.github/workflows/deploy.yml`, which SSHes into Hetzner via a forced-command key and triggers `bin/deploy-impl.sh`. The deploy script runs `docker compose -f docker-compose.prod.yml up -d --build` (which in turn runs `migrate --noinput` + `collectstatic --noinput` on container start, then boots gunicorn) and sanity-curls `127.0.0.1:8002/healthz`.
 - **Manual deploy** (rollback, hotfix, debugging): from `/home/deploy/literature/repo/`, run `git pull && docker compose -f docker-compose.prod.yml up -d --build` directly.
 
 ## Backups
@@ -226,14 +226,14 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
   - Django is pinned `>=5.2,<5.3` (5.2 is the current LTS series; this project tracks LTS releases only).
   - Runtime deps include `bleach` for HTML sanitisation (Phase 5+) and `pdfplumber` for PDF text extraction (Phase 1+, replaces the legacy `pdfminer`).
 - **Tests** run with `uv run pytest` (or `make test`). `pytest-django` is wired through `[tool.pytest.ini_options]` in `pyproject.toml`. Smoke suite lives in `items/tests/test_views.py` (Phase 8+).
-- **GitHub Actions** runs `pre-commit run --all-files` and `pytest` on every PR and on push to `master` (`.github/workflows/ci.yml`, Phase 8). The pytest step boots a `postgres:16-alpine` service container, sets `DJANGO_SETTINGS_MODULE=literature.settings.ci`, and injects `SECRET_KEY` + `POSTGRES_*` + `SQL_*` env vars directly via the workflow `env:` block — no `.env` file is created. Tests run against the same database engine as production.
+- **GitHub Actions** runs `pre-commit run --all-files` and `pytest` on every PR and on push to `main` (`.github/workflows/ci.yml`, Phase 8). The pytest step boots a `postgres:16-alpine` service container, sets `DJANGO_SETTINGS_MODULE=literature.settings.ci`, and injects `SECRET_KEY` + `POSTGRES_*` + `SQL_*` env vars directly via the workflow `env:` block — no `.env` file is created. Tests run against the same database engine as production.
 - **Docker compose**: `docker-compose.yml` is for **local development** (volume-mounts the source for hot reload, runs `runserver` against SQLite via `literature.settings.dev`). `docker-compose.prod.yml` is the **production** compose used on Hetzner (bind-mounts `.env` and `data/` dirs, sets `DJANGO_SETTINGS_MODULE=literature.settings.prod`, runs `migrate` + `collectstatic` + `gunicorn`, binds to loopback on offset ports `8002`/`5435`). Both use the same `Dockerfile`.
 - **pre-commit** is configured (`.pre-commit-config.yaml`) — same hook set as openmv (`pre-commit-hooks` v5, `mypy` v1.13, `isort` 5.13, `black` 24.10, `blacken-docs` 1.19, `flake8` 7.1). Refresh with `pre-commit autoupdate` and re-run `pre-commit run --all-files` before merging.
 - **flake8** config: `.flake8`. Line length 100. Ignores E266/E203/E231/W503.
 
 ## Branch conventions
 
-- Production deploys ship from `master`.
+- Production deploys ship from `main`.
 - Revival work happens on `claude/revive-literature-site-*` branches and is reviewed before merge.
 - Modernization work after the initial revival happens on `claude/modernize-*` branches.
 
@@ -249,13 +249,13 @@ Bump heuristic:
 
 If unsure which level to pick, **ask the human reviewer before merging.** When running as Claude Code, ask via `AskUserQuestion` rather than guessing.
 
-Tagging and the GitHub Release are produced automatically by `.github/workflows/release.yml` once the bumped `pyproject.toml` and the matching `RELEASES.md` section land on `master`. The workflow refuses to run if the `## v<version>` heading is missing — that's the safety net. **Do not** create tags manually.
+Tagging and the GitHub Release are produced automatically by `.github/workflows/release.yml` once the bumped `pyproject.toml` and the matching `RELEASES.md` section land on `main`. The workflow refuses to run if the `## v<version>` heading is missing — that's the safety net. **Do not** create tags manually.
 
 The first release will be `v1.0.0` once Phase 11 lands and the site goes live. Pre-Phase-11 work flows on the `claude/revive-literature-site-*` branch as a single multi-PR effort; no per-PR version bump is required during the revival.
 
 ## After opening a PR
 
-Once a PR is posted, watch it. If `master` advances and the PR develops merge conflicts, resolve them on the PR branch and push the merge commit — don't leave the PR sitting in a conflicted state waiting for the human reviewer to rebase. When the conflict is in `pyproject.toml` / `RELEASES.md` because another PR landed a version bump, renumber your section to the next appropriate level on top of the new `master` version (re-apply the PATCH / MINOR / MAJOR heuristic above against the new base) and update any `docs/SECURITY.md` "Fixed in vX.Y.Z" cross-references to match. Re-run `pytest` and `pre-commit` after the merge before pushing.
+Once a PR is posted, watch it. If `main` advances and the PR develops merge conflicts, resolve them on the PR branch and push the merge commit — don't leave the PR sitting in a conflicted state waiting for the human reviewer to rebase. When the conflict is in `pyproject.toml` / `RELEASES.md` because another PR landed a version bump, renumber your section to the next appropriate level on top of the new `main` version (re-apply the PATCH / MINOR / MAJOR heuristic above against the new base) and update any `docs/SECURITY.md` "Fixed in vX.Y.Z" cross-references to match. Re-run `pytest` and `pre-commit` after the merge before pushing.
 
 ## Outstanding work
 
