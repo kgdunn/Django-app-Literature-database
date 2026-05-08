@@ -20,13 +20,7 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
-from items.models import (
-    Author,
-    AuthorGroup,
-    Item,
-    Journal,
-    JournalPub,
-)
+from items.models import Author, AuthorGroup, Item, Journal, JournalPub
 from pagehit.models import PageHit
 from tagging.models import Tag
 
@@ -37,7 +31,11 @@ def legacy_dump(tmp_path):
     records = [
         # --- noise: auth.* / contenttypes.* / sessions.* — dropped on floor.
         {"model": "auth.user", "pk": 1, "fields": {"username": "kgdunn"}},
-        {"model": "contenttypes.contenttype", "pk": 1, "fields": {"app_label": "items"}},
+        {
+            "model": "contenttypes.contenttype",
+            "pk": 1,
+            "fields": {"app_label": "items"},
+        },
         # --- lookup models
         {
             "model": "items.author",
@@ -197,7 +195,9 @@ class TestImportLegacyDump:
         assert ag.author.last_name == "Einstein"
         assert ag.item_id == 47
         # And the M2M-via-through resolves the reverse:
-        assert "Einstein" in [a.last_name for a in JournalPub.objects.get(pk=47).authors.all()]
+        assert "Einstein" in [
+            a.last_name for a in JournalPub.objects.get(pk=47).authors.all()
+        ]
 
     def test_idempotent_rerun(self, legacy_dump):
         """Running the import twice is a no-op (same row counts, same

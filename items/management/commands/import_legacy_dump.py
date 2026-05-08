@@ -98,6 +98,14 @@ _M2M_FIELDS = {
     "items.thesis": ("supervisors",),
 }
 
+# Subclass-only M2Ms that get applied AFTER the parent + subclass rows
+# exist. The handler iterates these in `_apply_subclass_m2ms`.
+_SUBCLASSES_WITH_AUTHOR_M2M = (
+    "items.book",
+    "items.conferenceproceeding",
+    "items.thesis",
+)
+
 
 class Command(BaseCommand):
     help = "Import a legacy `dumpdata --all` JSON snapshot."
@@ -117,31 +125,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        path = Path(options["file"])
-        if not path.exists():
-            raise CommandError(f"Dump file does not exist: {path}")
-
-        try:
-            with path.open() as f:
-                records = json.load(f)
-        except json.JSONDecodeError as e:
-            raise CommandError(f"Could not parse {path} as JSON: {e}") from e
-
-        if not isinstance(records, list):
-            raise CommandError(
-                f"Expected a JSON array (Django dumpdata format); got "
-                f"{type(records).__name__}."
-            )
-
-        # Index everything by model so we can process in dependency order.
-        # `items.item` records are merged into their subclass record below.
-        by_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        for r in records:
-            model = r.get("model")
-            if model:
-                by_model[model.lower()].append(r)
-
-        item_parent_by_pk: dict[int, dict[str, Any]] = {
+        records = self._load_dump(Path(options["file"]))
+        by_model = self._index_by_model(records)
+        item_parents: dict[int, dict[str, Any]] = {
             r["pk"]: r["fields"] for r in by_model.get("items.item", [])
         }
 
@@ -151,85 +137,12 @@ class Command(BaseCommand):
         with transaction.atomic():
             sid = transaction.savepoint()
 
-            # --- Lookup models first (no FKs to anything else here) ---
-            for model_label, model_cls in _LOOKUP_MODELS.items():
-                for r in by_model.get(model_label, []):
-                    self._upsert(model_cls, r["pk"], r["fields"], dry=dry,
-                                 model_label=model_label, counts=counts)
-
-            # --- Item subclasses: merge parent + subclass fields ---
-            for subclass_label, subclass_cls in _ITEM_SUBCLASSES.items():
-                for r in by_model.get(subclass_label, []):
-                    parent = item_parent_by_pk.get(r["pk"])
-                    if parent is None:
-                        # Subclass with no matching items.item record — skip
-                        # (the dump is malformed; don't pretend to import it).
-                        self.stdout.write(self.style.WARNING(
-                            f"  [skip] {subclass_label} pk={r['pk']}: no "
-                            f"matching items.item record"
-                        ))
-                        continue
-                    merged = self._merge_item_fields(parent, r["fields"])
-                    self._upsert(subclass_cls, r["pk"], merged, dry=dry,
-                                 model_label=subclass_label, counts=counts,
-                                 parent_label="items.item")
-
-            # --- M2M assignments on Items (tags, etc.) ---
-            for r in by_model.get("items.item", []):
-                pk = r["pk"]
-                fields = r["fields"]
-                tag_pks = fields.get("tags") or []
-                if tag_pks and not dry:
-                    item = Item.objects.filter(pk=pk).first()
-                    if item is not None:
-                        item.tags.set(Tag.objects.filter(pk__in=tag_pks))
-                if tag_pks:
-                    counts["m2m: items.item.tags"] += len(tag_pks)
-
-            for label in ("items.book", "items.conferenceproceeding",
-                          "items.thesis"):
-                m2m_names = _M2M_FIELDS.get(label, ())
-                for r in by_model.get(label, []):
-                    pk = r["pk"]
-                    for m2m_name in m2m_names:
-                        related_pks = r["fields"].get(m2m_name) or []
-                        if related_pks and not dry:
-                            obj = _ITEM_SUBCLASSES[label].objects.filter(
-                                pk=pk
-                            ).first()
-                            if obj is not None:
-                                getattr(obj, m2m_name).set(
-                                    Author.objects.filter(pk__in=related_pks)
-                                )
-                        if related_pks:
-                            counts[f"m2m: {label}.{m2m_name}"] += len(related_pks)
-
-            # --- AuthorGroup (Item ↔ Author through-table) ---
-            for r in by_model.get("items.authorgroup", []):
-                fields = r["fields"]
-                if dry:
-                    counts["items.authorgroup"] += 1
-                    continue
-                AuthorGroup.objects.update_or_create(
-                    pk=r["pk"],
-                    defaults={
-                        "author_id": fields["author"],
-                        "item_id": fields["item"],
-                        "order": fields.get("order", 0),
-                    },
-                )
-                counts["items.authorgroup"] += 1
-
-            # --- PageHit ---
-            for r in by_model.get("pagehit.pagehit", []):
-                self._upsert(
-                    PageHit,
-                    r["pk"],
-                    self._strip_dropped("pagehit.pagehit", r["fields"]),
-                    dry=dry,
-                    model_label="pagehit.pagehit",
-                    counts=counts,
-                )
+            self._import_lookup_models(by_model, dry=dry, counts=counts)
+            self._import_subclasses(by_model, item_parents, dry=dry, counts=counts)
+            self._apply_item_tags(by_model, dry=dry, counts=counts)
+            self._apply_subclass_m2ms(by_model, dry=dry, counts=counts)
+            self._import_authorgroups(by_model, dry=dry, counts=counts)
+            self._import_pagehits(by_model, dry=dry, counts=counts)
 
             if dry:
                 # Roll back so the database is untouched.
@@ -239,7 +152,194 @@ class Command(BaseCommand):
 
         self._print_summary(counts, dry=dry)
 
-    # -------- helpers ---------------------------------------------
+    # -------- input loading ---------------------------------------
+
+    def _load_dump(self, path: Path) -> list[dict[str, Any]]:
+        if not path.exists():
+            raise CommandError(f"Dump file does not exist: {path}")
+        try:
+            with path.open() as f:
+                records = json.load(f)
+        except json.JSONDecodeError as e:
+            raise CommandError(f"Could not parse {path} as JSON: {e}") from e
+        if not isinstance(records, list):
+            raise CommandError(
+                f"Expected a JSON array (Django dumpdata format); got "
+                f"{type(records).__name__}."
+            )
+        return records
+
+    def _index_by_model(
+        self, records: list[dict[str, Any]]
+    ) -> dict[str, list[dict[str, Any]]]:
+        by_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for r in records:
+            model = r.get("model")
+            if model:
+                by_model[model.lower()].append(r)
+        return by_model
+
+    # -------- per-model passes ------------------------------------
+
+    def _import_lookup_models(
+        self,
+        by_model: dict[str, list[dict[str, Any]]],
+        *,
+        dry: bool,
+        counts: Counter,
+    ) -> None:
+        """Author / Journal / Publisher / School / Tag — no FKs to anything
+        else in this set, so order within the loop doesn't matter.
+        """
+        for model_label, model_cls in _LOOKUP_MODELS.items():
+            for r in by_model.get(model_label, []):
+                self._upsert(
+                    model_cls,
+                    r["pk"],
+                    r["fields"],
+                    dry=dry,
+                    model_label=model_label,
+                    counts=counts,
+                )
+
+    def _import_subclasses(
+        self,
+        by_model: dict[str, list[dict[str, Any]]],
+        item_parents: dict[int, dict[str, Any]],
+        *,
+        dry: bool,
+        counts: Counter,
+    ) -> None:
+        """Multi-table-inheritance pass: for each subclass record, look up
+        its parent ``items.item`` fields, merge, then upsert the subclass
+        with the legacy pk so Django populates both the parent and
+        subclass rows in one shot.
+        """
+        for subclass_label, subclass_cls in _ITEM_SUBCLASSES.items():
+            for r in by_model.get(subclass_label, []):
+                parent = item_parents.get(r["pk"])
+                if parent is None:
+                    self._warn_orphan_subclass(subclass_label, r["pk"])
+                    continue
+                merged = self._merge_item_fields(parent, r["fields"])
+                self._upsert(
+                    subclass_cls,
+                    r["pk"],
+                    merged,
+                    dry=dry,
+                    model_label=subclass_label,
+                    counts=counts,
+                    parent_label="items.item",
+                )
+
+    def _warn_orphan_subclass(self, subclass_label: str, pk: int) -> None:
+        self.stdout.write(
+            self.style.WARNING(
+                f"  [skip] {subclass_label} pk={pk}: no matching items.item record"
+            )
+        )
+
+    def _apply_item_tags(
+        self,
+        by_model: dict[str, list[dict[str, Any]]],
+        *,
+        dry: bool,
+        counts: Counter,
+    ) -> None:
+        """Set Item.tags M2Ms once parent rows exist. The fields list comes
+        from the ``items.item`` record (subclass records don't carry it).
+        """
+        for r in by_model.get("items.item", []):
+            tag_pks = r["fields"].get("tags") or []
+            if not tag_pks:
+                continue
+            counts["m2m: items.item.tags"] += len(tag_pks)
+            if dry:
+                continue
+            item = Item.objects.filter(pk=r["pk"]).first()
+            if item is not None:
+                item.tags.set(Tag.objects.filter(pk__in=tag_pks))
+
+    def _apply_subclass_m2ms(
+        self,
+        by_model: dict[str, list[dict[str, Any]]],
+        *,
+        dry: bool,
+        counts: Counter,
+    ) -> None:
+        """Book.editors / ConferenceProceeding.editors / Thesis.supervisors.
+        All three resolve to ``Author`` queries.
+        """
+        for label in _SUBCLASSES_WITH_AUTHOR_M2M:
+            m2m_names = _M2M_FIELDS.get(label, ())
+            for r in by_model.get(label, []):
+                self._apply_one_subclass_record_m2ms(
+                    label, r, m2m_names, dry=dry, counts=counts
+                )
+
+    def _apply_one_subclass_record_m2ms(
+        self,
+        label: str,
+        record: dict[str, Any],
+        m2m_names: tuple[str, ...],
+        *,
+        dry: bool,
+        counts: Counter,
+    ) -> None:
+        for m2m_name in m2m_names:
+            related_pks = record["fields"].get(m2m_name) or []
+            if not related_pks:
+                continue
+            counts[f"m2m: {label}.{m2m_name}"] += len(related_pks)
+            if dry:
+                continue
+            obj = _ITEM_SUBCLASSES[label].objects.filter(pk=record["pk"]).first()
+            if obj is not None:
+                getattr(obj, m2m_name).set(Author.objects.filter(pk__in=related_pks))
+
+    def _import_authorgroups(
+        self,
+        by_model: dict[str, list[dict[str, Any]]],
+        *,
+        dry: bool,
+        counts: Counter,
+    ) -> None:
+        """AuthorGroup is the through-table linking Item.authors. Each row
+        carries (author_id, item_id, order). Created last so both sides
+        of the FK already exist.
+        """
+        for r in by_model.get("items.authorgroup", []):
+            counts["items.authorgroup"] += 1
+            if dry:
+                continue
+            fields = r["fields"]
+            AuthorGroup.objects.update_or_create(
+                pk=r["pk"],
+                defaults={
+                    "author_id": fields["author"],
+                    "item_id": fields["item"],
+                    "order": fields.get("order", 0),
+                },
+            )
+
+    def _import_pagehits(
+        self,
+        by_model: dict[str, list[dict[str, Any]]],
+        *,
+        dry: bool,
+        counts: Counter,
+    ) -> None:
+        for r in by_model.get("pagehit.pagehit", []):
+            self._upsert(
+                PageHit,
+                r["pk"],
+                self._strip_dropped("pagehit.pagehit", r["fields"]),
+                dry=dry,
+                model_label="pagehit.pagehit",
+                counts=counts,
+            )
+
+    # -------- per-record helpers ----------------------------------
 
     def _merge_item_fields(
         self, parent_fields: dict[str, Any], subclass_fields: dict[str, Any]
