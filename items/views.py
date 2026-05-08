@@ -1,22 +1,20 @@
-from django.shortcuts import render_to_response, redirect
-from django.template import RequestContext
-from django.core.exceptions import ObjectDoesNotExist
-from django.template.defaultfilters import slugify
-from django.core.urlresolvers import reverse
-from django.http import HttpResponse
-
-from pages.views import page_404_error
-from utils import paginated_queryset, invalid_IP_address
-from pagehit.views import create_hit
-#from templatetags.core_tags import most_viewed
-
-from .models import Item, ConferenceProceeding, Thesis, JournalPub, Book, Author
-
+import logging
 import re
 import unicodedata
-import logging
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
+from django.shortcuts import redirect, render
+from django.template.defaultfilters import slugify
+from django.urls import reverse
+
+from items.models import Author, Book, ConferenceProceeding, Item, Journal, JournalPub, Thesis
+from pagehit.views import create_hit
+from pages.views import page_404_error
+from utils import invalid_IP_address, paginated_queryset
 
 logger = logging.getLogger(__name__)
+
 
 def get_items_or_404(view_function):
     """
@@ -29,7 +27,6 @@ def get_items_or_404(view_function):
         ``slug`` is ignored for now - just used to create good SEO URLs.
         """
         try:
-            # Use the Submissions manager's ``all()`` function
             the_item = Item.objects.all().filter(id=item_id)
         except ObjectDoesNotExist:
             return page_404_error(request, 'You request a non-existant item')
@@ -40,17 +37,15 @@ def get_items_or_404(view_function):
         the_item = the_item[0]
         # Is the URL of the form: "..../NN/XXXX"; if so, then XXXX the item
         path_split = request.path.split('/')
-        if len(path_split)>=4 and path_split[3] in ['download.pdf', ]:
+        if len(path_split) >= 4 and path_split[3] in ['download.pdf', ]:
             return view_function(request, the_item)
 
-        # Is the URL not the canonical URL for the item? .... redirect the user
-        #else:
+        # Is the URL not the canonical URL for the item? Redirect the user.
         if slug is None or the_item.slug != slug:
             return redirect('/'.join(['/item',
-                                      item_id,
+                                      str(item_id),
                                       the_item.slug]),
                             permanent=True)
-
 
         if the_item.item_type == 'conferenceproc':
             the_item = ConferenceProceeding.objects.get(id=item_id)
@@ -91,12 +86,6 @@ def show_items(request, what_view='', extra_info=''):
         extra_info = '(reverse publication date order)'
         entry_order = list(all_items)
 
-    elif what_view == 'sort' and extra_info == 'most-viewed':
-        page_title = 'All references (in order of most viewed)'
-        extra_info = ''
-        assert(False)
-        entry_order = most_viewed('item', Item.objects.count())
-
     elif what_view == 'pub-by-year':
         all_items = Item.objects.all().filter(year=extra_info)
         page_title = 'All entries published in '
@@ -124,24 +113,35 @@ def show_items(request, what_view='', extra_info=''):
         entry_order = list(journal_items)
 
     entries = paginated_queryset(request, entry_order)
-    return render_to_response(template_name,
-                              context={'entries': entries,
-                                       'page_title': page_title,
-                                       'extra_info': extra_info})
+    return render(request, template_name, {
+        'entries': entries,
+        'page_title': page_title,
+        'extra_info': extra_info,
+    })
 
 
 @get_items_or_404
 def download_item(request, the_item):
     """
-    Return the PDF to the user
+    Return the PDF to the user.
+
+    Phase 5 will harden this further: tighten the URL regex before any DB
+    lookup, stream via FileResponse, and revisit the Item.private_pdf /
+    invalid_IP_address ACL (which doesn't compose with Cloudflare's edge
+    IP rewrite). For Phase 1 this is the legacy behaviour with the Py2
+    artefacts removed.
     """
     create_hit(request, the_item.pk, extra_info="download-pdf")
-    if the_item.pdf_file:
-        title = unicodedata.normalize('NFKD', the_item.title).encode('ascii', 'ignore')
-        title = unicode(re.sub('[^\w\s-]', '', title).strip())
-        pdf_name = '%s -- %s.pdf' % (the_item.author_slugs, title)
-    else:
+    if not the_item.pdf_file:
         return page_404_error(request, 'This item does not have a PDF file.')
+
+    title = (
+        unicodedata.normalize('NFKD', the_item.title)
+        .encode('ascii', 'ignore')
+        .decode('ascii')
+    )
+    title = re.sub(r'[^\w\s-]', '', title).strip()
+    pdf_name = '%s -- %s.pdf' % (the_item.author_slugs, title)
 
     if the_item.private_pdf:
         return page_404_error(request, "This item's PDF file is not available.")
@@ -150,7 +150,7 @@ def download_item(request, the_item):
     if invalid_IP_address(request):
         return page_404_error(request, "This item's PDF file cannot be downloaded.")
 
-    response = HttpResponse(mimetype="application/pdf")
+    response = HttpResponse(content_type="application/pdf")
     response['Content-Disposition'] = 'attachment; filename=%s' % pdf_name
     response.write(the_item.pdf_file.read())
     return response
@@ -178,65 +178,48 @@ def view_item(request, the_item, slug):
     if (the_item.download_link) and invalid_IP_address(request):
         the_item.download_link = ''
 
-    logger.debug('Viewing: {}'.format(the_item))
+    logger.debug('Viewing: %s', the_item)
 
     create_hit(request, the_item.pk)
-    ctx = {'item': the_item,
-           'tag_list': the_item.tags.all(),
-           }
-    return render_to_response('items/item.html', context=ctx)
+    return render(request, 'items/item.html', {
+        'item': the_item,
+        'tag_list': the_item.tags.all(),
+    })
 
 
 def __extract_extra__(request, item_id=None):
-    if not request.user.is_authenticated():
+    """
+    Admin-only endpoint that extracts plain text from each Item's PDF
+    via pdfplumber and stores it in Item.other_search_text so the
+    Postgres-FTS search vector (Phase 3) can index it. Replaces the
+    legacy pdfminer chain.
+    """
+    if not request.user.is_authenticated:
         return HttpResponse('Please sign in first')
 
-    from pdfminer.layout import LAParams
-    from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter, process_pdf
-    from pdfminer.pdfdevice import PDFDevice, TagExtractor
-    from pdfminer.converter import TextConverter
-    from cStringIO import StringIO
-
-    laparams = LAParams()
-    outtype = 'text'
-    laparams.char_margin = 1.0
-    laparams.line_margin = 0.3
-    laparams.word_margin = 0.2
-    codec = 'utf-8'
-    caching = True
+    import pdfplumber
 
     if item_id:
         all_items = Item.objects.filter(id=item_id)
     else:
         all_items = Item.objects.all()
 
+    last_title = ''
     for item in all_items:
-
-        # Don't extract if no PDF exists; or if we already have search text
+        # Don't extract if no PDF exists; or if we already have search text.
         if not item.pdf_file or item.other_search_text:
             continue
 
-        rsrcmgr = PDFResourceManager(caching=caching)
-        outfp = StringIO()
-        device = TextConverter(rsrcmgr, outfp, codec=codec, laparams=laparams)
-        fp = item.pdf_file.file
+        last_title = item.title
         try:
-            process_pdf(rsrcmgr, device, fp, pagenos=set(), maxpages=0, password='',
-                        caching=caching, check_extractable=True)
-        except AssertionError:
-            logger.warning('FAILED in completely PDF index "%s"' % item.title)
-            return HttpResponse('FAILED in completely PDF index "%s"' \
-                                % item.title)
-        else:
-            logger.debug('Full PDF index of item "%s"' % item.title)
-        finally:
-            fp.close()
-            device.close()
-            outfp.seek(0)
-            page_text = outfp.read()
-            outfp.close()
+            with pdfplumber.open(item.pdf_file.path) as pdf:
+                pages = [page.extract_text() or '' for page in pdf.pages]
+        except Exception:  # pdfplumber raises a broad set of errors
+            logger.warning('FAILED in completely PDF index "%s"', item.title)
+            return HttpResponse('FAILED in completely PDF index "%s"' % item.title)
 
-            item.other_search_text = page_text
-            item.save()
+        item.other_search_text = '\n'.join(pages)
+        item.save()
+        logger.debug('Full PDF index of item "%s"', item.title)
 
-    return HttpResponse('Full PDF indexed for item "%s"' % item.title)
+    return HttpResponse('Full PDF indexed for item "%s"' % last_title)

@@ -1,16 +1,16 @@
-from django.conf.urls import url, include
-from pages.views import front_page, about_page, search
+from django.urls import re_path
+
+from pages.views import about_page, front_page, search
 
 urlpatterns = [
-
     # Front page
-    url(r'^$', front_page, name='lit-main-page'),
+    re_path(r'^$', front_page, name='lit-main-page'),
 
     # About page
-    url(r'about', about_page, name='lit-about-page'),
+    re_path(r'about', about_page, name='lit-about-page'),
 
-    # Search views (go through our app to log search queries)
-    url(r'search', search, name='haystack_search'),
-
+    # Search view (route name preserved as `haystack_search` so existing
+    # `{% url 'haystack_search' %}` template references keep working;
+    # Phase 3 replaces the body with Postgres-FTS).
+    re_path(r'search', search, name='haystack_search'),
 ]
-

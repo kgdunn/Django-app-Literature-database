@@ -21,7 +21,9 @@ class ItemAdmin(admin.ModelAdmin):
                     'has_extra')
     list_display_links = ('title', )
     ordering = ['-id']
-    filter_horizontal = ['authors', 'tags']
+    # `authors` is managed via the inline above; Django 2+ refuses to put a
+    # M2M with a `through=` model in filter_horizontal (admin.E013).
+    filter_horizontal = ['tags']
 
 
 class JournalPubAdmin(admin.ModelAdmin):
@@ -30,7 +32,7 @@ class JournalPubAdmin(admin.ModelAdmin):
                     'volume', 'page_start', 'page_end', )
     list_display_links = ('title', )
     ordering = ['-date_created']
-    filter_horizontal = ['authors', 'tags']
+    filter_horizontal = ['tags']
 
 
 class ThesisAdmin(admin.ModelAdmin):
@@ -38,7 +40,7 @@ class ThesisAdmin(admin.ModelAdmin):
     list_display = ('author_list', 'title', 'thesis_type', 'year', 'school')
     list_display_links = ('title', )
     ordering = ['-date_created']
-    filter_horizontal = ['authors', 'supervisors', 'tags']
+    filter_horizontal = ['supervisors', 'tags']
 
 
 class BookAdmin(admin.ModelAdmin):
@@ -46,7 +48,7 @@ class BookAdmin(admin.ModelAdmin):
     list_display = ('author_list', 'title', 'year', 'isbn', 'publisher',)
     list_display_links = ('title', )
     ordering = ['-date_created']
-    filter_horizontal = ['authors', 'editors', 'tags']
+    filter_horizontal = ['editors', 'tags']
 
 
 admin.site.register(Author, AuthorAdmin)

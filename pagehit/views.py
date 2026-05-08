@@ -1,14 +1,13 @@
 # Built-in imports
 import unicodedata
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime, timezone
 
 # Imports from other apps
 from utils import get_IP_address
 from .models import PageHit
 
 from django.conf import settings
-from django.utils import timezone
 
 static_items = {'lit-main-page': -1,
                 'haystack_search': -2,
@@ -50,8 +49,11 @@ def get_search_hits():
     hits_by_search = defaultdict(int)
 
     for hit in page_hits:
-        term = unicodedata.normalize('NFKD', hit.extra_info).encode(\
-                                                              'ascii', 'ignore')
+        term = (
+            unicodedata.normalize('NFKD', hit.extra_info or '')
+            .encode('ascii', 'ignore')
+            .decode('ascii')
+        )
         term = term.strip().lower()
         if term not in PROFANITIES_LIST:
             hits_by_search[term] += 1
