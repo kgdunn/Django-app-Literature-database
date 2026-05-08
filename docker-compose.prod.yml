@@ -12,6 +12,12 @@
 #   - literature-app:       127.0.0.1:8002 -> 8000
 #   - literature-postgres:  127.0.0.1:5435 -> 5432
 
+# Distinct project name keeps `docker compose down` from accidentally
+# tearing out the openmv stack on the same VPS (both repos sit at
+# `/home/deploy/<project>/repo/`, so without an explicit `name:` they
+# both default to project=repo and share one teardown scope).
+name: literature
+
 services:
   db:
     # Pinned by digest so a Docker Hub repoint of postgres:16-alpine can't

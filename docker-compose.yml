@@ -14,6 +14,12 @@
 # 8002 / 5435 — matching the Hetzner deploy), use `docker-compose.prod.yml`
 # instead.
 
+# Distinct project name keeps `docker compose down` from accidentally
+# tearing out the openmv stack on the same VPS (both repos sit at
+# `/home/deploy/<project>/repo/`, so without an explicit `name:` they
+# both default to project=repo and share one teardown scope).
+name: literature
+
 services:
   db:
     image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
