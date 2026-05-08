@@ -33,7 +33,7 @@ The site is **not yet in production** at the time of writing — there is no liv
 
 ## Project shape
 
-- **Project**: `literature/` (settings package, URL conf, WSGI/ASGI). After Phase 2 lands, settings live under `literature/settings/` — `base.py` (shared), `dev.py` (local SQLite + DEBUG=True), `prod.py` (Postgres + DEBUG=False + Caddy proxy headers), `ci.py` (GitHub Actions — derives from `prod.py` and disables HTTPS-only middleware so the Django test client works). Until Phase 2 it is a single `literature/settings.py` plus a legacy `local_settings.py` shim.
+- **Project**: `literature/` (settings package, URL conf, WSGI/ASGI). Settings live under `literature/settings/` — `base.py` (shared), `dev.py` (local Postgres + DEBUG=True), `prod.py` (Postgres + DEBUG=False + Caddy proxy headers + HSTS + secure cookies), `ci.py` (GitHub Actions — derives from `prod.py` and disables HTTPS-only middleware so the Django test client works). Both `dev` and `prod` target Postgres so the search/FTS/pgvector code paths are exercised the same way locally and in production; the only behavioural difference is `DEBUG`, `ALLOWED_HOSTS`, and the proxy/secure-cookie flags.
 - **Apps**:
   - `items/` — the literature catalogue itself.
   - `tagging/` — a small home-grown `Tag` model (predates django-taggit; not vendored from `django-tagging`).
@@ -81,7 +81,7 @@ The site is **not yet in production** at the time of writing — there is no liv
 - `make debug` runs `collectstatic --no-input`, `migrate`, `createcachetable`, then `runserver 8080 --nostatic`.
 - Settings read **process environment first**, then fall back to a `.env` file via `python-dotenv` if one exists (Phase 2+). The `env()` and `env_list()` helpers in `literature/settings/base.py` encapsulate this. `SECRET_KEY` is the only universally required key; `prod.py` additionally requires the `POSTGRES_*` + `SQL_*` keys. Either layer (env or `.env`) can supply them — handy for containers, CI, and ad-hoc overrides.
 - Which DB / hosts / DEBUG flag you get depends on `DJANGO_SETTINGS_MODULE`:
-  - `literature.settings.dev` (default in `manage.py`, `wsgi.py`, `asgi.py`, `pyproject.toml` pytest) → SQLite at `db.sqlite3`, `DEBUG=True`, `ALLOWED_HOSTS` from `$ALLOWED_HOSTS` (default `127.0.0.1,localhost`).
+  - `literature.settings.dev` (default in `manage.py`, `wsgi.py`, `asgi.py`, `pyproject.toml` pytest) → Postgres via `POSTGRES_*` + `SQL_*` keys (defaults: `literature/literature/literature@127.0.0.1:5432`), `DEBUG=True`, `ALLOWED_HOSTS` from `$ALLOWED_HOSTS` (default `127.0.0.1,localhost`).
   - `literature.settings.prod` (forced by `docker-compose.prod.yml`'s `web.environment` block) → Postgres via `POSTGRES_*` + `SQL_*` keys, `DEBUG=False`, `ALLOWED_HOSTS` from `$ALLOWED_HOSTS` (default `.literature.learnche.org,127.0.0.1`), `SECURE_PROXY_SSL_HEADER` + `CSRF_TRUSTED_ORIGINS` for Caddy.
   - `literature.settings.ci` (forced by `.github/workflows/ci.yml` for the pytest step) → re-exports prod, then turns off `SECURE_SSL_REDIRECT` / HSTS / secure-cookie flags so the Django test client (which uses HTTP) doesn't hit a 301. Same Postgres `POSTGRES_*` + `SQL_*` env vars as prod, supplied by the workflow against the `postgres:16-alpine` service.
 
@@ -96,7 +96,7 @@ uv sync --dev
 make debug             # collectstatic + migrate + createcachetable + runserver:8080
 ```
 
-**Docker compose (`make docker-up` → SQLite + runserver in a container):**
+**Docker compose (`make docker-up` — Phase 7+; will run Postgres + runserver in containers):**
 ```bash
 cp .env.example .env   # set SECRET_KEY
 make docker-up         # docker compose up --build
@@ -172,7 +172,7 @@ Meilisearch (Phase 14+) is **not** backed up — its index is rebuildable from P
 
 Three stages, layered:
 
-1. **Postgres FTS** (Phase 3 — Stage 1, canonical) — `pages.search` builds a weighted `SearchVector` over `Item.title` (A), `Item.abstract` (B), `Item.other_search_text` (C), ranked with `SearchRank`, OR-joined with `TrigramSimilarity("authorgroup__author__last_name", q) > 0.3` for fuzzy author matching. Whitespace-AND tokenization, mirrors openmv's `?q=` semantics. SQLite dev falls back to `icontains` so dev/prod parity is preserved (the `pg_trgm` extension and the `GinIndex` are Postgres-only). Backed by `CREATE EXTENSION IF NOT EXISTS pg_trgm` plus a `GinIndex` migration.
+1. **Postgres FTS** (Phase 3 — Stage 1, canonical) — `pages.search` builds a weighted `SearchVector` over `Item.title` (A), `Item.abstract` (B), `Item.other_search_text` (C), ranked with `SearchRank`, OR-joined with `__trigram_similar` on author last names for fuzzy author matching. Uses `SearchQuery(..., search_type='websearch')` so bare terms AND, quoted phrases preserve order, and `-foo` excludes. Backed by `CREATE EXTENSION IF NOT EXISTS pg_trgm` (`items` migration `0004_pg_trgm`). No GIN index yet — the corpus is small enough that a sequential scan is sub-100 ms; revisit in Phase 9/10 if benchmarks demand it.
 
 2. **pgvector** (Phase 12 — Stage 2, semantic) — `Item.embedding` (`vector(N)`, dimension TBD by model choice). HNSW index. Embeddings produced in batch via an external API (Voyage / OpenAI / similar — model decided when Phase 12 PR opens). `manage.py rebuild_embeddings --batch-size 100` is idempotent and resumable. Detail page surfaces a "Similar papers" panel via `Item.objects.exclude(pk=item.pk).order_by(L2Distance("embedding", item.embedding))[:5]`.
 
@@ -227,7 +227,7 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
   - Runtime deps include `bleach` for HTML sanitisation (Phase 5+) and `pdfplumber` for PDF text extraction (Phase 1+, replaces the legacy `pdfminer`).
 - **Tests** run with `uv run pytest` (or `make test`). `pytest-django` is wired through `[tool.pytest.ini_options]` in `pyproject.toml`. Smoke suite lives in `items/tests/test_views.py` (Phase 8+).
 - **GitHub Actions** runs `pre-commit run --all-files` and `pytest` on every PR and on push to `main` (`.github/workflows/ci.yml`, Phase 8). The pytest step boots a `postgres:16-alpine` service container, sets `DJANGO_SETTINGS_MODULE=literature.settings.ci`, and injects `SECRET_KEY` + `POSTGRES_*` + `SQL_*` env vars directly via the workflow `env:` block — no `.env` file is created. Tests run against the same database engine as production.
-- **Docker compose**: `docker-compose.yml` is for **local development** (volume-mounts the source for hot reload, runs `runserver` against SQLite via `literature.settings.dev`). `docker-compose.prod.yml` is the **production** compose used on Hetzner (bind-mounts `.env` and `data/` dirs, sets `DJANGO_SETTINGS_MODULE=literature.settings.prod`, runs `migrate` + `collectstatic` + `gunicorn`, binds to loopback on offset ports `8002`/`5435`). Both use the same `Dockerfile`.
+- **Docker compose**: `docker-compose.yml` is for **local development** (volume-mounts the source for hot reload, runs `runserver` against a sidecar Postgres container via `literature.settings.dev`). `docker-compose.prod.yml` is the **production** compose used on Hetzner (bind-mounts `.env` and `data/` dirs, sets `DJANGO_SETTINGS_MODULE=literature.settings.prod`, runs `migrate` + `collectstatic` + `gunicorn`, binds to loopback on offset ports `8002`/`5435`). Both use the same `Dockerfile`. (Compose files land in Phase 7.)
 - **pre-commit** is configured (`.pre-commit-config.yaml`) — same hook set as openmv (`pre-commit-hooks` v5, `mypy` v1.13, `isort` 5.13, `black` 24.10, `blacken-docs` 1.19, `flake8` 7.1). Refresh with `pre-commit autoupdate` and re-run `pre-commit run --all-files` before merging.
 - **flake8** config: `.flake8`. Line length 100. Ignores E266/E203/E231/W503.
 

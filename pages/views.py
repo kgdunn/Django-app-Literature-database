@@ -1,12 +1,19 @@
 import logging
 
+from django.contrib.postgres.search import (
+    SearchQuery,
+    SearchRank,
+    SearchVector,
+    TrigramSimilarity,
+)
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import get_template
 
 from items.models import Item
 from pagehit.views import create_hit
-from utils import get_IP_address
+from utils import get_IP_address, paginated_queryset
 
 logger = logging.getLogger(__name__)
 
@@ -48,23 +55,25 @@ def page_500_error(request):
 
 
 def search(request):
-    """
-    Site-wide search.
+    """Site-wide search.
 
-    Phase 1 stub: the legacy implementation called Haystack on a
-    Whoosh / Xapian backend, which doesn't run on Python 3 / Django 5.2.
-    Haystack and its templates will be removed in Phase 3 and this view
-    will be rewritten to use ``django.contrib.postgres.search``
-    (SearchVector / SearchRank / TrigramSimilarity) so the same URL keeps
-    working without an external search service. Until that lands, the
-    search view does an item-id shortcut and otherwise renders an
-    explanatory page so the route doesn't 500.
+    Postgres full-text search: weighted ``SearchVector`` over title /
+    abstract / other_search_text, ranked by ``SearchRank``, OR-joined
+    with ``__trigram_similar`` on author last names so typos still
+    find the right author. Backed by the ``pg_trgm`` extension
+    (installed in ``items`` migration 0004).
+
+    Both dev and prod settings point at Postgres (Phase 3 onwards), so
+    this view does not branch on ``connection.vendor`` — Postgres is
+    the only supported backend.
     """
     q = request.GET.get('q', '').strip()
     if not q:
         return redirect(front_page)
 
-    # Numeric query → direct item-id shortcut.
+    # Numeric query is treated as a direct item-id shortcut: if it
+    # resolves, redirect; otherwise fall through to text search so a
+    # query like "2023" still finds papers.
     try:
         item_id = int(q)
     except ValueError:
@@ -78,9 +87,35 @@ def search(request):
         create_hit(request, 'haystack_search', extra_info=q)
         logger.info('SEARCH [%s]: %s', get_IP_address(request), q)
 
-    # Phase-3 placeholder. Render the front-page template so visitors
-    # land somewhere sensible with the latest items still browseable.
-    return render(request, 'pages/front-page.html', {
-        'latest_items': Item.latest_items.get_latest(n=10),
-        'search_disabled_query': q,
+    vector = (
+        SearchVector('title', weight='A', config='english')
+        + SearchVector('abstract', weight='B', config='english')
+        + SearchVector('other_search_text', weight='C', config='english')
+    )
+    # `websearch` parses the user input forgivingly: bare terms ANDed,
+    # quoted phrases preserved, `-foo` excludes.
+    query = SearchQuery(q, config='english', search_type='websearch')
+
+    # Threshold of 0.3 catches one-letter typos in author last names
+    # (`einstien` -> `Einstein`) without sweeping in unrelated names.
+    # Tunable here without touching the per-session pg_trgm GUC.
+    AUTHOR_TRIGRAM_THRESHOLD = 0.3
+
+    results = (
+        Item.objects
+        .annotate(
+            rank=SearchRank(vector, query),
+            author_sim=TrigramSimilarity('authorgroup__author__last_name', q),
+        )
+        .filter(Q(rank__gt=0) | Q(author_sim__gt=AUTHOR_TRIGRAM_THRESHOLD))
+        .order_by('-rank', '-author_sim', '-year')
+        .distinct()
+    )
+
+    entries = paginated_queryset(request, results)
+
+    return render(request, 'pages/search.html', {
+        'query': q,
+        'entries': entries,
+        'no_entries_message': 'No items match "%s".' % q,
     })

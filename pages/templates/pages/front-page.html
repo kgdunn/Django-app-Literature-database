@@ -9,7 +9,13 @@
 	applications. <i>Full text and abstracts</i> are searched below.
 </div>
 
-{% include "search/includes/main-search-box.html" %}
+<div id="lit-search">
+    <form method="get" action="{% url 'search' %}" id="lit-search-form" name="lit_search_form">
+        <input id="lit-search-input" name="q" type="text" placeholder="Search all references" value="{{ query|default_if_none:'' }}" />
+        <input id="lit-search-button" type="submit" value="Search" />
+    </form>
+    <div style="clear:both;"></div>
+</div>
 
 {% load core_tags %}
   <div class="lit-portal-container">
@@ -50,7 +56,7 @@
 		  <h3>Top search terms</h3>
 			<ul>
 		  	{% for item in "item"|most_searched:12 %}
-			  <li><a href="{% url "haystack_search" %}?q={{item}}">{{item}}</a></li>
+			  <li><a href="{% url 'search' %}?q={{item}}">{{item}}</a></li>
 			{% endfor %}
 			</ul>
 		</div>

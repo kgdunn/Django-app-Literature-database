@@ -9,8 +9,6 @@ urlpatterns = [
     # About page
     re_path(r'about', about_page, name='lit-about-page'),
 
-    # Search view (route name preserved as `haystack_search` so existing
-    # `{% url 'haystack_search' %}` template references keep working;
-    # Phase 3 replaces the body with Postgres-FTS).
-    re_path(r'search', search, name='haystack_search'),
+    # Site-wide search (Postgres FTS in prod, icontains fallback in SQLite dev).
+    re_path(r'search', search, name='search'),
 ]
