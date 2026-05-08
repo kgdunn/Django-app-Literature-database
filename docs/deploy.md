@@ -1,6 +1,6 @@
 # Deploying `literature.learnche.org` to Hetzner
 
-This runbook covers the **one-time host bootstrap** plus the auto-deploy wiring. After it's done, `git push origin main` triggers `.github/workflows/deploy.yml`, which SSHes to Hetzner via a forced-command key and runs `bin/deploy-impl.sh` (which itself runs `docker compose -f docker-compose.prod.yml up -d --build` + a `/healthz` sanity curl).
+This runbook covers the **one-time host bootstrap** plus the auto-deploy wiring. After it's done, every push to `main` runs `.github/workflows/ci.yml`; **on successful CI completion**, `.github/workflows/deploy.yml` chains via `workflow_run` and SSHes to Hetzner via a forced-command key, running `bin/deploy-impl.sh` (which itself runs `docker compose -f docker-compose.prod.yml up -d --build` + a `/healthz` sanity curl). A failing CI run does not deploy. Manual `workflow_dispatch` (rollback / forced redeploy) bypasses the CI gate.
 
 Production target:
 
