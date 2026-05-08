@@ -32,14 +32,26 @@ ls -lh "$DUMP"
 
 The command's `--dry-run` flag parses the dump, runs the same logic the real import would, then **rolls back the transaction** so the database is untouched. It prints a summary of how many rows of each type would land. Run it first to confirm the dump shape matches the importer's expectations.
 
-Locally (Docker dev compose):
+> **`--file` is interpreted inside the `web` container.** The container only sees three host paths bind-mounted in (per `docker-compose.prod.yml`'s `volumes:` block): `.env`, `data/media/`, and `data/static/`. Anything else on the host is invisible. The cleanest way to feed in the dump is `docker cp` into the container's `/tmp/`, which gives a one-off path that disappears on container restart (no leftover dump sitting around in a bind mount).
+
+On Hetzner:
 
 ```bash
-docker compose exec web python manage.py import_legacy_dump \
-    --file /app/path/to/legacy.json --dry-run
+ssh deploy@hetzner-host
+cd /home/deploy/literature/repo
+
+# Make sure the prod compose is up; web should be (healthy)
+docker compose -f docker-compose.prod.yml ps
+
+# Copy the dump into the running web container's /tmp/
+docker cp path/to/legacy.json literature-app:/tmp/
+
+# Dry-run with the in-container path
+docker compose -f docker-compose.prod.yml exec web \
+    python manage.py import_legacy_dump --file /tmp/legacy.json --dry-run
 ```
 
-Or natively (uv):
+Or natively (uv) on a dev box, where `/tmp/legacy.json` is just the host path:
 
 ```bash
 uv run python manage.py import_legacy_dump --file path/to/legacy.json --dry-run
@@ -49,21 +61,22 @@ You should see something like:
 
 ```
 Would import:
-  items.author: 87
-  items.book: 6
-  items.conferenceproceeding: 4
-  items.journal: 14
-  items.journalpub: 122
-  items.publisher: 9
-  items.school: 7
-  items.thesis: 11
-  items.authorgroup: 280
-  m2m: items.book.editors: 3
-  m2m: items.item.tags: 195
-  m2m: items.thesis.supervisors: 14
-  pagehit.pagehit: 38214
-  tagging.tag: 33
+  items.author: 204
+  items.authorgroup: 442
+  items.book: 10
+  items.conferenceproceeding: 1
+  items.journal: 37
+  items.journalpub: 147
+  items.publisher: 6
+  items.school: 1
+  items.thesis: 19
+  m2m: items.item.tags: 528
+  m2m: items.thesis.supervisors: 25
+  pagehit.pagehit: 86248
+  tagging.tag: 128
 ```
+
+(That's the actual row inventory of the 2018-09-11 backup of `literature.connectmv.com`, used for the smoke run.)
 
 If a count looks zero where you expected rows, or the command errors on parsing, stop and reconcile against the dump shape (`jq '.[].model' legacy.json | sort -u`) before doing the real import.
 
@@ -71,21 +84,17 @@ If a count looks zero where you expected rows, or the command errors on parsing,
 
 **Recommended order**: import to the staging hostname (`test.literature.learnche.org`) first, sanity-check, then to prod. Both hostnames share the same `docker-compose.prod.yml` and the same Postgres container, so this is mostly about cautious sequencing rather than literal separate environments.
 
-If you're importing to a brand-new (empty) production DB, you can run on `literature.learnche.org` directly:
+If you're importing to a brand-new (empty) production DB, you can run on `literature.learnche.org` directly. The dump file should already be in the container's `/tmp/` from Step 2; if you're starting fresh, `docker cp` it in again:
 
 ```bash
-ssh deploy@hetzner-host
 cd /home/deploy/literature/repo
 
-# Make sure the prod compose is up:
-docker compose -f docker-compose.prod.yml ps   # web should be (healthy)
+# Skip if the dump is still in /tmp/ from the dry-run; otherwise:
+docker cp path/to/legacy.json literature-app:/tmp/
 
-# Copy the dump into the bind-mount so the container can read it:
-sudo -u deploy cp /tmp/legacy.json data/
-
-# Run the import inside the web container:
+# Run the import (no `--dry-run` this time)
 docker compose -f docker-compose.prod.yml exec web \
-    python manage.py import_legacy_dump --file /app/data/legacy.json
+    python manage.py import_legacy_dump --file /tmp/legacy.json
 ```
 
 Watch the summary it prints; row counts should match the dry-run.
