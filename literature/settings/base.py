@@ -54,6 +54,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Registers Postgres-specific lookups (__trigram_similar, __search, ...)
+    # used by `pages.search`. The full-text-search and trigram operators
+    # come from `pg_trgm` (installed via items migration 0004_pg_trgm).
+    "django.contrib.postgres",
     # First-party
     "items.apps.ItemsConfig",
     "tagging",

@@ -31,16 +31,7 @@
   <ul>
 	{#  The ``entry`` objects must be from the ``submission.Revision`` class   #}
 	{% for entry in entries.object_list %}
-	  {# It's a search query result; used to be ``entry.django_CT`` #}
-	  {% if entry.object %}
-		{% with entry.object as entry %}
-		  {% include 'search/includes/one-item-result.html' %}
-		{% endwith %}
-
-	  {# It's just a list of objects #}
-	  {% else %}
-		{% include 'search/includes/one-item-result.html' %}
-	  {% endif %}
+	  {% include 'items/_item_row.html' %}
 	{% endfor %}
   </ul>
   <div style="clear:both;"></div>
@@ -50,5 +41,3 @@
   {% endif %}
 
 {% endif %}
-
-{# include "search/includes/main-search-box.html" #}

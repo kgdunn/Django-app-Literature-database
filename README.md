@@ -20,7 +20,7 @@ The site lets visitors:
 ├── pyproject.toml            # uv-managed dependencies + pytest config
 ├── uv.lock                   # committed lockfile (added in Phase 1 once deps resolve)
 ├── Dockerfile                # multi-stage image (Phase 7)
-├── docker-compose.yml        # local dev (SQLite, runserver) — Phase 7
+├── docker-compose.yml        # local dev (Postgres sidecar + runserver) — Phase 7
 ├── docker-compose.prod.yml   # production (Postgres, gunicorn) — Phase 7
 ├── .github/workflows/        # ci.yml + deploy.yml + release.yml — Phase 8/9/15
 ├── literature/               # Django project (settings, root URLs, WSGI)
@@ -57,7 +57,7 @@ The revival is a multi-PR effort tracked in [CLAUDE.md](CLAUDE.md). Phases not y
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) for dependency management
-- PostgreSQL (production only, via `literature.settings.prod` once Phase 2 lands). Local dev uses SQLite via `literature.settings.dev`.
+- PostgreSQL 16 (both dev and prod use Postgres so the FTS / pgvector code paths are exercised identically; create a local `literature` user + database first — see below).
 
 Dependencies are declared in `pyproject.toml` and pinned in `uv.lock`.
 
@@ -66,18 +66,32 @@ Dependencies are declared in `pyproject.toml` and pinned in `uv.lock`.
 ### Native (uv)
 
 ```bash
+# 1. Clone and enter the repo.
 git clone https://github.com/kgdunn/Django-app-Literature-database.git literature
 cd literature
+
+# 2. Bootstrap a local Postgres role + database (one-time; PostgreSQL 16
+#    must be installed and running). Match the defaults baked into
+#    .env.example so a fresh checkout boots without further config.
+sudo -u postgres psql -c "CREATE USER literature WITH PASSWORD 'literature';"
+sudo -u postgres psql -c "CREATE DATABASE literature OWNER literature;"
+
+# 3. Install Python deps + write a .env with a real SECRET_KEY.
 uv sync --dev
-cp .env.example .env       # set SECRET_KEY to any random string
+cp .env.example .env
+python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(50))" \
+    | tee -a .env >/dev/null
+sed -i.bak '/^SECRET_KEY=change-me$/d' .env && rm .env.bak
+
+# 4. Run migrations + the dev server.
 make debug                 # collectstatic + migrate + createcachetable + runserver:8080
 ```
 
-### Docker compose
+### Docker compose (Phase 7+)
 
 ```bash
 cp .env.example .env       # set SECRET_KEY
-make docker-up             # builds + runs runserver against SQLite (Phase 7+)
+make docker-up             # builds + runs Postgres + runserver in sidecars
 ```
 
 Both paths target <http://127.0.0.1:8080/>. To rehearse the production stack locally (Postgres + gunicorn + `literature.settings.prod`), use `docker compose -f docker-compose.prod.yml up --build` (Phase 7+).
