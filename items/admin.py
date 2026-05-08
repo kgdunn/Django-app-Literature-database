@@ -16,9 +16,11 @@ class AuthorAdmin(admin.ModelAdmin):
 
 class ItemAdmin(admin.ModelAdmin):
     inlines = (AuthorGroupInline,)
+    # `pdf_file` stays in list_display so admins can confirm at a glance
+    # which items have a PDF attached for FTS extraction; the file itself
+    # is never exposed publicly (Phase 5 removed `download_item`).
     list_display = ('id', 'title', 'author_list', 'year', 'pdf_file',
-                    'private_pdf', 'doi_link', 'item_type', 'date_created',
-                    'has_extra')
+                    'doi_link', 'item_type', 'date_created', 'has_extra')
     list_display_links = ('title', )
     ordering = ['-id']
     # `authors` is managed via the inline above; Django 2+ refuses to put a

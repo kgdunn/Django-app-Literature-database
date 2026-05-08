@@ -17,7 +17,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 2     | Settings split + middleware + .env.example           | pending  |
 | 3     | Drop Haystack, add Postgres FTS (Stage 1 search)     | pending  |
 | 4     | Trim PageHit (drop UA/IP) + drop IP gate on download | done     |
-| 5     | Modernize PDF download + bleach sanitisation         | pending  |
+| 5     | Remove public PDF download (copyright); add bleach   | done     |
 | 6     | Templates modernization (Bootstrap, MathJax, mobile) | pending  |
 | 7     | Dockerize (Dockerfile + compose dev/prod)            | pending  |
 | 8     | Tests + CI workflow                                  | pending  |
@@ -41,7 +41,7 @@ The site is **not yet in production** at the time of writing — there is no liv
   - `pages/` — front page, about page, search page. Has no models.
   - `kg/` — knowledge graph (citations, co-authorship). Created in Phase 13.
 - **Models**:
-  - `items.Item` — abstract-ish base. Multi-table inheritance: subclasses `JournalPub`, `Book`, `ConferenceProceeding`, `Thesis` each create their own DB table joined to `Item` via an implicit OneToOne. Item fields: `title`, `slug`, `item_type` (`thesis|journalpub|book|conferenceproc`), `year`, `doi_link`, `web_link`, `abstract`, `show_abstract`, `date_created` (`auto_now=True`), `pdf_file` (`upload_to=literature/pdf/{slug[0]}/{slug}.pdf`), `private_pdf`, `can_show_pdf`, `other_search_text` (free-text search bucket — auto-extracted from PDF or hand-curated). Custom manager `LatestItemManager` orders by `-date_created`.
+  - `items.Item` — abstract-ish base. Multi-table inheritance: subclasses `JournalPub`, `Book`, `ConferenceProceeding`, `Thesis` each create their own DB table joined to `Item` via an implicit OneToOne. Item fields: `title`, `slug`, `item_type` (`thesis|journalpub|book|conferenceproc`), `year`, `doi_link`, `web_link`, `abstract`, `show_abstract`, `date_created` (`auto_now=True`), `pdf_file` (`upload_to=literature/pdf/{slug[0]}/{slug}.pdf`; **admin-only — never exposed for download**), `other_search_text` (free-text search bucket — auto-extracted from the PDF or hand-curated). Phase 5 dropped the legacy `private_pdf` and `can_show_pdf` flags along with the public `download_item` view (copyright restriction; PDFs are admin-internal only and consumed only by `__extract_extra__` for FTS extraction). Custom manager `LatestItemManager` orders by `-date_created`.
   - `items.Author` — `first_name`, `middle_initials`, `last_name`, `slug` (auto-generated via `utils.unique_slugify`).
   - `items.AuthorGroup` — through-table for `Item.authors` M2M, carries `order` (IntegerField) so author position is preserved.
   - `items.School`, `items.Journal`, `items.Publisher` — lookup tables, all with `name` + auto-`slug`.
@@ -59,7 +59,9 @@ The site is **not yet in production** at the time of writing — there is no liv
   - `pages.search` — `/search?q=<terms>` — search results. After Phase 3, this is the canonical Postgres-FTS endpoint (whitespace-AND tokens, weighted `SearchVector` over title/abstract/other_search_text + `TrigramSimilarity` for fuzzy author matching). Pre-Phase 3, this is a Haystack passthrough. Empty / missing `q` returns the front page.
   - `items.show_items` — `/item/show-all`, `/item/<view>/<slug>/`, `/item/pub-by-year/<year>/` — paginated list view, parameterized by `what_view` (`all`, `tag`, `author`, `journal`, `pub-by-year`, `sort`).
   - `items.view_item` — `/item/<id>/<slug>` (slug optional) — detail page.
-  - `items.download_item` — `/item/<id>/download.pdf` — increments a `PageHit` row, then writes the file body into an `HttpResponse`. Phase 4 dropped the legacy IP-allowlist gate; only the per-item `Item.private_pdf` flag still gates access. Phase 5 will tighten the URL regex before the DB lookup and stream via `FileResponse` to dodge Cloudflare's Bot Fight Mode false-positives (matching openmv's hardening from openmv#86).
+  - `items.__extract_extra__` — `/item/__extract_extra__/<id>` — admin-only endpoint (gated on `request.user.is_authenticated`) that runs `pdfplumber` over `Item.pdf_file` and writes the extracted text into `Item.other_search_text` so the Postgres FTS pipeline (Phase 3) can index it. The PDF bytes never leave the gunicorn worker.
+
+  - **No public PDF download endpoint exists.** Phase 5 removed `items.download_item` and the `lit-download-pdf` URL pattern: PDFs are copyright-restricted, so `Item.pdf_file` is admin-only storage, consumed only by `__extract_extra__` for FTS extraction. The Caddy `/media/literature/pdf/*` path must be excluded from the static `file_server` rule in production for the same reason — see "Production deployment" below.
   - `items.__extract_extra__` — admin-only endpoint that runs the PDF text extractor (`pdfplumber` after Phase 1; `pdfminer` before) and writes the result into `Item.other_search_text`.
 
 - **Templates** (`templates/` + per-app `{app}/templates/{app}/`):
@@ -70,7 +72,7 @@ The site is **not yet in production** at the time of writing — there is no liv
   - `items/templates/items/show-entries.html`, `entries_list.html`, `item.html`, `show-tag-cloud.html` — list, detail, and tag-cloud renderings.
   - `templates/search/*` — Haystack-era search templates, **deleted in Phase 3** (the `pages.search` view will render directly into a new `pages/templates/pages/search.html`).
 
-- **Custom template tags**: `items/templatetags/extra_tags.py` (after Phase 5) defines `sanitise_markup` (passes admin-authored HTML through `bleach` with a small allowlist before rendering — see `docs/SECURITY.md`). The bleach allowlist matches openmv's: `a, b, i, em, strong, sub, sup, code, br, p, span, ul, ol, li, dl, dt, dd`.
+- **Custom template tags**: `items/templatetags/extra_tags.py` defines `sanitise_markup` (passes admin-authored HTML through `bleach` with a small allowlist before rendering). Used in `item.html` to render `Item.abstract` (the only field where an admin can paste arbitrary HTML). The bleach allowlist matches openmv's: `a, b, i, em, strong, sub, sup, code, br, p, span, ul, ol, li, dl, dt, dd`. LaTeX written as `\(...\)` survives the filter because bleach treats backslashes and parentheses as text; MathJax then renders it client-side.
 
 - **Project-local middleware**: `literature/middleware.py` (after Phase 2) defines `SecurityHeadersMiddleware`, which sets `Content-Security-Policy`, `Permissions-Policy`, and `Cross-Origin-Opener-Policy` on every response. Wired into `MIDDLEWARE` in `base.py` immediately after Django's `SecurityMiddleware`.
 
@@ -190,11 +192,11 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
 
 2. **Legacy `media/` prefix on `Item.pdf_file`.** Pre-revival data may have stored paths as `media/literature/pdf/<slug>.pdf`. The new `upload_to` builds `literature/pdf/<slug[0]>/<slug>.pdf` (no `media/`). The Phase 10 import script strips the prefix; if you ever re-restore from a stale legacy dump, re-run: `UPDATE items_item SET pdf_file = regexp_replace(pdf_file, '^media/', '') WHERE pdf_file LIKE 'media/%';`
 
-3. **`Item.private_pdf` and `Item.can_show_pdf` are independent flags.** `can_show_pdf=True AND private_pdf=False AND <pdf_file exists>` is the only combination that exposes a download URL. Templates and `download_item` both check this. Phase 4 dropped the IP-allowlist gate that had stacked on top (it didn't compose with Cloudflare's edge-IP rewrite anyway), so `private_pdf` is now the only ACL on download_item. **Phase 5 decision pending**: openmv's all-public model is simpler; consider dropping `private_pdf` entirely. If retained, document why in `docs/SECURITY.md`.
+3. **PDFs are not downloadable. Period.** Phase 5 removed `items.download_item`, the `lit-download-pdf` URL pattern, and the `Item.private_pdf` / `Item.can_show_pdf` flags. The site holds copyright-restricted PDFs that the admin uploads for FTS extraction only — the only consumer of `Item.pdf_file` is `__extract_extra__`, which reads the bytes inside the gunicorn worker and writes the extracted text into `Item.other_search_text`. **If you add a view that returns `Item.pdf_file.read()` or builds a URL pointing at `/media/literature/pdf/...`, you've reintroduced the bug.** In production, Caddy's `/media/*` `file_server` rule must explicitly exclude `/media/literature/pdf/*` (Phase 9 wires this up). Locally, `runserver`'s `static()` serves `/media/` only when `DEBUG=True`, so the dev box is fine without the exclusion — but don't link to `/media/literature/pdf/...` from any template.
 
-4. **`download_item` validates its `file_name` against a tight regex before any DB lookup** (after Phase 5). Anything outside that shape returns 404, not 500. The pre-Phase-5 path 302-redirected to `/media/...` and is broken behind Cloudflare's Bot Fight Mode (issue openmv#86). Stream via `FileResponse` after Phase 5; the file just needs to be readable by the gunicorn worker — in production via the `/app/media` bind mount, locally via `BASE_DIR/media/`. Caddy's `/media/*` `file_server` rule stays in place for any externally-cached direct links.
+4. **`__extract_extra__` is admin-only via `request.user.is_authenticated`** — there is no per-permission gate. Anyone with a Django superuser/staff session can run it. That's the right level of access for an internal back-office tool, but if `pages.views` ever grew unauthenticated paths to log-in, this endpoint would inherit that surface; treat it as part of the admin trust boundary.
 
-5. **Admin-authored markup in `Item.abstract` and (Author / Tag) `description` is passed through `bleach` at render time** by the `sanitise_markup` filter (after Phase 5). Tags outside the allowlist (script, iframe, style, event handlers, javascript: URLs) are stripped. LaTeX in `\(...\)` survives because bleach treats backslashes and dollar signs as text. If you add a new field that should accept the same markup, route it through the same filter — don't reach for `|safe`.
+5. **Admin-authored markup in `Item.abstract` is passed through `bleach` at render time** by the `sanitise_markup` filter (lives in `items/templatetags/extra_tags.py`, registered as a Django template filter). Tags outside the allowlist (script, iframe, style, event handlers, javascript: URLs) are stripped. LaTeX in `\(...\)` survives because bleach treats backslashes and parentheses as text. App-built HTML (`Item.full_citation`, `Item.full_author_listing`, `Item.author_list_all_lastnames`) still uses `|safe` because it's assembled inside Python from already-trusted model fields; if that ever takes user input, route it through `sanitise_markup` instead.
 
 6. **`PageHit` table privacy.** Pre-Phase-4 the schema held `ua_string` and `ip_address`. Migration `pagehit/0003_drop_pagehit_pii` destroyed those columns, taking every existing value with them. There is no retention job because the schema itself no longer holds PII. If you ever restore a pre-Phase-4 backup, re-run `manage.py migrate` to re-trim it. `pagehit.views.create_hit` is the sole writer; the admin is read-only.
 
@@ -214,7 +216,7 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
 
 14. **`Item.doi_link_cleaned` calls `.lstrip('http://dx.doi.org/')`** which is a per-character strip, not a prefix strip. `.lstrip("hp:/dx.oirg")` would do the same thing. This is a latent bug; if a DOI happens to start with any of those characters (e.g. `10.1234`) it'll be eaten. Fix to `removeprefix("https://dx.doi.org/").removeprefix("http://dx.doi.org/").removeprefix("https://doi.org/").removeprefix("http://doi.org/")` in Phase 1 cleanup.
 
-15. **Security review of the codebase lives in `docs/SECURITY.md`** (created in Phase 5) — that's the canonical record of every audit finding (fixed and deferred), the host-side recommendations (Caddy admin rate-limit, Cloudflare WAF, fail2ban), and the follow-up issues. Update it on any PR that touches a security-relevant surface.
+15. **Security review of the codebase will live in `docs/SECURITY.md`** once a security-review pass produces one (Phase 5 added the bleach filter and the no-PDF-downloads constraint, but the doc itself is deferred until a real audit lands). Until then, security-relevant decisions live in this CLAUDE.md "Gotchas" section and in PR descriptions.
 
 ## Tooling
 

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load extra_tags %}
 
 
 {% block title %}{{item.title}}{% endblock %}
@@ -31,13 +32,13 @@
     {% if item.doi_link %}
     <div class="lit-item-row">
       <span class="lit-item-label">DOI link:</span>
-      <span class="lit-item-entry"><a href="{{item.doi_link}}" target="_blank">{{item.doi_link_cleaned}}</a></span>
+      <span class="lit-item-entry"><a href="{{item.doi_link}}" target="_blank" rel="noopener">{{item.doi_link_cleaned}}</a></span>
     </div>
     {% else %}
 	  {% if item.web_link %}
 		<div class="lit-item-row">
 		  <span class="lit-item-label">External link:</span>
-		  <span class="lit-item-entry"><a href="{{item.web_link}}">{{item.web_link}}</a></span>
+		  <span class="lit-item-entry"><a href="{{item.web_link}}" target="_blank" rel="noopener">{{item.web_link}}</a></span>
 		</div>
 	  {% endif%}
 	{% endif%}
@@ -45,7 +46,7 @@
 	{% if item.show_abstract %}
     <div class="lit-item-row">
       <span class="lit-item-label">Abstract:</span>
-      <span class="lit-item-entry">{{item.abstract|safe}}</span>
+      <span class="lit-item-entry">{{item.abstract|sanitise_markup}}</span>
     </div>
 	{% endif%}
 
@@ -59,18 +60,6 @@
       <span class="lit-item-entry">{% for tag in tag_list %}<span><a href="{% url "lit-show-items" what_view="tag" extra_info=tag.slug %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}</span>
     </div>
     <div style="clear:both;">&nbsp;</div>
-
-    <div class="lit-item-row">
-      <span class="lit-item-label">Download PDF:</span>
-      {% if item.download_link %}
-	<span class="lit-item-entry">
-		<img src="{{MEDIA_URL}}literature/nuvola_mimetypes_pdf.png" width="24">
-		<a href="{{item.download_link}}">Get PDF</a> [{{item.download_size|filesizeformat}}]
-	</span>
-	  {% else %}
-	    No PDF available
-	  {% endif %}
-    </div>
 
   </div>
 
