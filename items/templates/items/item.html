@@ -1,68 +1,58 @@
 {% extends "base.html" %}
 {% load extra_tags %}
 
-
 {% block title %}{{item.title}}{% endblock %}
 
 {% block content %}
 
-  <div id="lit-item-header">
-	<div id="lit-item-header-left">{% if item.previous_item %}<a href="{{item.previous_item}}">Previous</a>{% endif %}</div>
-	<div id="lit-item-header-right">{% if item.next_item %}<a href="{{item.next_item}}">Next</a>{% endif %}</div>
-  </div>
+<p class="detail-topbar"><a href="{% url 'lit-main-page' %}">&larr; Back to home</a></p>
 
+<h3>{{ item.title }}</h3>
 
-  <h2>{{item.title}}</h2>
+<dl class="lit-detail-meta">
 
-  <div id="lit-itemdisp-container">
+    <dt>Authors</dt>
+    <dd>{{ item.full_author_listing|safe }}</dd>
 
-    <div class="lit-item-row">
-    </div>
-
-    <div class="lit-item-row">
-      <span class="lit-item-label">Authors:</span>
-      <span class="lit-item-entry">{{item.full_author_listing|safe}}</span>
-    </div>
-
-    <div class="lit-item-row">
-      <span class="lit-item-label">Publication year:</span>
-      <span class="lit-item-entry"><a href="{% url "show-items--pub-by-year" extra_info=item.year %}">{{ item.year }}</a></span>
-    </div>
+    <dt>Published</dt>
+    <dd><a href="{% url 'show-items--pub-by-year' extra_info=item.year %}">{{ item.year }}</a></dd>
 
     {% if item.doi_link %}
-    <div class="lit-item-row">
-      <span class="lit-item-label">DOI link:</span>
-      <span class="lit-item-entry"><a href="{{item.doi_link}}" target="_blank" rel="noopener">{{item.doi_link_cleaned}}</a></span>
-    </div>
-    {% else %}
-	  {% if item.web_link %}
-		<div class="lit-item-row">
-		  <span class="lit-item-label">External link:</span>
-		  <span class="lit-item-entry"><a href="{{item.web_link}}" target="_blank" rel="noopener">{{item.web_link}}</a></span>
-		</div>
-	  {% endif%}
-	{% endif%}
+    <dt>DOI</dt>
+    <dd><a href="{{ item.doi_link }}" target="_blank" rel="noopener">{{ item.doi_link_cleaned }}</a></dd>
+    {% elif item.web_link %}
+    <dt>External link</dt>
+    <dd><a href="{{ item.web_link }}" target="_blank" rel="noopener">{{ item.web_link }}</a></dd>
+    {% endif %}
 
-	{% if item.show_abstract %}
-    <div class="lit-item-row">
-      <span class="lit-item-label">Abstract:</span>
-      <span class="lit-item-entry">{{item.abstract|sanitise_markup}}</span>
-    </div>
-	{% endif%}
+    <dt>Citation</dt>
+    <dd class="lit-detail-citation">{{ item.full_citation|safe }}</dd>
 
-    <div class="lit-item-row">
-      <span class="lit-item-label">Citation:</span>
-      <span class="lit-item-entry lit-item-description">{{item.full_citation|safe}}</span>
-    </div>
+    {% if item.show_abstract %}
+    <dt>Abstract</dt>
+    <dd><div class="lit-detail-abstract">{{ item.abstract|sanitise_markup }}</div></dd>
+    {% endif %}
 
-    <div class="lit-item-row">
-      <span class="lit-item-label">Tags:</span>
-      <span class="lit-item-entry">{% for tag in tag_list %}<span><a href="{% url "lit-show-items" what_view="tag" extra_info=tag.slug %}" class="lit-tag">{{tag.name}}</a></span>{% endfor %}</span>
-    </div>
-    <div style="clear:both;">&nbsp;</div>
+    {% if tag_list %}
+    <dt>Tags</dt>
+    <dd>
+        <div class="tag-list">
+            {% for tag in tag_list %}
+            <a href="{% url 'lit-show-items' what_view='tag' extra_info=tag.slug %}" class="lit-tag">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+    </dd>
+    {% endif %}
 
-  </div>
+</dl>
 
-  <div style="clear: both;"><p>&nbsp;</div>
+<nav class="lit-detail-nav">
+    {% if item.previous_item %}
+    <span class="nav-prev"><a href="{{ item.previous_item }}">&larr; Previous</a></span>
+    {% endif %}
+    {% if item.next_item %}
+    <span class="nav-next"><a href="{{ item.next_item }}">Next &rarr;</a></span>
+    {% endif %}
+</nav>
 
 {% endblock %}
