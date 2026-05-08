@@ -172,20 +172,20 @@ class Item(models.Model):
     show_abstract = models.BooleanField(default=False)
     date_created = models.DateTimeField(editable=False, auto_now=True)
 
-    pdf_file = models.FileField(upload_to=upload_dest, max_length=255,
-                                blank=True, null=True, verbose_name='PDF file')
-
-    # This PDF should never be shown because it contains personal notes or is
-    # not authorized for distributions
-    private_pdf = models.BooleanField(default=False,
-                                      verbose_name='Private PDF')
-
-    # If ``private_pdf`` is False and this field is True, and there actually
-    # exists a PDF, then show the PDF available for download. Usually set
-    # True for theses.
-    # If ``private_pdf`` is True, then this still will not show the download
-    can_show_pdf = models.BooleanField(default=False,
-                                       verbose_name='Can show PDF')
+    # PDFs are uploaded by site admins and consumed only by the
+    # ``__extract_extra__`` admin endpoint, which extracts plain text via
+    # pdfplumber into ``other_search_text`` for the Postgres FTS pipeline.
+    # They are NEVER served to end users (copyright restriction) — the
+    # public ``download_item`` view was removed in Phase 5. Caddy's
+    # ``/media/literature/pdf/*`` path is excluded from the static
+    # file_server in production for the same reason.
+    pdf_file = models.FileField(
+        upload_to=upload_dest,
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='PDF file (admin-only; not exposed for download)',
+    )
 
     # Contains unstructured text (auto-extracted from PDF, cut/paste, whatever)
     # to improve the user's search

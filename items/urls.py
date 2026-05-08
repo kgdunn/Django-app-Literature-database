@@ -1,8 +1,9 @@
 from django.urls import re_path
 
-from items.views import __extract_extra__, download_item, show_items, view_item
+from items.views import __extract_extra__, show_items, view_item
 
 urlpatterns = [
+
     re_path(r'^show-all$',
             show_items,
             {'what_view': 'all'},
@@ -19,19 +20,18 @@ urlpatterns = [
             show_items,
             name='lit-show-items'),
 
-    # Download an item (this URL must come before the next URL rule)
-    re_path(r'^(?P<item_id>\d+)/download.pdf$',
-            download_item,
-            name='lit-download-pdf'),
-
     # View an existing item: both versions of accessing the item are valid
     # Maximum information:   http://..../23/draw-an-ellipse/
     # Minimal working link:  http://..../23/    <-- shows latest revision
+    #
+    # NOTE: Phase 5 removed the public PDF download URL (`download.pdf`)
+    # because all PDFs are copyright-restricted. PDFs are admin-only
+    # storage, consumed by `__extract_extra__` for FTS text extraction.
     re_path(r'^(?P<item_id>\d+)+(/)?(?P<slug>[-\w]+)?(/)?',
             view_item,
             name='lit-view-item'),
 
-    # Extract PDF text to add to the Item object
+    # Extract PDF text to add to the Item object (admin-only).
     re_path(r'__extract_extra__/(?P<item_id>\d+)',
             __extract_extra__,
             name='lit-extract-extra'),

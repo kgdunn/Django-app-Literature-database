@@ -1,31 +1,29 @@
 import logging
-import re
-import unicodedata
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.defaultfilters import slugify
-from django.urls import reverse
 
 from items.models import Author, Book, ConferenceProceeding, Item, Journal, JournalPub, Thesis
 from pagehit.views import create_hit
 from pages.views import page_404_error
-from utils import invalid_IP_address, paginated_queryset
+from utils import paginated_queryset
 
 logger = logging.getLogger(__name__)
 
 
 def get_items_or_404(view_function):
     """
-    Decorator for views that ensures the item requested
-    actually exist. If not, throws a 404, else, it calls the view function
-    with the required inputs.
+    Decorator that resolves an ``Item`` from ``item_id`` and downcasts
+    it to its concrete subclass (JournalPub / Book / ConferenceProceeding
+    / Thesis based on ``item_type``). 404s if no Item matches.
+
+    Phase 5 removed the ``download.pdf`` branch: PDFs are no longer
+    exposed publicly (copyright restriction), so the only path through
+    this decorator is canonical-URL handling for ``view_item``.
     """
     def decorator(request, item_id, slug=None):
-        """Retrieves the ``Item`` when given the primary key (``item_id``).
-        ``slug`` is ignored for now - just used to create good SEO URLs.
-        """
         try:
             the_item = Item.objects.all().filter(id=item_id)
         except ObjectDoesNotExist:
@@ -35,10 +33,6 @@ def get_items_or_404(view_function):
             return page_404_error(request, 'This item does not exist yet')
 
         the_item = the_item[0]
-        # Is the URL of the form: "..../NN/XXXX"; if so, then XXXX the item
-        path_split = request.path.split('/')
-        if len(path_split) >= 4 and path_split[3] in ['download.pdf', ]:
-            return view_function(request, the_item)
 
         # Is the URL not the canonical URL for the item? Redirect the user.
         if slug is None or the_item.slug != slug:
@@ -121,63 +115,14 @@ def show_items(request, what_view='', extra_info=''):
 
 
 @get_items_or_404
-def download_item(request, the_item):
-    """
-    Return the PDF to the user.
-
-    Phase 5 will harden this further: tighten the URL regex before any DB
-    lookup, stream via FileResponse, and revisit the Item.private_pdf /
-    invalid_IP_address ACL (which doesn't compose with Cloudflare's edge
-    IP rewrite). For Phase 1 this is the legacy behaviour with the Py2
-    artefacts removed.
-    """
-    create_hit(request, the_item.pk, extra_info="download-pdf")
-    if not the_item.pdf_file:
-        return page_404_error(request, 'This item does not have a PDF file.')
-
-    title = (
-        unicodedata.normalize('NFKD', the_item.title)
-        .encode('ascii', 'ignore')
-        .decode('ascii')
-    )
-    title = re.sub(r'[^\w\s-]', '', title).strip()
-    pdf_name = '%s -- %s.pdf' % (the_item.author_slugs, title)
-
-    if the_item.private_pdf:
-        return page_404_error(request, "This item's PDF file is not available.")
-
-    # Only check IPs if we have a valid download link
-    if invalid_IP_address(request):
-        return page_404_error(request, "This item's PDF file cannot be downloaded.")
-
-    response = HttpResponse(content_type="application/pdf")
-    response['Content-Disposition'] = 'attachment; filename=%s' % pdf_name
-    response.write(the_item.pdf_file.read())
-    return response
-
-
-@get_items_or_404
 def view_item(request, the_item, slug):
     """
-    Show the full details of one item
+    Show the full details of one item.
+
+    No PDF download path exists (Phase 5 removed it for copyright
+    reasons). The detail page surfaces citation, abstract, DOI /
+    external link, and tags only.
     """
-    if the_item.pdf_file:
-        the_item.download_link = reverse('lit-download-pdf', args=[the_item.pk])
-        try:
-            the_item.download_size = the_item.pdf_file.size
-        except OSError:
-            # We couldn't find the file: has been removed from storage?
-            the_item.download_link = ''
-    else:
-        the_item.download_link = ''
-
-    if the_item.private_pdf:
-        the_item.download_link = ''
-
-    # Only check IPs if we have a valid download link
-    if (the_item.download_link) and invalid_IP_address(request):
-        the_item.download_link = ''
-
     logger.debug('Viewing: %s', the_item)
 
     create_hit(request, the_item.pk)

@@ -20,25 +20,16 @@ def ensuredir(path):
 def get_IP_address(request):
     """
     Returns the visitor's IP address as a string given the Django ``request``.
+
+    Used only for log lines (``pages.views`` 404 / 500 / search handlers).
+    Phase 4 dropped the legacy stored-PII path: PageHit rows no longer
+    capture IPs, and ``download_item`` no longer gates on them.
     """
     # Catchs the case when the user is on a proxy
     ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
     if ip == '' or ip.lower() == 'unkown':
         ip = request.META.get('REMOTE_ADDR', '')   # User is not on a proxy
     return ip
-
-
-def invalid_IP_address(request):
-    """
-    Used to determine whether a user can download the item
-    """
-    ip = get_IP_address(request)
-    for valid_ip in ['127.0.0.1', '130.113', '86.91.182.154']:# models.ValidIP.objects.all():
-        if ip.startswith(valid_ip):#.valid_ip_address):
-            return False
-
-    # User's IP address not found in list
-    return True
 
 
 def paginated_queryset(request, queryset):
