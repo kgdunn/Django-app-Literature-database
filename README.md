@@ -88,7 +88,7 @@ Create a superuser with `uv run python manage.py createsuperuser` (native) or `d
 
 - `make test` — runs `uv run pytest`. Smoke tests land in Phase 8.
 - `make lint` — runs `pre-commit run --all-files`.
-- `.github/workflows/ci.yml` (Phase 8+) runs both on every PR and on pushes to `master`, against a `postgres:16-alpine` service container.
+- `.github/workflows/ci.yml` (Phase 8+) runs both on every PR and on pushes to `main`, against a `postgres:16-alpine` service container.
 
 ## Production notes
 
