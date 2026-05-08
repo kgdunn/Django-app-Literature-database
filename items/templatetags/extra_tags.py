@@ -24,25 +24,27 @@ from django.utils.safestring import mark_safe
 register = template.Library()
 
 
-ALLOWED_TAGS = frozenset({
-    "a",
-    "b",
-    "i",
-    "em",
-    "strong",
-    "sub",
-    "sup",
-    "code",
-    "br",
-    "p",
-    "span",
-    "ul",
-    "ol",
-    "li",
-    "dl",
-    "dt",
-    "dd",
-})
+ALLOWED_TAGS = frozenset(
+    {
+        "a",
+        "b",
+        "i",
+        "em",
+        "strong",
+        "sub",
+        "sup",
+        "code",
+        "br",
+        "p",
+        "span",
+        "ul",
+        "ol",
+        "li",
+        "dl",
+        "dt",
+        "dd",
+    }
+)
 
 ALLOWED_ATTRIBUTES: dict[str, list[str]] = {
     "a": ["href", "title"],

@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Pinned by digest so the CI Postgres byte-matches the prod stack
+        # (docker-compose.prod.yml). Bumped by Dependabot (`docker` ecosystem).
+        image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
+        env:
+          POSTGRES_DB: literature
+          POSTGRES_USER: literature
+          POSTGRES_PASSWORD: literature
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Third-party actions are pinned by full commit SHA (immutable) rather
+      # than by floating tag (re-pointable by the action owner). Dependabot
+      # bumps these via `.github/dependabot.yml` (`github-actions` ecosystem).
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies (locked)
+        run: uv sync --frozen
+
+      - name: Lint (pre-commit)
+        run: uv run pre-commit run --all-files --show-diff-on-failure --color always
+
+      - name: Test (pytest)
+        run: uv run pytest
+        env:
+          SECRET_KEY: ci-test-key
+          DJANGO_SETTINGS_MODULE: literature.settings.ci
+          POSTGRES_DB: literature
+          POSTGRES_USER: literature
+          POSTGRES_PASSWORD: literature
+          SQL_HOST: 127.0.0.1
+          SQL_PORT: "5432"
+
+      - name: Audit dependencies (pip-audit)
+        # Non-blocking for now: surfaces known CVEs in the resolved tree
+        # without failing the build. Tighten to `--strict` once the
+        # baseline is clean.
+        continue-on-error: true
+        run: uv run pip-audit --progress-spinner=off

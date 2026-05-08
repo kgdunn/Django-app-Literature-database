@@ -1,0 +1,168 @@
+"""Smoke tests for the public-facing views.
+
+Covers the routes that have to keep working through every revival phase:
+front page, about, item-detail, item-list, search (Postgres FTS +
+trigram fuzzy author lookup), healthz, and 404 path. Also has a couple
+of negative tests that pin Phase-5's "no public PDF download" guarantee.
+"""
+
+import pytest
+from django.urls import NoReverseMatch, reverse
+
+
+@pytest.mark.django_db
+class TestStaticPages:
+    def test_front_page_returns_200(self, client):
+        r = client.get("/")
+        assert r.status_code == 200
+        assert b"Recently added" in r.content
+        assert b"Browse by year" in r.content
+
+    def test_about_page_returns_200(self, client):
+        r = client.get("/about")
+        assert r.status_code == 200
+
+    def test_healthz_returns_200_with_no_store(self, client):
+        for path in ("/healthz", "/healthz/"):
+            r = client.get(path)
+            assert r.status_code == 200, path
+            assert r.content == b"ok"
+            assert r["Cache-Control"] == "no-store"
+
+
+@pytest.mark.django_db
+class TestSecurityHeaders:
+    def test_csp_present_on_front_page(self, client):
+        r = client.get("/")
+        csp = r.get("Content-Security-Policy", "")
+        assert "default-src 'self'" in csp
+        assert "https://cdn.jsdelivr.net" in csp
+        assert "frame-ancestors 'none'" in csp
+
+    def test_permissions_policy_present(self, client):
+        r = client.get("/")
+        assert "interest-cohort=()" in r.get("Permissions-Policy", "")
+
+    def test_coop_present(self, client):
+        r = client.get("/")
+        assert r.get("Cross-Origin-Opener-Policy") == "same-origin"
+
+
+@pytest.mark.django_db
+class TestItemDetail:
+    def test_canonical_url_returns_200(self, client, journalpub_factory, author, tag):
+        pub = journalpub_factory(authors=[author], tags=[tag], title="Test paper")
+        r = client.get(f"/item/{pub.pk}/{pub.slug}")
+        assert r.status_code == 200
+        assert b"Test paper" in r.content
+        assert b"Einstein" in r.content
+        # Phase 5 guarantee: no public PDF download UI on the page.
+        assert b"Download PDF" not in r.content
+        assert b"download.pdf" not in r.content
+
+    def test_no_slug_redirects_to_canonical(self, client, journalpub_factory, author):
+        pub = journalpub_factory(authors=[author])
+        r = client.get(f"/item/{pub.pk}/")
+        assert r.status_code == 301
+        assert r["Location"].endswith(f"/item/{pub.pk}/{pub.slug}")
+
+    def test_unknown_item_returns_404(self, client):
+        r = client.get("/item/999/")
+        assert r.status_code == 404
+
+
+@pytest.mark.django_db
+class TestSearch:
+    def test_empty_query_redirects_to_front_page(self, client):
+        r = client.get("/search?q=")
+        assert r.status_code == 302
+        assert r["Location"] == "/"
+
+    def test_title_match(self, client, journalpub_factory, author):
+        journalpub_factory(authors=[author], title="On the Fourier transform")
+        r = client.get("/search?q=fourier")
+        assert r.status_code == 200
+        assert b"On the Fourier transform" in r.content
+
+    def test_abstract_match(self, client, journalpub_factory, author):
+        journalpub_factory(
+            authors=[author],
+            title="A different paper",
+            abstract="<p>Wave-function collapse on superconducting qubits.</p>",
+        )
+        r = client.get("/search?q=qubits")
+        assert r.status_code == 200
+        assert b"A different paper" in r.content
+
+    def test_author_exact(self, client, journalpub_factory, author):
+        journalpub_factory(authors=[author], title="Some paper")
+        r = client.get("/search?q=Einstein")
+        assert r.status_code == 200
+        assert b"Some paper" in r.content
+
+    def test_author_trigram_typo(self, client, journalpub_factory, author):
+        """`einstien` (typo of Einstein) still resolves via TrigramSimilarity > 0.3."""
+        journalpub_factory(authors=[author], title="Some paper")
+        r = client.get("/search?q=einstien")
+        assert r.status_code == 200
+        assert b"Some paper" in r.content
+
+    def test_no_match_renders_empty_state(self, client, journalpub_factory, author):
+        journalpub_factory(authors=[author], title="Fourier")
+        r = client.get("/search?q=zzqxzzqx")
+        assert r.status_code == 200
+        assert b"No items match" in r.content
+
+    def test_numeric_id_shortcut(self, client, journalpub_factory, author):
+        """A numeric `q` that matches an Item.pk redirects to the detail page."""
+        pub = journalpub_factory(authors=[author])
+        r = client.get(f"/search?q={pub.pk}")
+        assert r.status_code == 302
+        assert r["Location"].rstrip("/").endswith(f"/item/{pub.pk}")
+
+
+@pytest.mark.django_db
+class TestNoPdfDownloadEndpoint:
+    """Phase 5 hard rule: no public PDF download URL exists."""
+
+    def test_lit_download_pdf_url_name_does_not_resolve(self):
+        with pytest.raises(NoReverseMatch):
+            reverse("lit-download-pdf", args=[1])
+
+    def test_legacy_download_pdf_path_redirects_to_canonical(
+        self, client, journalpub_factory, author
+    ):
+        """Stale links like `/item/1/download.pdf` now match the catch-all
+        `lit-view-item` regex with slug='download' and 301-redirect to the
+        canonical detail URL — no PDF served at any point.
+        """
+        pub = journalpub_factory(authors=[author])
+        r = client.get(f"/item/{pub.pk}/download.pdf")
+        assert r.status_code == 301
+        # Redirect target ends with the canonical slug, NOT '.pdf'.
+        assert r["Location"].endswith(f"/item/{pub.pk}/{pub.slug}")
+        assert ".pdf" not in r["Location"]
+
+
+@pytest.mark.django_db
+class TestItemList:
+    def test_show_all_returns_200(self, client, journalpub_factory, author):
+        journalpub_factory(authors=[author])
+        r = client.get("/item/show-all")
+        assert r.status_code == 200
+
+    def test_pub_by_year_filters(self, client, journalpub_factory, author):
+        journalpub_factory(authors=[author], title="Y2024", year=2024)
+        journalpub_factory(authors=[author], title="Y2023", year=2023)
+        r = client.get("/item/pub-by-year/2024/")
+        assert r.status_code == 200
+        assert b"Y2024" in r.content
+        assert b"Y2023" not in r.content
+
+    def test_tag_filter(self, client, journalpub_factory, author, tag):
+        journalpub_factory(authors=[author], tags=[tag], title="Has Fourier tag")
+        journalpub_factory(authors=[author], title="No tag")
+        r = client.get(f"/item/tag/{tag.slug}/")
+        assert r.status_code == 200
+        assert b"Has Fourier tag" in r.content
+        assert b"No tag" not in r.content

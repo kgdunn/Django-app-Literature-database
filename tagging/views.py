@@ -1,5 +1,7 @@
-from .models import Tag
 from collections import defaultdict
+
+from .models import Tag
+
 
 def get_tag_uses():
     """
@@ -16,7 +18,7 @@ def get_tag_uses():
         for item in tag.item_set.all():
             uses_by_pk[tag.pk] += 1
 
-    hit_counts = sorted((value, key) for (key,value) in uses_by_pk.items())
+    hit_counts = sorted((value, key) for (key, value) in uses_by_pk.items())
     hit_counts.reverse()
 
     return hit_counts
