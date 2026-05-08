@@ -1,0 +1,11 @@
+.env
+.venv/
+**/__pycache__
+*.pyc
+*.code-workspace
+logfile*
+*db.sqlite*
+static/*
+media/*
+.pytest_cache/
+.mypy_cache/
