@@ -23,7 +23,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 8     | Tests + CI workflow + Dependabot                     | done     |
 | 9     | Hetzner provisioning + deploy workflow               | done     |
 | 10    | Data import from legacy dump                         | done     |
-| 11    | S3 nightly backups                                   | pending  |
+| 11    | S3 nightly backups                                   | done     |
 | 12    | pgvector semantic search (Stage 2)                   | pending  |
 | 13    | Knowledge graph (citations, co-authorship)           | pending  |
 | 14    | Meilisearch sidecar (Stage 3)                        | pending  |
@@ -159,7 +159,7 @@ s3://$BACKUP_S3_BUCKET/$BACKUP_S3_PREFIX/
 └── public/       mirror of data/public/
 ```
 
-The IAM principal for these keys is scoped to the `literature/*` prefix only — same pattern as openmv but a separate prefix, so a key leak limits blast radius. Bucket versioning + SSE-S3 are on. Full step-by-step (AWS bucket + IAM, Hetzner install, smoke-test, restore drill, troubleshooting) is in [`docs/backup.md`](docs/backup.md) once Phase 11 lands.
+The IAM principal for these keys is scoped to the `literature/*` prefix only — same pattern as openmv but a separate IAM user with a separate access key, so a leak in either stack can't reach the other. Bucket versioning + SSE-S3 are on. Full step-by-step (AWS bucket + IAM, Hetzner install, smoke-test, restore drill, troubleshooting) is in [`docs/backup.md`](docs/backup.md).
 
 Cron entry (run as `deploy`):
 
