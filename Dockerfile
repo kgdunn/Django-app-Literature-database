@@ -9,7 +9,7 @@
 # by sha256 digest — the host operator should run `docker pull python:3.11-slim`
 # once on the prod box and switch this `FROM` to `python:3.11-slim@sha256:…`
 # before the first deploy. Phase 9 (Hetzner provisioning) will document this.
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 # Pinned to a specific uv version so a malicious push to ghcr.io/astral-sh/uv
 # can't land in our build. Bump in lockstep with `uv self update` and the host
@@ -26,7 +26,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
 # ---- runtime ------------------------------------------------------------
-FROM python:3.11-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # `libpq5` is required by `psycopg2-binary` at runtime (it ships its own
 # wheel but still wants the system libpq.so.5). `curl` is only here for the
