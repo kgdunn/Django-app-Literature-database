@@ -16,7 +16,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 1     | Python 2 → 3 + Django 1.11 → 5.2 port                | pending  |
 | 2     | Settings split + middleware + .env.example           | pending  |
 | 3     | Drop Haystack, add Postgres FTS (Stage 1 search)     | pending  |
-| 4     | Trim PageHit (drop UA/IP)                            | pending  |
+| 4     | Trim PageHit (drop UA/IP) + drop IP gate on download | done     |
 | 5     | Modernize PDF download + bleach sanitisation         | pending  |
 | 6     | Templates modernization (Bootstrap, MathJax, mobile) | pending  |
 | 7     | Dockerize (Dockerfile + compose dev/prod)            | pending  |
@@ -37,7 +37,7 @@ The site is **not yet in production** at the time of writing — there is no liv
 - **Apps**:
   - `items/` — the literature catalogue itself.
   - `tagging/` — a small home-grown `Tag` model (predates django-taggit; not vendored from `django-tagging`).
-  - `pagehit/` — privacy-respecting view counter (after Phase 4 trims PII).
+  - `pagehit/` — privacy-respecting view counter (Phase 4 trimmed the historical UA/IP columns).
   - `pages/` — front page, about page, search page. Has no models.
   - `kg/` — knowledge graph (citations, co-authorship). Created in Phase 13.
 - **Models**:
@@ -50,7 +50,7 @@ The site is **not yet in production** at the time of writing — there is no liv
   - `items.ConferenceProceeding` — adds M2M `editors`, `conference_name`, `page_start`/`page_end`, `organization`, `location`, FK `publisher` (nullable).
   - `items.Thesis` — adds `thesis_type` (`masters|phd`), FK `school`, M2M `supervisors`.
   - `tagging.Tag` — `slug` (unique, auto-generated), `name`, `description`. Reverse M2M from `Item.tags`.
-  - `pagehit.PageHit` — after Phase 4 holds only `(item, item_pk, datetime, extra_info)`. Pre-Phase-4 also holds `ua_string` and `ip_address`. Two columns power the visible features: top-N most-viewed lists and the per-item view count on the detail page. Rows are kept indefinitely; once PII is dropped, retention is privacy-safe.
+  - `pagehit.PageHit` — holds only `(item, item_pk, datetime, extra_info)` after Phase 4 dropped the legacy `ua_string` and `ip_address` columns (migration `0003_drop_pagehit_pii`). Two columns power the visible features: top-N most-viewed lists and the per-item view count on the detail page. Rows are kept indefinitely; the schema itself no longer holds any user-identifying data so retention is privacy-safe.
   - `kg.Citation`, `kg.ExternalReference`, `kg.CoauthorshipEdge` — Phase 13.
 
 - **Views** (`items/views.py`, `pages/views.py`):
@@ -59,7 +59,7 @@ The site is **not yet in production** at the time of writing — there is no liv
   - `pages.search` — `/search?q=<terms>` — search results. After Phase 3, this is the canonical Postgres-FTS endpoint (whitespace-AND tokens, weighted `SearchVector` over title/abstract/other_search_text + `TrigramSimilarity` for fuzzy author matching). Pre-Phase 3, this is a Haystack passthrough. Empty / missing `q` returns the front page.
   - `items.show_items` — `/item/show-all`, `/item/<view>/<slug>/`, `/item/pub-by-year/<year>/` — paginated list view, parameterized by `what_view` (`all`, `tag`, `author`, `journal`, `pub-by-year`, `sort`).
   - `items.view_item` — `/item/<id>/<slug>` (slug optional) — detail page.
-  - `items.download_item` — `/item/<id>/download.pdf` — increments a `PageHit` row, then streams the file body via `FileResponse` after Phase 5. Until Phase 5 it 302-redirects to `/media/literature/pdf/...` and lets the static file server return the bytes; the pre-Phase-5 path will 403 against `urllib`/`pandas.read_csv` clients behind Cloudflare's Bot Fight Mode. The post-Phase-5 path matches openmv's hardening (issue openmv#86).
+  - `items.download_item` — `/item/<id>/download.pdf` — increments a `PageHit` row, then writes the file body into an `HttpResponse`. Phase 4 dropped the legacy IP-allowlist gate; only the per-item `Item.private_pdf` flag still gates access. Phase 5 will tighten the URL regex before the DB lookup and stream via `FileResponse` to dodge Cloudflare's Bot Fight Mode false-positives (matching openmv's hardening from openmv#86).
   - `items.__extract_extra__` — admin-only endpoint that runs the PDF text extractor (`pdfplumber` after Phase 1; `pdfminer` before) and writes the result into `Item.other_search_text`.
 
 - **Templates** (`templates/` + per-app `{app}/templates/{app}/`):
@@ -74,7 +74,7 @@ The site is **not yet in production** at the time of writing — there is no liv
 
 - **Project-local middleware**: `literature/middleware.py` (after Phase 2) defines `SecurityHeadersMiddleware`, which sets `Content-Security-Policy`, `Permissions-Policy`, and `Cross-Origin-Opener-Policy` on every response. Wired into `MIDDLEWARE` in `base.py` immediately after Django's `SecurityMiddleware`.
 
-- **Admin**: registered in `items/admin.py`, `tagging/admin.py`, `pagehit/admin.py`. After Phase 4 `PageHitAdmin` rows are `readonly_fields` (the table is an append-only audit log) and have a `date_hierarchy` + `list_filter` so scoping doesn't require loading the whole table.
+- **Admin**: registered in `items/admin.py`, `tagging/admin.py`, `pagehit/admin.py`. `PageHitAdmin` is read-only (`readonly_fields` covers every column, `has_add_permission` returns `False`) — the table is an append-only audit log written exclusively by `pagehit.views.create_hit`. `date_hierarchy = "datetime"` + `list_filter = ("item",)` keep the change-list scoped without loading the whole table.
 
 ## How it runs
 
@@ -190,13 +190,13 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
 
 2. **Legacy `media/` prefix on `Item.pdf_file`.** Pre-revival data may have stored paths as `media/literature/pdf/<slug>.pdf`. The new `upload_to` builds `literature/pdf/<slug[0]>/<slug>.pdf` (no `media/`). The Phase 10 import script strips the prefix; if you ever re-restore from a stale legacy dump, re-run: `UPDATE items_item SET pdf_file = regexp_replace(pdf_file, '^media/', '') WHERE pdf_file LIKE 'media/%';`
 
-3. **`Item.private_pdf` and `Item.can_show_pdf` are independent flags.** `can_show_pdf=True AND private_pdf=False AND <pdf_file exists>` is the only combination that exposes a download URL. Templates and `download_item` both check this. **Phase 5 decision pending**: openmv's all-public model is simpler; consider dropping `private_pdf` entirely. If retained, document why in `docs/SECURITY.md`.
+3. **`Item.private_pdf` and `Item.can_show_pdf` are independent flags.** `can_show_pdf=True AND private_pdf=False AND <pdf_file exists>` is the only combination that exposes a download URL. Templates and `download_item` both check this. Phase 4 dropped the IP-allowlist gate that had stacked on top (it didn't compose with Cloudflare's edge-IP rewrite anyway), so `private_pdf` is now the only ACL on download_item. **Phase 5 decision pending**: openmv's all-public model is simpler; consider dropping `private_pdf` entirely. If retained, document why in `docs/SECURITY.md`.
 
 4. **`download_item` validates its `file_name` against a tight regex before any DB lookup** (after Phase 5). Anything outside that shape returns 404, not 500. The pre-Phase-5 path 302-redirected to `/media/...` and is broken behind Cloudflare's Bot Fight Mode (issue openmv#86). Stream via `FileResponse` after Phase 5; the file just needs to be readable by the gunicorn worker — in production via the `/app/media` bind mount, locally via `BASE_DIR/media/`. Caddy's `/media/*` `file_server` rule stays in place for any externally-cached direct links.
 
 5. **Admin-authored markup in `Item.abstract` and (Author / Tag) `description` is passed through `bleach` at render time** by the `sanitise_markup` filter (after Phase 5). Tags outside the allowlist (script, iframe, style, event handlers, javascript: URLs) are stripped. LaTeX in `\(...\)` survives because bleach treats backslashes and dollar signs as text. If you add a new field that should accept the same markup, route it through the same filter — don't reach for `|safe`.
 
-6. **`PageHit` table privacy.** Pre-Phase-4, `pagehit/models.py` captures `ua_string` and `ip_address`. The Phase 4 migration `0002_drop_pagehit_pii` destroys these columns, taking every existing value with them. There is no retention job because the schema itself no longer holds PII after the migration. If you ever restore a pre-Phase-4 backup, re-run `manage.py migrate` to re-trim it.
+6. **`PageHit` table privacy.** Pre-Phase-4 the schema held `ua_string` and `ip_address`. Migration `pagehit/0003_drop_pagehit_pii` destroyed those columns, taking every existing value with them. There is no retention job because the schema itself no longer holds PII. If you ever restore a pre-Phase-4 backup, re-run `manage.py migrate` to re-trim it. `pagehit.views.create_hit` is the sole writer; the admin is read-only.
 
 7. **`literature.urls` mounts `items.urls` as `r'item/'`** (no leading `^`). That technically matches `r'item/'` *anywhere* in the path, but Django's URL resolver is greedy from the start of `path_info`, so it works in practice. Don't tighten this without checking the legacy URL patterns above it.
 

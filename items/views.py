@@ -11,7 +11,7 @@ from django.urls import reverse
 from items.models import Author, Book, ConferenceProceeding, Item, Journal, JournalPub, Thesis
 from pagehit.views import create_hit
 from pages.views import page_404_error
-from utils import invalid_IP_address, paginated_queryset
+from utils import paginated_queryset
 
 logger = logging.getLogger(__name__)
 
@@ -125,11 +125,13 @@ def download_item(request, the_item):
     """
     Return the PDF to the user.
 
-    Phase 5 will harden this further: tighten the URL regex before any DB
-    lookup, stream via FileResponse, and revisit the Item.private_pdf /
-    invalid_IP_address ACL (which doesn't compose with Cloudflare's edge
-    IP rewrite). For Phase 1 this is the legacy behaviour with the Py2
-    artefacts removed.
+    Phase 4 dropped the legacy IP-allowlist ACL — gunicorn behind
+    Cloudflare only sees edge IPs, so the gate either let everyone
+    through or let no one through depending on which IPs were whitelisted,
+    and was effectively security-theatre. The `Item.private_pdf` flag
+    remains as the per-item "do not expose this PDF" toggle. Phase 5 will
+    tighten the URL regex before any DB lookup and stream via
+    `FileResponse` (matching openmv's hardening from openmv#86).
     """
     create_hit(request, the_item.pk, extra_info="download-pdf")
     if not the_item.pdf_file:
@@ -145,10 +147,6 @@ def download_item(request, the_item):
 
     if the_item.private_pdf:
         return page_404_error(request, "This item's PDF file is not available.")
-
-    # Only check IPs if we have a valid download link
-    if invalid_IP_address(request):
-        return page_404_error(request, "This item's PDF file cannot be downloaded.")
 
     response = HttpResponse(content_type="application/pdf")
     response['Content-Disposition'] = 'attachment; filename=%s' % pdf_name
@@ -172,10 +170,6 @@ def view_item(request, the_item, slug):
         the_item.download_link = ''
 
     if the_item.private_pdf:
-        the_item.download_link = ''
-
-    # Only check IPs if we have a valid download link
-    if (the_item.download_link) and invalid_IP_address(request):
         the_item.download_link = ''
 
     logger.debug('Viewing: %s', the_item)

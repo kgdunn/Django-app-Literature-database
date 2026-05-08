@@ -4,10 +4,10 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 # Imports from other apps
-from utils import get_IP_address
 from .models import PageHit
 
 from django.conf import settings
+
 
 static_items = {'lit-main-page': -1,
                 'haystack_search': -2,
@@ -16,25 +16,31 @@ static_items = {'lit-main-page': -1,
 PROFANITIES_LIST = ('asshat', 'asshead', 'asshole', 'cunt', 'fuck',
                     'gook', 'nigger', 'shit')
 
+
 def create_hit(request, item, extra_info=None):
     """
     Given a Django ``request`` object, create an entry in the DB for the hit.
 
     If the ``item`` is a string, then we assume it is a static item and use
     the dictionary above to look up its "primary key".
+
+    Phase 4 trimmed PII storage: ``ua_string`` and ``ip_address`` were
+    dropped from the PageHit schema, so the only data captured per hit is
+    (item, item_pk, datetime, extra_info). The ``request`` argument is
+    kept on the signature so callers don't all have to change at once,
+    even though the body no longer reads it.
     """
-    ip_address = get_IP_address(request)
-    ua_string = request.META.get('HTTP_USER_AGENT', '')
+    del request  # captured for signature stability; PII trim drops use of it
     if extra_info is None:
-        extra_info = request.META.get('HTTP_REFERER', None)
+        extra_info = ''
+
     if isinstance(item, int):
-        page_hit = PageHit(ip_address=ip_address, ua_string=ua_string,
-                           item='item', item_pk=item,
-                           extra_info=extra_info)
+        page_hit = PageHit(item='item', item_pk=item, extra_info=extra_info)
     elif isinstance(item, str):
-        page_hit = PageHit(ip_address=ip_address, ua_string=ua_string,
-                           item=item, item_pk=static_items.get(item, 0),
+        page_hit = PageHit(item=item, item_pk=static_items.get(item, 0),
                            extra_info=extra_info)
+    else:
+        return  # unknown item type; refuse silently rather than 500
 
     page_hit.save()
 
@@ -58,9 +64,10 @@ def get_search_hits():
         if term not in PROFANITIES_LIST:
             hits_by_search[term] += 1
 
-    hit_counts = sorted((value, key) for (key,value) in hits_by_search.items())
+    hit_counts = sorted((value, key) for (key, value) in hits_by_search.items())
     hit_counts.reverse()
     return hit_counts
+
 
 def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     """
@@ -83,14 +90,14 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
 
     # extra_info=None to avoid counting download hits
     if item_pk is None:
-        page_hits = PageHit.objects.filter(item='item').\
-                                       filter(datetime__gte=start_date).\
-                                       filter(datetime__lte=end_date)
+        page_hits = PageHit.objects.filter(item='item')\
+                                       .filter(datetime__gte=start_date)\
+                                       .filter(datetime__lte=end_date)
     else:
-        page_hits = PageHit.objects.filter(item=item).\
-                                       filter(datetime__gte=start_date).\
-                                       filter(datetime__lte=end_date).\
-                                       filter(item_pk=item_pk)
+        page_hits = PageHit.objects.filter(item=item)\
+                                       .filter(datetime__gte=start_date)\
+                                       .filter(datetime__lte=end_date)\
+                                       .filter(item_pk=item_pk)
 
         return len(page_hits)
 
@@ -98,7 +105,6 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     for hit in page_hits:
         hits_by_pk[hit.item_pk] += 1
 
-    hit_counts = sorted((value, key) for (key,value) in hits_by_pk.items())
+    hit_counts = sorted((value, key) for (key, value) in hits_by_pk.items())
     hit_counts.reverse()
     return hit_counts
-

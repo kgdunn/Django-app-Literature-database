@@ -6,9 +6,12 @@ class PageHit(models.Model):
     code snippet or library, tag, person's profile, etc.
 
     The only requirement is that the item must have an integer primary key.
+
+    Phase 4 trimmed the historical ``ua_string`` (User-Agent) and
+    ``ip_address`` columns; the table is now privacy-respecting and
+    can be retained indefinitely without holding PII.
     """
-    ua_string = models.CharField(max_length=255) # browser's user agent
-    ip_address = models.GenericIPAddressField()
+
     datetime = models.DateTimeField(auto_now=True)
     item = models.CharField(max_length=50)
     item_pk = models.IntegerField()
