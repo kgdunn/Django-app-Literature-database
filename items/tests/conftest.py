@@ -6,13 +6,10 @@ from items.models import (
     Author,
     AuthorGroup,
     Book,
-    ConferenceProceeding,
-    Item,
     Journal,
     JournalPub,
     Publisher,
     School,
-    Thesis,
 )
 from tagging.models import Tag
 

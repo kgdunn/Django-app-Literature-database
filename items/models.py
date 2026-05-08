@@ -7,10 +7,11 @@ from django.urls import reverse
 
 from utils import unique_slugify
 
+
 # Custom manager for the items
 class LatestItemManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().order_by('-date_created')
+        return super().get_queryset().order_by("-date_created")
 
     def get_latest(self, n=5):
         return self.get_queryset()[0:n]
@@ -23,39 +24,33 @@ class Author(models.Model):
     slug = models.SlugField(max_length=510, editable=False)
 
     class Meta:
-        ordering = ['last_name']
+        ordering = ["last_name"]
 
     def __str__(self):
         if self.middle_initials:
-            return '%s, %s %s' % (self.last_name, self.first_name,
-                                  self.middle_initials)
+            return "%s, %s %s" % (self.last_name, self.first_name, self.middle_initials)
         else:
-            return '%s, %s' % (self.last_name, self.first_name)
+            return "%s, %s" % (self.last_name, self.first_name)
 
     @property
     def full_name(self):
         if self.middle_initials:
-            return '%s %s %s' % (self.first_name, self.middle_initials,
-                                 self.last_name)
+            return "%s %s %s" % (self.first_name, self.middle_initials, self.last_name)
         else:
-            return '%s %s' % (self.first_name, self.last_name)
-
+            return "%s %s" % (self.first_name, self.last_name)
 
     @property
     def full_name_hyperlinked(self):
         if self.middle_initials:
-            return '%s %s %s' % (self.first_name, self.middle_initials,
-                                 self.last_name)
+            return "%s %s %s" % (self.first_name, self.middle_initials, self.last_name)
         else:
-            return '%s %s' % (self.first_name, self.last_name)
-
+            return "%s %s" % (self.first_name, self.last_name)
 
     def get_absolute_url(self):
-        """ Create a URL to display all publications by this author
-        """
-        return reverse('lit-show-items', kwargs={'what_view': 'author',
-                                                 'extra_info': self.slug})
-
+        """Create a URL to display all publications by this author"""
+        return reverse(
+            "lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug}
+        )
 
     def save(self, *args, **kwargs):
         """
@@ -64,14 +59,15 @@ class Author(models.Model):
         """
         self.first_name = self.first_name.strip()
         self.last_name = self.last_name.strip()
-        unique_slugify(self, self.full_name, 'slug')
+        unique_slugify(self, self.full_name, "slug")
         super(Author, self).save(*args, **kwargs)
 
 
 class AuthorGroup(models.Model):
-    """ Ensures the author order is correctly added """
+    """Ensures the author order is correctly added"""
+
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
-    item = models.ForeignKey('Item', on_delete=models.CASCADE)
+    item = models.ForeignKey("Item", on_delete=models.CASCADE)
     order = models.IntegerField(default=0)
 
 
@@ -101,18 +97,17 @@ class Journal(models.Model):
     def __str__(self):
         return self.name
 
-
     def get_absolute_url(self):
         """
         Create a URL to display all publications from this journal
         """
-        return reverse('lit-show-items', kwargs={'what_view': 'journal',
-                                                 'extra_info': self.slug})
+        return reverse(
+            "lit-show-items", kwargs={"what_view": "journal", "extra_info": self.slug}
+        )
 
     @property
     def as_url(self):
         return '<a href="%s">%s</a>' % (self.get_absolute_url(), self.name)
-
 
     def save(self, *args, **kwargs):
         """
@@ -143,31 +138,33 @@ class Publisher(models.Model):
 
 class Item(models.Model):
 
-
-    objects = models.Manager() # The default manager: 'Item.objects.all()'
-    latest_items = LatestItemManager()  #'Item.latest_items.all()'
+    objects = models.Manager()  # The default manager: 'Item.objects.all()'
+    latest_items = LatestItemManager()  # 'Item.latest_items.all()'
 
     ITEM_CHOICES = (
-        ('thesis',         'Thesis'),
-        ('journalpub',     'Journal publication'),
-        ('book',           'Book'),
-        ('conferenceproc', 'Conference proceeding'),
+        ("thesis", "Thesis"),
+        ("journalpub", "Journal publication"),
+        ("book", "Book"),
+        ("conferenceproc", "Conference proceeding"),
     )
+
     def upload_dest(instance, filename):
-        """ ``instance.slug`` has already been defined at this point (from
+        """``instance.slug`` has already been defined at this point (from
         self.save()), so it can be safely used.
         """
-        return 'literature/pdf/%s/%s.pdf' % (instance.slug[0], instance.slug)
+        return "literature/pdf/%s/%s.pdf" % (instance.slug[0], instance.slug)
 
-    authors = models.ManyToManyField(Author, through='AuthorGroup')
+    authors = models.ManyToManyField(Author, through="AuthorGroup")
     title = models.TextField()
     slug = models.SlugField(max_length=255, editable=False)
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
     year = models.PositiveIntegerField()
-    doi_link = models.URLField(blank=True, null=True,
-                               verbose_name='DOI link')
-    web_link = models.URLField(blank=True, null=True, )
-    tags = models.ManyToManyField('tagging.Tag')
+    doi_link = models.URLField(blank=True, null=True, verbose_name="DOI link")
+    web_link = models.URLField(
+        blank=True,
+        null=True,
+    )
+    tags = models.ManyToManyField("tagging.Tag")
     abstract = models.TextField(blank=True)
     show_abstract = models.BooleanField(default=False)
     date_created = models.DateTimeField(editable=False, auto_now=True)
@@ -184,7 +181,7 @@ class Item(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        verbose_name='PDF file (admin-only; not exposed for download)',
+        verbose_name="PDF file (admin-only; not exposed for download)",
     )
 
     # Contains unstructured text (auto-extracted from PDF, cut/paste, whatever)
@@ -193,45 +190,43 @@ class Item(models.Model):
 
     def __str__(self):
         if self.doi_link:
-            return '%s (%s) [doi:%s]' % (self.title, str(self.year),
-                                         self.doi_link)
+            return "%s (%s) [doi:%s]" % (self.title, str(self.year), self.doi_link)
         else:
-            return '%s (%s)' % (self.title, str(self.year))
-
+            return "%s (%s)" % (self.title, str(self.year))
 
     @property
     def has_extra(self):
         return bool(self.other_search_text)
 
-
     @property
     def year_as_url(self):
-        return '<a href="%s">%s</a>' % (reverse('lit-show-items',
-                                                kwargs={'what_view': 'pub-by-year',
-                                                 'extra_info': self.year}),
-                                        self.year)
+        return '<a href="%s">%s</a>' % (
+            reverse(
+                "lit-show-items",
+                kwargs={"what_view": "pub-by-year", "extra_info": self.year},
+            ),
+            self.year,
+        )
 
     @property
     def external_link_text(self):
-        """ Text to display for the external link """
+        """Text to display for the external link"""
         if self.doi_link:
-            return 'DOI'
+            return "DOI"
         elif self.web_link:
-            return 'More info'
+            return "More info"
         else:
-            return ''
-
+            return ""
 
     @property
     def external_link(self):
-        """ Hyperlink to use for the external link """
+        """Hyperlink to use for the external link"""
         if self.doi_link:
             return self.doi_link
         elif self.web_link:
             return self.web_link
         else:
             return None
-
 
     @property
     def author_list(self):
@@ -240,15 +235,15 @@ class Item(models.Model):
         2: Smith and Weston
         3: Joyce et al.
         """
-        auth_list = self.authors.all().order_by('authorgroup__order')
+        auth_list = self.authors.all().order_by("authorgroup__order")
         if len(auth_list) > 2:
-            return auth_list[0].last_name + ' <i>et al</i>.'
+            return auth_list[0].last_name + " <i>et al</i>."
         elif len(auth_list) == 2:
-            return ' and '.join([auth.last_name for auth in auth_list])
+            return " and ".join([auth.last_name for auth in auth_list])
         else:
             return auth_list[0].last_name
-    #author_list.allow_tags = True
 
+    # author_list.allow_tags = True
 
     @property
     def author_slugs(self):
@@ -261,26 +256,25 @@ class Item(models.Model):
         2: Smith-and-Weston
         3: Joyce-Smith-Smythe
         """
-        auth_list = self.authors.all().order_by('authorgroup__order')
+        auth_list = self.authors.all().order_by("authorgroup__order")
         authors = []
         for auth in auth_list:
             author = (
-                unicodedata.normalize('NFKD', auth.last_name)
-                .encode('ascii', 'ignore')
-                .decode('ascii')
+                unicodedata.normalize("NFKD", auth.last_name)
+                .encode("ascii", "ignore")
+                .decode("ascii")
             )
-            author = re.sub(r'[^\w\s-]', '', author).strip()
+            author = re.sub(r"[^\w\s-]", "", author).strip()
             authors.append(author)
 
         if len(auth_list) >= 3:
-            out = ', '.join([auth for auth in authors[0:-1]])
-            out += ' and ' + authors[-1]
+            out = ", ".join([auth for auth in authors[0:-1]])
+            out += " and " + authors[-1]
             return out
         elif len(auth_list) == 2:
-            return ' and '.join(authors)
+            return " and ".join(authors)
         else:
             return authors[0]
-
 
     @property
     def author_list_all_lastnames(self):
@@ -291,22 +285,21 @@ class Item(models.Model):
         2: Smith and Weston
         3: Joyce, Smith and Smythe
         """
-        auth_list = list(self.authors.all().order_by('authorgroup__order'))
-        def urlize(author):
-            return '<a href="%s">%s</a>' % (author.get_absolute_url(),
-                                            author.last_name)
+        auth_list = list(self.authors.all().order_by("authorgroup__order"))
 
-        out = ''
+        def urlize(author):
+            return '<a href="%s">%s</a>' % (author.get_absolute_url(), author.last_name)
+
+        out = ""
         if len(auth_list) >= 3:
-            out = ', '.join([urlize(auth) for auth in auth_list[0:-1]])
-            out += ' and ' + urlize(auth_list[-1])
+            out = ", ".join([urlize(auth) for auth in auth_list[0:-1]])
+            out += " and " + urlize(auth_list[-1])
         if len(auth_list) == 2:
-            out = ' and '.join([urlize(auth) for auth in auth_list])
+            out = " and ".join([urlize(auth) for auth in auth_list])
         if len(auth_list) == 1:
             out = urlize(auth_list[0])
 
         return out
-
 
     @property
     def full_author_listing(self):
@@ -317,64 +310,60 @@ class Item(models.Model):
         2: John R. Smith and P. Q. Weston
         3: R. W. Joyce, P. J. Smith and T. Y. Smythe
         """
-        auth_list = list(self.authors.all().order_by('authorgroup__order'))
-        def urlize(author):
-            return '<a href="%s">%s</a>' % (author.get_absolute_url(),
-                                            author.full_name)
+        auth_list = list(self.authors.all().order_by("authorgroup__order"))
 
-        out = ''
+        def urlize(author):
+            return '<a href="%s">%s</a>' % (author.get_absolute_url(), author.full_name)
+
+        out = ""
         if len(auth_list) >= 3:
-            out = ', '.join([urlize(auth) for auth in auth_list[0:-1]])
-            out += ' and ' + urlize(auth_list[-1])
+            out = ", ".join([urlize(auth) for auth in auth_list[0:-1]])
+            out += " and " + urlize(auth_list[-1])
         if len(auth_list) == 2:
-            out = ' and '.join([urlize(auth) for auth in auth_list])
+            out = " and ".join([urlize(auth) for auth in auth_list])
         if len(auth_list) == 1:
             out = urlize(auth_list[0])
         return out
 
-
     @property
     def doi_link_cleaned(self):
         return (
-            self.doi_link
-            .removeprefix('https://dx.doi.org/')
-            .removeprefix('http://dx.doi.org/')
-            .removeprefix('https://doi.org/')
-            .removeprefix('http://doi.org/')
+            self.doi_link.removeprefix("https://dx.doi.org/")
+            .removeprefix("http://dx.doi.org/")
+            .removeprefix("https://doi.org/")
+            .removeprefix("http://doi.org/")
         )
-
 
     @property
     def previous_item(self):
         n = 1
-        item = Item.objects.all().filter(pk=self.pk-n)
+        item = Item.objects.all().filter(pk=self.pk - n)
         if len(item):
             return item[0].get_absolute_url()
         else:
             return None
-
 
     @property
     def next_item(self):
         n = 1
-        item = Item.objects.all().filter(pk=self.pk+n)
+        item = Item.objects.all().filter(pk=self.pk + n)
         if len(item):
             return item[0].get_absolute_url()
         else:
             return None
 
-
     def get_absolute_url(self):
-        """ I can't seem to find a way to use the "reverse" or "permalink"
+        """I can't seem to find a way to use the "reverse" or "permalink"
         functions to create this URL: do it manually, to match ``urls.py``
         """
-        return reverse('lit-view-item', args=[0]).rstrip('0') + \
-                '%d/%s' % (self.pk, self.slug)
-
+        return reverse("lit-view-item", args=[0]).rstrip("0") + "%d/%s" % (
+            self.pk,
+            self.slug,
+        )
 
     def save(self, *args, **kwargs):
         self.title = self.title.strip()
-        unique_slugify(self, self.title[0:255], 'slug')
+        unique_slugify(self, self.title[0:255], "slug")
         super(Item, self).save(*args, **kwargs)
 
 
@@ -385,9 +374,7 @@ class JournalPub(Item):
     page_end = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
-        return '%s (%s) [doi:%s]' % (self.title, str(self.year),
-                                     self.doi_link)
-
+        return "%s (%s) [doi:%s]" % (self.title, str(self.year), self.doi_link)
 
     def full_citation(self):
         """
@@ -403,7 +390,6 @@ class JournalPub(Item):
             self.year_as_url,
         )
 
-
     class Meta:
         verbose_name_plural = "journal publications"
 
@@ -414,24 +400,27 @@ class Book(Item):
     volume = models.CharField(max_length=100, blank=True, null=True)
     series = models.CharField(max_length=100, blank=True, null=True)
     edition = models.CharField(max_length=100, blank=True, null=True)
-    isbn = models.CharField(max_length=20, blank=True, null=True,
-                            verbose_name='ISBN')
+    isbn = models.CharField(max_length=20, blank=True, null=True, verbose_name="ISBN")
 
     def full_citation(self):
         """
         Returns details about the book in HTML form
         """
-        edition = self.edition.lower().rstrip('edition')
+        edition = self.edition.lower().rstrip("edition")
         if self.edition:
-            return '%s: "<i>%s</i>", %s, %s, %s.' %  (self.full_author_listing,
-                                                       self.title,
-                                                       edition,
-                                                       self.publisher,
-                                                       self.year_as_url)
-        return '%s: "<i>%s</i>", %s, %s.' %  (self.author_list,
-                                               self.title,
-                                               self.publisher,
-                                               self.year_as_url)
+            return '%s: "<i>%s</i>", %s, %s, %s.' % (
+                self.full_author_listing,
+                self.title,
+                edition,
+                self.publisher,
+                self.year_as_url,
+            )
+        return '%s: "<i>%s</i>", %s, %s.' % (
+            self.author_list,
+            self.title,
+            self.publisher,
+            self.year_as_url,
+        )
 
 
 class ConferenceProceeding(Item):
@@ -441,24 +430,32 @@ class ConferenceProceeding(Item):
     page_end = models.CharField(max_length=10, blank=True, null=True)
     organization = models.CharField(blank=True, null=True, max_length=200)
     location = models.CharField(blank=True, null=True, max_length=200)
-    publisher = models.ForeignKey(Publisher, on_delete=models.CASCADE,
-                                  blank=True, null=True)
+    publisher = models.ForeignKey(
+        Publisher, on_delete=models.CASCADE, blank=True, null=True
+    )
 
     def full_citation(self):
         """
         Returns details about the conference in HTML form
         """
-        first =  '%s: "<i>%s</i>", '%  (self.author_list, self.title)
-        rest = (item for item in [self.conference_name, self.organization,
-                                  self.location, self.publisher] if item)
-        rest = ', '.join(rest)
+        first = '%s: "<i>%s</i>", ' % (self.author_list, self.title)
+        rest = (
+            item
+            for item in [
+                self.conference_name,
+                self.organization,
+                self.location,
+                self.publisher,
+            ]
+            if item
+        )
+        rest = ", ".join(rest)
 
-        final = ', %s.' % self.year
+        final = ", %s." % self.year
         if self.page_start and self.page_end:
-            final = ', %s-%s, %s.' % (self.page_start, self.page_end,
-                                      self.year)
+            final = ", %s-%s, %s." % (self.page_start, self.page_end, self.year)
         elif self.page_start:
-            final = ', %s, %s.' % (self.page_start, self.year)
+            final = ", %s, %s." % (self.page_start, self.year)
 
         return first + rest + final
 
@@ -468,8 +465,8 @@ class ConferenceProceeding(Item):
 
 class Thesis(Item):
     THESIS_CHOICES = (
-        ('masters', 'Masters thesis'),
-        ('phd',     'Ph.D thesis'),
+        ("masters", "Masters thesis"),
+        ("phd", "Ph.D thesis"),
     )
     thesis_type = models.CharField(max_length=50, choices=THESIS_CHOICES)
     school = models.ForeignKey(School, on_delete=models.CASCADE)
@@ -479,16 +476,18 @@ class Thesis(Item):
         """
         Returns details about the thesis in HTML form
         """
-        thesis_type = ''
+        thesis_type = ""
         for option_key, option_value in self.THESIS_CHOICES:
             if self.thesis_type == option_key:
-                    thesis_type = option_value
+                thesis_type = option_value
 
-        return '%s: "<i>%s</i>", %s, %s, %s.' %  (self.author_list,
-                                                  self.title,
-                                                  thesis_type,
-                                                  self.school,
-                                                  self.year_as_url)
+        return '%s: "<i>%s</i>", %s, %s, %s.' % (
+            self.author_list,
+            self.title,
+            thesis_type,
+            self.school,
+            self.year_as_url,
+        )
 
     class Meta:
         verbose_name_plural = "theses"

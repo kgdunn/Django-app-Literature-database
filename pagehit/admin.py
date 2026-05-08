@@ -9,11 +9,12 @@ class PageHitAdmin(admin.ModelAdmin):
     edited or deleted from the admin. Phase 4 dropped the PII columns
     (`ua_string`, `ip_address`); what's left is intentionally minimal.
     """
-    list_display = ('datetime', 'item', 'item_pk', 'extra_info')
-    list_filter = ('item',)
-    date_hierarchy = 'datetime'
-    search_fields = ('item', 'extra_info')
-    readonly_fields = ('datetime', 'item', 'item_pk', 'extra_info')
+
+    list_display = ("datetime", "item", "item_pk", "extra_info")
+    list_filter = ("item",)
+    date_hierarchy = "datetime"
+    search_fields = ("item", "extra_info")
+    readonly_fields = ("datetime", "item", "item_pk", "extra_info")
     list_per_page = 200
 
     def has_add_permission(self, request):

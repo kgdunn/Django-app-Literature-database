@@ -8,6 +8,7 @@ class Tag(models.Model):
     A tag object: each item can have several tags. All tags must have
     a unique slug name.
     """
+
     # Name used for URLs and tag blocks
     slug = models.SlugField(unique=True, editable=False)
 
@@ -18,20 +19,20 @@ class Tag(models.Model):
     # descriptions
     description = models.CharField(max_length=255, blank=True, null=True)
     # and perhaps an image
-#    image = models.ImageField(upload_to='tags/', blank=True)
+    #    image = models.ImageField(upload_to='tags/', blank=True)
 
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
-        """ Slug is a primary key: don't save a new tag if one already exists
+        """Slug is a primary key: don't save a new tag if one already exists
         with the identical slug.
         """
         slug = slugify(self.name)
 
         # happens if the slug is totally unicode characters
         if len(slug) == 0:
-            raise ValidationError('Tag contains invalid characters')
+            raise ValidationError("Tag contains invalid characters")
 
         if Tag.objects.filter(slug=slug):
             return
@@ -41,4 +42,4 @@ class Tag(models.Model):
             super(Tag, self).save(*args, **kwargs)
 
     class Meta:
-        ordering = ['slug']
+        ordering = ["slug"]

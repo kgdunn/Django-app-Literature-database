@@ -26,14 +26,16 @@ def front_page(request):
     that year. ORDER BY year DESC so the list is human-readable.
     """
     years = (
-        Item.objects.values('year')
-        .annotate(count=Count('id'))
-        .order_by('-year')[:15]
+        Item.objects.values("year").annotate(count=Count("id")).order_by("-year")[:15]
     )
-    return render(request, 'pages/front-page.html', {
-        'latest_items': Item.latest_items.get_latest(n=10),
-        'years': list(years),
-    })
+    return render(
+        request,
+        "pages/front-page.html",
+        {
+            "latest_items": Item.latest_items.get_latest(n=10),
+            "years": list(years),
+        },
+    )
 
 
 def healthz(request):
@@ -41,37 +43,35 @@ def healthz(request):
     Phase-9 deploy script. Plain text, never cached, no DB hit so a
     Postgres outage doesn't fail the container's healthcheck.
     """
-    response = HttpResponse('ok', content_type='text/plain')
-    response['Cache-Control'] = 'no-store'
+    response = HttpResponse("ok", content_type="text/plain")
+    response["Cache-Control"] = "no-store"
     return response
 
 
 def about_page(request):
-    return render(request, 'pages/about-page.html')
+    return render(request, "pages/about-page.html")
 
 
-def page_404_error(request, exception=None, extra_info=''):
-    """ Override Django's 404 handler, because we want to log this also.
+def page_404_error(request, exception=None, extra_info=""):
+    """Override Django's 404 handler, because we want to log this also.
 
     Django's handler signature changed in 1.9 to add `exception`; we accept
     it here so the handler is callable both directly (where we pass
     extra_info) and via the URL resolver.
     """
     ip = get_IP_address(request)
-    info = extra_info or (str(exception) if exception is not None else '')
-    logger.info('404 from %s for request "%s"; extra info=%s',
-                ip, request.path, info)
-    t = get_template('404.html')
-    html = t.render({'extra_info': info}, request)
+    info = extra_info or (str(exception) if exception is not None else "")
+    logger.info('404 from %s for request "%s"; extra info=%s', ip, request.path, info)
+    t = get_template("404.html")
+    html = t.render({"extra_info": info}, request)
     return HttpResponse(html, status=404)
 
 
 def page_500_error(request):
-    """ Override Django's 500 handler, because we want to log this also.
-    """
+    """Override Django's 500 handler, because we want to log this also."""
     ip = get_IP_address(request)
     logger.error('500 from %s for request "%s"', ip, request.path)
-    t = get_template('500.html')
+    t = get_template("500.html")
     html = t.render({}, request)
     return HttpResponse(html, status=500)
 
@@ -89,7 +89,7 @@ def search(request):
     this view does not branch on ``connection.vendor`` — Postgres is
     the only supported backend.
     """
-    q = request.GET.get('q', '').strip()
+    q = request.GET.get("q", "").strip()
     if not q:
         return redirect(front_page)
 
@@ -102,21 +102,21 @@ def search(request):
         pass
     else:
         if Item.objects.filter(id=item_id).exists():
-            return redirect('lit-view-item', item_id=item_id)
+            return redirect("lit-view-item", item_id=item_id)
 
     # Avoid duplicate logging if the search request paginates.
-    if 'page' not in request.GET:
-        create_hit(request, 'haystack_search', extra_info=q)
-        logger.info('SEARCH [%s]: %s', get_IP_address(request), q)
+    if "page" not in request.GET:
+        create_hit(request, "haystack_search", extra_info=q)
+        logger.info("SEARCH [%s]: %s", get_IP_address(request), q)
 
     vector = (
-        SearchVector('title', weight='A', config='english')
-        + SearchVector('abstract', weight='B', config='english')
-        + SearchVector('other_search_text', weight='C', config='english')
+        SearchVector("title", weight="A", config="english")
+        + SearchVector("abstract", weight="B", config="english")
+        + SearchVector("other_search_text", weight="C", config="english")
     )
     # `websearch` parses the user input forgivingly: bare terms ANDed,
     # quoted phrases preserved, `-foo` excludes.
-    query = SearchQuery(q, config='english', search_type='websearch')
+    query = SearchQuery(q, config="english", search_type="websearch")
 
     # Threshold of 0.3 catches one-letter typos in author last names
     # (`einstien` -> `Einstein`) without sweeping in unrelated names.
@@ -124,20 +124,23 @@ def search(request):
     AUTHOR_TRIGRAM_THRESHOLD = 0.3
 
     results = (
-        Item.objects
-        .annotate(
+        Item.objects.annotate(
             rank=SearchRank(vector, query),
-            author_sim=TrigramSimilarity('authorgroup__author__last_name', q),
+            author_sim=TrigramSimilarity("authorgroup__author__last_name", q),
         )
         .filter(Q(rank__gt=0) | Q(author_sim__gt=AUTHOR_TRIGRAM_THRESHOLD))
-        .order_by('-rank', '-author_sim', '-year')
+        .order_by("-rank", "-author_sim", "-year")
         .distinct()
     )
 
     entries = paginated_queryset(request, results)
 
-    return render(request, 'pages/search.html', {
-        'query': q,
-        'entries': entries,
-        'no_entries_message': 'No items match "%s".' % q,
-    })
+    return render(
+        request,
+        "pages/search.html",
+        {
+            "query": q,
+            "entries": entries,
+            "no_entries_message": 'No items match "%s".' % q,
+        },
+    )

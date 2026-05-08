@@ -1,5 +1,14 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+
+# Django-generated migrations are tracked verbatim from `makemigrations`;
+# we don't want black / isort / flake8 / mypy bickering about their style
+# (e.g. line length on long auto-generated CreateModel calls, or isort
+# rearranging the `from django.db import migrations, models` block). The
+# global exclude below applies to every hook, so the previous per-hook
+# `exclude:` on mypy is no longer needed.
+exclude: ^(items|tagging|pagehit)/migrations/
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -23,7 +32,6 @@ repos:
     hooks:
       - id: mypy
         args: [--ignore-missing-imports]
-        exclude: ^(items|tagging|pagehit)/migrations/
         additional_dependencies:
           - types-bleach
 
