@@ -1,0 +1,58 @@
+"""Production settings: Postgres + DEBUG=False + Caddy/Cloudflare proxy headers."""
+
+from .base import *  # noqa: F401,F403
+from .base import env, env_list
+
+DEBUG = False
+
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ".literature.learnche.org,127.0.0.1")
+
+# Caddy terminates TLS on the host and proxies plain HTTP to gunicorn.
+# This header tells Django the request was originally HTTPS.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Required by Django 4.x for any non-GET request (e.g. admin login) when the
+# request reaches Django over HTTPS via a reverse proxy.
+CSRF_TRUSTED_ORIGINS = [
+    "https://literature.learnche.org",
+    "https://test.literature.learnche.org",
+]
+
+# Security headers. HSTS is staged: start at 300 s to verify the proxy is
+# forwarding X-Forwarded-Proto correctly, then bump to 31536000 (1 year) via
+# SECURE_HSTS_SECONDS in .env and flip SECURE_HSTS_PRELOAD to True once
+# confirmed on staging + prod.
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "300") or "300")
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = False
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = "Lax"
+X_FRAME_OPTIONS = "DENY"
+
+_db_keys = ["POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD", "SQL_HOST", "SQL_PORT"]
+_db_settings = {}
+for _key in _db_keys:
+    _value = env(_key)
+    assert (
+        _value is not None
+    ), f"{_key} must be set via environment variable or .env file"
+    _db_settings[_key] = _value
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _db_settings["POSTGRES_DB"],
+        "USER": _db_settings["POSTGRES_USER"],
+        "PASSWORD": _db_settings["POSTGRES_PASSWORD"],
+        "HOST": _db_settings["SQL_HOST"],
+        "PORT": _db_settings["SQL_PORT"],
+        "CONN_MAX_AGE": 60,
+    }
+}
