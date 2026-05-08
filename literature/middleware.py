@@ -12,23 +12,26 @@ that Django's `SecurityMiddleware` does not set:
 * ``Cross-Origin-Opener-Policy`` — isolate browsing-context groups.
 
 CSP currently allows ``'unsafe-inline'`` for both `script-src` and
-`style-src` because base.html ships an inline ``<style>`` block and a few
-templates inline small ``<script>`` snippets. Externalising those is
-tracked for Phase 6 (templates modernization).
+`style-src` because `templates/base.html` ships an inline ``<style>``
+block (the design tokens + layout) and a couple of small inline
+``<script>`` blocks (the early-applied theme preference and the theme
+toggle button). Externalising them is queued for a future phase that
+moves the CSS / JS into static files; the bleach filter on
+`Item.abstract` already keeps the high-risk surface (admin-pasted HTML)
+out of the inline-script ambit.
 
 CDN allowlist:
-* `cdn.jsdelivr.net` — target host once Phase 6 switches to jsdelivr-served
-  MathJax + ECharts (matching openmv).
-* `cdnjs.cloudflare.com` — current host of the legacy MathJax 2.7.5 script
-  in templates/base.html. Both entries stay until Phase 6 lands so no
-  inline-script regressions appear during the transition.
-* `fonts.googleapis.com` + `fonts.gstatic.com` — Google Fonts (Inconsolata,
-  Lato) loaded from base.html.
+* `cdn.jsdelivr.net` — host of the SRI-pinned MathJax 2.7.9 script
+  (Phase 6) used to render LaTeX in `Item.abstract`. The integrity
+  hash in `templates/base.html` ensures the bytes can't drift without
+  the browser refusing to execute the script.
+* `fonts.googleapis.com` + `fonts.gstatic.com` — Google Fonts (IBM Plex
+  Sans / Serif / Mono) loaded from base.html.
 """
 
 CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; "
     "img-src 'self' data:; "

@@ -6,7 +6,7 @@ from django.contrib.postgres.search import (
     SearchVector,
     TrigramSimilarity,
 )
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import get_template
@@ -19,9 +19,21 @@ logger = logging.getLogger(__name__)
 
 
 def front_page(request):
-    """Assembles the front page with predefined defaults"""
-    return render(request, 'pages/front-page.html',
-                  {'latest_items': Item.latest_items.get_latest(n=10)})
+    """Assembles the front page with predefined defaults.
+
+    `years` powers the front-page "Browse by year" navigation: the 15
+    most recent publication years, each with the count of items in
+    that year. ORDER BY year DESC so the list is human-readable.
+    """
+    years = (
+        Item.objects.values('year')
+        .annotate(count=Count('id'))
+        .order_by('-year')[:15]
+    )
+    return render(request, 'pages/front-page.html', {
+        'latest_items': Item.latest_items.get_latest(n=10),
+        'years': list(years),
+    })
 
 
 def about_page(request):

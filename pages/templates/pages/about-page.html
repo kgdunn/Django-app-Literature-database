@@ -4,11 +4,16 @@
 
 {% block content %}
 
-<div id="lit-static-centering">
-<p>This site is a database of latent variable references that we consider useful for
-understanding these methods.
+<p class="detail-topbar"><a href="{% url 'lit-main-page' %}">&larr; Back to home</a></p>
 
-<p>If you'd like to contribute any references that we may have overlooked, please
-email them for our consideration: <a href="mailto:kgdunn@gmail.com">kgdunn@gmail.com</a>
+<h3>About this site</h3>
+
+<div class="lit-site-statement">
+    <p>This site is a database of latent-variable references that we consider useful for understanding these methods.</p>
 </div>
+
+<p>If you'd like to contribute any references that we may have overlooked, please email them for our consideration: <a href="mailto:kgdunn@gmail.com">kgdunn@gmail.com</a>.</p>
+
+<p>PDFs are stored alongside each entry for full-text indexing only and are not exposed for download (copyright restriction). Use the DOI / external link on each item's detail page to find the publisher-hosted copy.</p>
+
 {% endblock %}

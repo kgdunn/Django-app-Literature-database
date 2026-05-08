@@ -1,68 +1,78 @@
 {% extends "base.html" %}
+{% load core_tags %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
 
-<div id="lit-site-statement">
-    A collection of references related to latent variable methods and various
-	applications. <i>Full text and abstracts</i> are searched below.
+<div class="lit-site-statement">
+    <p>A collection of references on latent-variable methods and applications. <i>Full text and abstracts</i> are searched below; author last-name typos are matched fuzzily.</p>
 </div>
 
-<div id="lit-search">
-    <form method="get" action="{% url 'search' %}" id="lit-search-form" name="lit_search_form">
-        <input id="lit-search-input" name="q" type="text" placeholder="Search all references" value="{{ query|default_if_none:'' }}" />
-        <input id="lit-search-button" type="submit" value="Search" />
-    </form>
-    <div style="clear:both;"></div>
+<form method="get" action="{% url 'search' %}" class="lit-search" role="search">
+    <label for="lit-search-input" class="visually-hidden">Search the literature catalogue</label>
+    <input type="search" id="lit-search-input" name="q" maxlength="200" autocomplete="off"
+           placeholder="Search all references" value="{{ query|default_if_none:'' }}" />
+    <button type="submit" class="lit-search__submit">Search</button>
+</form>
+
+<div class="lit-portal-grid">
+
+    <section class="lit-portal">
+        <h3>Recently added</h3>
+        <ul>
+        {% for item in latest_items %}
+            <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:16 }}</a></li>
+        {% endfor %}
+        </ul>
+        <a class="lit-portal__more" href="{% url 'show-items--all' %}">Show all</a>
+    </section>
+
+    <section class="lit-portal">
+        <h3>Tag cloud</h3>
+        <div class="tag-list" style="line-height: 2.2;">
+        {% for tag_item in "item"|cloud:28 %}
+            <a href="{% url 'lit-show-items' what_view='tag' extra_info=tag_item.tag.slug %}"
+               class="lit-tag-cloud"
+               style="font-size: {{ tag_item.score }}%">{{ tag_item.tag.name }}</a>
+        {% endfor %}
+        </div>
+        <a class="lit-portal__more" href="{% url 'lit-show-items' what_view='show' extra_info='all-tags' %}">See complete tag cloud</a>
+    </section>
+
+    <section class="lit-portal">
+        <h3>Most viewed</h3>
+        <ul>
+        {% for item in "item"|most_viewed:7 %}
+            <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:12 }}</a></li>
+        {% endfor %}
+        </ul>
+    </section>
+
+    <section class="lit-portal">
+        <h3>Browse by year</h3>
+        {% if years %}
+        <div class="lit-year-list">
+            {% for y in years %}
+            <a href="{% url 'show-items--pub-by-year' extra_info=y.year %}">{{ y.year }}<span class="count">{{ y.count }}</span></a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: var(--color-text-subtle);">No items yet.</p>
+        {% endif %}
+    </section>
+
+    {% if "item"|most_searched:1 %}
+    <section class="lit-portal">
+        <h3>Top search terms</h3>
+        <div class="tag-list">
+        {% for term in "item"|most_searched:12 %}
+            <a href="{% url 'search' %}?q={{ term }}" class="lit-tag">{{ term }}</a>
+        {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
 </div>
-
-{% load core_tags %}
-  <div class="lit-portal-container">
-	<div class="lit-portal-row-container">
-	  <div class="lit-portal-row">
-		<div class="lit-portal-left lit-portal">
-		  <h3>Recently added</h3>
-			<ul>
-			{% for item in latest_items %}
-			    <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:16 }}</a></li>
-			{% endfor %}
-			</ul>
-			<a href="{% url 'show-items--all' %}">Show all</a>
-		</div>
-
-		<div class="lit-portal-right">
-  		  <h3>Tag cloud</h3>
-            {% for item in "item"|cloud:28 %}
-			  <span><a href="{% url "lit-show-items" what_view="tag" extra_info=item.tag %}" class="lit-tag-cloud" style="font-size: {{item.score}}%">{{item.tag.name}}</a></span>
-			{% endfor %}
-			<p><a href="{% url "lit-show-items" what_view="show" extra_info="all-tags" %}">See complete tag cloud</a>
-		</div>
-	  </div>
-	</div>
-	<div style="clear: both;"></div>
-	<div class="lit-portal-row-container">
-	  <div class="lit-portal-row">
-		<div class="lit-portal-left">
-		  <h3>Most viewed</h3>
-			<ul>
-		  	{% for item in "item"|most_viewed:7 %}
-			  <li><a href="{{ item.get_absolute_url }}">{{ item.title|truncatewords:12}}</a></li>
-			{% endfor %}
-			</ul>
-			<p><a href="{% url "lit-show-items" what_view="sort" extra_info="most-viewed" %}">Show all</a>
-		</div>
-		<div class="lit-portal-right">
-		  <h3>Top search terms</h3>
-			<ul>
-		  	{% for item in "item"|most_searched:12 %}
-			  <li><a href="{% url 'search' %}?q={{item}}">{{item}}</a></li>
-			{% endfor %}
-			</ul>
-		</div>
-	  </div>
-	</div>
-  </div>
-
 
 {% endblock %}

@@ -4,20 +4,20 @@
 
 {% block content %}
 
-<div id="lit-search">
-    <form method="get" action="{% url 'search' %}" id="lit-search-form" name="lit_search_form">
-        <input id="lit-search-input" name="q" type="text" placeholder="Search all references" value="{{ query }}" />
-        <input id="lit-search-button" type="submit" value="Search" />
-    </form>
-    <div style="clear:both;"></div>
-</div>
+<p class="detail-topbar"><a href="{% url 'lit-main-page' %}">&larr; Back to home</a></p>
+
+<h3>Search results</h3>
+
+<form method="get" action="{% url 'search' %}" class="lit-search" role="search">
+    <label for="lit-search-input" class="visually-hidden">Search the literature catalogue</label>
+    <input type="search" id="lit-search-input" name="q" maxlength="200" autocomplete="off"
+           placeholder="Search all references" value="{{ query }}" />
+    <button type="submit" class="lit-search__submit">Search</button>
+</form>
 
 {% if query %}
-    <div id="lit-search-results-note">
-        Search across titles, abstracts, and (where available) the full
-        article text. Author last-name typos are matched fuzzily.
-    </div>
-    {% include "items/entries_list.html" %}
+    <p class="lit-search__results-note">Search across titles, abstracts, and (where available) the full article text. Author last-name typos are matched fuzzily.</p>
+    {% include 'items/entries_list.html' %}
 {% endif %}
 
 {% endblock %}

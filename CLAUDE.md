@@ -18,7 +18,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 3     | Drop Haystack, add Postgres FTS (Stage 1 search)     | pending  |
 | 4     | Trim PageHit (drop UA/IP) + drop IP gate on download | done     |
 | 5     | Remove public PDF download (copyright); add bleach   | done     |
-| 6     | Templates modernization (Bootstrap, MathJax, mobile) | pending  |
+| 6     | Templates modernization (design tokens, MathJax, mobile) | done     |
 | 7     | Dockerize (Dockerfile + compose dev/prod)            | pending  |
 | 8     | Tests + CI workflow                                  | pending  |
 | 9     | Hetzner provisioning + deploy workflow               | pending  |
@@ -65,12 +65,13 @@ The site is **not yet in production** at the time of writing — there is no liv
   - `items.__extract_extra__` — admin-only endpoint that runs the PDF text extractor (`pdfplumber` after Phase 1; `pdfminer` before) and writes the result into `Item.other_search_text`.
 
 - **Templates** (`templates/` + per-app `{app}/templates/{app}/`):
-  - `templates/base.html` — site layout. After Phase 6, Bootstrap 3 inline-style (no static-file dependency, MathJax CDN for `\(...\)` LaTeX in abstracts, ECharts CDN for the per-item view sparkline). Pre-Phase-6 is the legacy markup.
+  - `templates/base.html` — site layout, mirroring openmv's design system: a single inline `<style>` block of CSS variables (light + dark theme), IBM Plex Sans/Serif/Mono via Google Fonts, no static-file dependency. Includes the `<meta viewport>` for mobile, a tri-state theme toggle (light / dark / auto, persisted in `localStorage`), and an SRI-pinned MathJax 2.7.9 script from jsdelivr for `\(...\)` LaTeX in abstracts. No ECharts dependency yet (no per-item sparkline; deferred until real PageHit data lands).
   - `templates/404.html`, `templates/500.html` — error pages.
-  - `pages/templates/pages/front-page.html` — homepage.
+  - `pages/templates/pages/front-page.html` — homepage. Five portals (Recently added, Tag cloud, Most viewed, Browse by year, Top search terms) inside a `.lit-portal-grid` (1-col on mobile, 2-col ≥768 px). The "Browse by year" entries come from a `Count`-annotated queryset built in `pages.front_page` (top 15 most-recent years).
   - `pages/templates/pages/about-page.html` — about.
-  - `items/templates/items/show-entries.html`, `entries_list.html`, `item.html`, `show-tag-cloud.html` — list, detail, and tag-cloud renderings.
-  - `templates/search/*` — Haystack-era search templates, **deleted in Phase 3** (the `pages.search` view will render directly into a new `pages/templates/pages/search.html`).
+  - `items/templates/items/show-entries.html`, `entries_list.html`, `_item_row.html`, `item.html`, `show-tag-cloud.html` — list, detail, row partial, and tag-cloud renderings. `entries_list.html` renders a `<table class="lit-items-table">` with title / authors / year / tags columns; on viewports under 768 px, the CSS reflows it into stacked cards via `display: block`. `_item_row.html` is the per-row partial (used by both the regular item list and the search-results page).
+  - `pages/templates/pages/search.html` — search results page. Embeds the search form at top, then the `lit-search__results-note` description, then `entries_list.html` for the rows. Replaces the Haystack-era `templates/search/*` (deleted in Phase 3).
+  - `pages/templates/pages/about-page.html` — static "About" page; explicitly notes that PDFs aren't downloadable.
 
 - **Custom template tags**: `items/templatetags/extra_tags.py` defines `sanitise_markup` (passes admin-authored HTML through `bleach` with a small allowlist before rendering). Used in `item.html` to render `Item.abstract` (the only field where an admin can paste arbitrary HTML). The bleach allowlist matches openmv's: `a, b, i, em, strong, sub, sup, code, br, p, span, ul, ol, li, dl, dt, dd`. LaTeX written as `\(...\)` survives the filter because bleach treats backslashes and parentheses as text; MathJax then renders it client-side.
 

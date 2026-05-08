@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{{page_title}}{% if extra_info %}{{extra_info}}{% endif %}{% endblock %}
+{% block title %}{{ page_title }}{% if extra_info %}{{ extra_info }}{% endif %}{% endblock %}
 
 {% block content %}
 
-<div id="lit-itemdisp-pageheader">{{page_title}}{% if extra_info %}{{extra_info}}{% endif %}</div>
+<p class="detail-topbar"><a href="{% url 'lit-main-page' %}">&larr; Back to home</a></p>
+
+<h3>{{ page_title }}{% if extra_info %} {{ extra_info }}{% endif %}</h3>
+
 {% include 'items/entries_list.html' %}
 
 {% endblock %}
