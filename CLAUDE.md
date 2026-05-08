@@ -22,7 +22,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 7     | Dockerize (Dockerfile + compose dev/prod)            | done     |
 | 8     | Tests + CI workflow + Dependabot                     | done     |
 | 9     | Hetzner provisioning + deploy workflow               | done     |
-| 10    | Data import from legacy dump                         | pending  |
+| 10    | Data import from legacy dump                         | done     |
 | 11    | S3 nightly backups                                   | pending  |
 | 12    | pgvector semantic search (Stage 2)                   | pending  |
 | 13    | Knowledge graph (citations, co-authorship)           | pending  |
@@ -192,7 +192,7 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
 
 1. **Multi-table inheritance on `Item`.** `JournalPub`, `Book`, `ConferenceProceeding`, `Thesis` each have their own DB table joined to `Item` via an implicit OneToOne. `Item.objects.all()` returns the parent rows; `JournalPub.objects.all()` joins. When iterating in templates, use the typed model if you need the subclass-specific fields (`full_citation()` differs per subclass). Avoid `Item.objects.select_subclasses()` patterns — the codebase doesn't use `django-model-utils` and there's no need for it; the subclass is reachable via `item.journalpub`/`item.book`/etc. when `item.item_type` says so.
 
-2. **Legacy `media/` prefix on `Item.pdf_file`.** Pre-revival data may have stored paths as `media/literature/pdf/<slug>.pdf`. The new `upload_to` builds `literature/pdf/<slug[0]>/<slug>.pdf` (no `media/`). The Phase 10 import script strips the prefix; if you ever re-restore from a stale legacy dump, re-run: `UPDATE items_item SET pdf_file = regexp_replace(pdf_file, '^media/', '') WHERE pdf_file LIKE 'media/%';`
+2. **Legacy `media/` prefix on `Item.pdf_file`.** Pre-revival data stored paths as `media/literature/pdf/<slug>.pdf`. The new `upload_to` builds `literature/pdf/<slug[0]>/<slug>.pdf` (no `media/`). The `manage.py import_legacy_dump` command (Phase 10, in `items/management/commands/`) strips the prefix; if you ever re-restore from a stale legacy dump, re-run the importer or, ad-hoc: `UPDATE items_item SET pdf_file = regexp_replace(pdf_file, '^media/', '') WHERE pdf_file LIKE 'media/%';`. Full import runbook in [`docs/data-import.md`](docs/data-import.md).
 
 3. **PDFs are not downloadable. Period.** Phase 5 removed `items.download_item`, the `lit-download-pdf` URL pattern, and the `Item.private_pdf` / `Item.can_show_pdf` flags. The site holds copyright-restricted PDFs that the admin uploads for FTS extraction only — the only consumer of `Item.pdf_file` is `__extract_extra__`, which reads the bytes inside the gunicorn worker and writes the extracted text into `Item.other_search_text`. **If you add a view that returns `Item.pdf_file.read()` or builds a URL pointing at `/media/literature/pdf/...`, you've reintroduced the bug.** In production, the Caddy server block in `docs/deploy.md` 404s `/media/literature/pdf/*` explicitly, in front of the generic `/media/*` `file_server`. Locally, `runserver`'s `static()` serves `/media/` only when `DEBUG=True`, so the dev box is fine without the exclusion — but don't link to `/media/literature/pdf/...` from any template.
 
