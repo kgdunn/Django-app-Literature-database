@@ -1,6 +1,6 @@
 from django.urls import re_path
 
-from pages.views import about_page, front_page, search
+from pages.views import about_page, front_page, healthz, search
 
 urlpatterns = [
     # Front page
@@ -11,4 +11,7 @@ urlpatterns = [
 
     # Site-wide search (Postgres FTS in prod, icontains fallback in SQLite dev).
     re_path(r'search', search, name='search'),
+
+    # Liveness probe (Dockerfile HEALTHCHECK + Phase-9 deploy script).
+    re_path(r'^healthz/?$', healthz, name='healthz'),
 ]
