@@ -1,12 +1,11 @@
-from django.db import models
-from django.contrib import admin
-from django.core.urlresolvers import reverse
-from django.template.defaultfilters import slugify
-from utils import unique_slugify
-
-# Standard library imports
 import re
 import unicodedata
+
+from django.db import models
+from django.template.defaultfilters import slugify
+from django.urls import reverse
+
+from utils import unique_slugify
 
 # Custom manager for the items
 class LatestItemManager(models.Manager):
@@ -36,19 +35,19 @@ class Author(models.Model):
     @property
     def full_name(self):
         if self.middle_initials:
-            return u'%s %s %s' % (self.first_name, self.middle_initials,
-                                   self.last_name)
+            return '%s %s %s' % (self.first_name, self.middle_initials,
+                                 self.last_name)
         else:
-            return u'%s %s' % (self.first_name, self.last_name)
+            return '%s %s' % (self.first_name, self.last_name)
 
 
     @property
     def full_name_hyperlinked(self):
         if self.middle_initials:
-            return u'%s %s %s' % (self.first_name, self.middle_initials,
-                                   self.last_name)
+            return '%s %s %s' % (self.first_name, self.middle_initials,
+                                 self.last_name)
         else:
-            return u'%s %s' % (self.first_name, self.last_name)
+            return '%s %s' % (self.first_name, self.last_name)
 
 
     def get_absolute_url(self):
@@ -71,8 +70,8 @@ class Author(models.Model):
 
 class AuthorGroup(models.Model):
     """ Ensures the author order is correctly added """
-    author = models.ForeignKey(Author)
-    item = models.ForeignKey('Item')
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+    item = models.ForeignKey('Item', on_delete=models.CASCADE)
     order = models.IntegerField(default=0)
 
 
@@ -265,9 +264,12 @@ class Item(models.Model):
         auth_list = self.authors.all().order_by('authorgroup__order')
         authors = []
         for auth in auth_list:
-            author = unicodedata.normalize('NFKD', auth.last_name).encode(\
-                                                              'ascii', 'ignore')
-            author = unicode(re.sub('[^\w\s-]', '', author).strip())
+            author = (
+                unicodedata.normalize('NFKD', auth.last_name)
+                .encode('ascii', 'ignore')
+                .decode('ascii')
+            )
+            author = re.sub(r'[^\w\s-]', '', author).strip()
             authors.append(author)
 
         if len(auth_list) >= 3:
@@ -333,7 +335,13 @@ class Item(models.Model):
 
     @property
     def doi_link_cleaned(self):
-        return self.doi_link.lstrip('http://dx.doi.org/')
+        return (
+            self.doi_link
+            .removeprefix('https://dx.doi.org/')
+            .removeprefix('http://dx.doi.org/')
+            .removeprefix('https://doi.org/')
+            .removeprefix('http://doi.org/')
+        )
 
 
     @property
@@ -371,7 +379,7 @@ class Item(models.Model):
 
 
 class JournalPub(Item):
-    journal = models.ForeignKey(Journal)
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE)
     volume = models.CharField(max_length=100, blank=True, null=True)
     page_start = models.CharField(max_length=10, blank=True, null=True)
     page_end = models.CharField(max_length=10, blank=True, null=True)
@@ -385,14 +393,15 @@ class JournalPub(Item):
         """
         Returns details about the journal publication in HTML form
         """
-        return u'%s: "%s", <i>%s</i>, <b>%s</b>, %s-%s, %s.' %\
-                                           (self.author_list,
-                                            self.title,
-                                            self.journal.as_url,
-                                            self.volume,
-                                            self.page_start,
-                                            self.page_end,
-                                            self.year_as_url)
+        return '%s: "%s", <i>%s</i>, <b>%s</b>, %s-%s, %s.' % (
+            self.author_list,
+            self.title,
+            self.journal.as_url,
+            self.volume,
+            self.page_start,
+            self.page_end,
+            self.year_as_url,
+        )
 
 
     class Meta:
@@ -400,7 +409,7 @@ class JournalPub(Item):
 
 
 class Book(Item):
-    publisher = models.ForeignKey(Publisher)
+    publisher = models.ForeignKey(Publisher, on_delete=models.CASCADE)
     editors = models.ManyToManyField(Author, blank=True)
     volume = models.CharField(max_length=100, blank=True, null=True)
     series = models.CharField(max_length=100, blank=True, null=True)
@@ -432,7 +441,8 @@ class ConferenceProceeding(Item):
     page_end = models.CharField(max_length=10, blank=True, null=True)
     organization = models.CharField(blank=True, null=True, max_length=200)
     location = models.CharField(blank=True, null=True, max_length=200)
-    publisher = models.ForeignKey(Publisher, blank=True, null=True)
+    publisher = models.ForeignKey(Publisher, on_delete=models.CASCADE,
+                                  blank=True, null=True)
 
     def full_citation(self):
         """
@@ -462,7 +472,7 @@ class Thesis(Item):
         ('phd',     'Ph.D thesis'),
     )
     thesis_type = models.CharField(max_length=50, choices=THESIS_CHOICES)
-    school = models.ForeignKey(School)
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
     supervisors = models.ManyToManyField(Author, blank=True)
 
     def full_citation(self):

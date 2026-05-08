@@ -1,30 +1,18 @@
-from django.conf.urls import url, include, static
 from django.conf import settings
-
-
-
-# Enable the admin:
+from django.conf.urls.static import static
 from django.contrib import admin
-admin.autodiscover()
-
+from django.urls import include, re_path
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-
-    # Major pages in the site: front page, about page, search, etc
-    url(r'', include('pages.urls')),
-
-    # Submissions: new and existing, including previous revisions
-    url(r'item/', include('items.urls')),
-
-    ## Tagging
-    #(r'^tagging/', include('tagging.urls')),
-
+    re_path(r"^admin/", admin.site.urls),
+    # Major pages in the site: front page, about page, search, etc.
+    re_path(r"", include("pages.urls")),
+    # Submissions: new and existing, including previous revisions.
+    re_path(r"item/", include("items.urls")),
 ]
 
-handler404 = 'pages.views.page_404_error'
-handler500 = 'pages.views.page_500_error'
+handler404 = "pages.views.page_404_error"
+handler500 = "pages.views.page_500_error"
 
-
-urlpatterns += static.static(settings.MEDIA_URL,
-                             document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
