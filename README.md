@@ -1,63 +1,76 @@
 # Literature catalogue
 
-The Django site behind <https://literature.learnche.org> — a personal literature catalogue: journal publications, books, conference proceedings, and theses, with authors, tags, and (where licensing permits) downloadable PDFs.
-
-Originally written in 2010 against Django 1.x / Python 2 with django-haystack on Whoosh/Xapian, the site went defunct mid-2010s. As of 2026 it is being revived and modernized in stages on Django 5.2 / Python 3.11 / Postgres / Docker Compose, on the same Hetzner VPS that runs <https://openmv.net>. Sister repo `kgdunn/Django-dataset-download-app` is the architectural template — repo layout, settings split, Dockerfile, CI/CD workflows, and backup script are ported from there.
+The Django site behind <https://literature.learnche.org> — a personal literature catalogue: journal publications, books, conference proceedings, and theses, with authors, tags, and (admin-only) PDFs used for full-text indexing.
 
 The site lets visitors:
 
-- Browse every literature item in a sortable list.
-- Filter by tag, author, journal, or publication year.
-- Read a per-item detail page with full citation, abstract, links to DOI / external sources, and (if licensed) a PDF download.
-- Search across titles, abstracts, and author names with fuzzy matching (Postgres FTS + `pg_trgm`; semantic and instant-typing search are queued).
+- Browse every literature item in a sortable, mobile-responsive table.
+- Filter items by tag, author, journal, or publication year.
+- Read a per-item detail page with full citation, abstract (with `\(...\)` LaTeX rendered via MathJax), DOI / external link, and tags-as-chips.
+- Search across titles, abstracts, and the (admin-extracted) full PDF text. Author last-name typos are matched fuzzily via Postgres `pg_trgm` similarity. Each query increments a privacy-respecting hit counter (timestamp + query only — no IP, user-agent, or referrer is stored).
+
+PDFs are uploaded by the admin and **never exposed for download** (copyright restriction); they are consumed only by an admin-only `__extract_extra__` endpoint that runs `pdfplumber` to extract plain text into the FTS search vector.
 
 ## Layout
 
 ```
 .
 ├── manage.py
-├── Makefile                  # dev tasks (install, migrate, test, lint, debug, docker-up, ...)
+├── Makefile                  # dev tasks (install, migrate, test, lint, debug, docker-up, sri, ...)
 ├── pyproject.toml            # uv-managed dependencies + pytest config
-├── uv.lock                   # committed lockfile (added in Phase 1 once deps resolve)
+├── uv.lock                   # committed lockfile
 ├── Dockerfile                # multi-stage image (uv builder + python:3.11-slim runtime)
 ├── docker-compose.yml        # local dev (Postgres sidecar + runserver, hot-reload)
 ├── docker-compose.prod.yml   # production (Postgres + gunicorn, loopback-only on :8002 / :5435)
-├── .github/workflows/        # ci.yml + deploy.yml + release.yml — Phase 8/9/15
-├── literature/               # Django project (settings, root URLs, WSGI)
-│   ├── settings/             # base.py + dev.py + prod.py + ci.py — Phase 2
+├── bin/
+│   └── deploy-impl.sh        # Hetzner-side deploy script (run via SSH forced-command)
+├── .github/
+│   ├── workflows/ci.yml      # pre-commit + pytest + pip-audit on push and PR
+│   ├── workflows/deploy.yml  # auto-deploy to Hetzner on push to main
+│   └── dependabot.yml        # weekly bumps for github-actions + docker
+├── literature/               # Django project (settings, root URLs, WSGI/ASGI, middleware)
+│   ├── settings/             # base.py + dev.py + prod.py + ci.py
 │   ├── urls.py
-│   └── wsgi.py
-├── items/                    # literature catalogue (Item + JournalPub/Book/ConferenceProceeding/Thesis)
+│   ├── wsgi.py
+│   ├── asgi.py
+│   ├── middleware.py         # SecurityHeadersMiddleware (CSP, Permissions-Policy, COOP)
+│   └── context_processors.py
+├── items/                    # literature catalogue (Item + JournalPub / Book / ConferenceProceeding / Thesis)
 │   ├── models.py
 │   ├── views.py
 │   ├── urls.py
 │   ├── admin.py
+│   ├── apps.py
 │   ├── migrations/
-│   ├── templates/items/
-│   └── templatetags/         # `sanitise_markup` filter — Phase 5
+│   ├── templates/items/      # entries_list.html, item.html, _item_row.html, show-tag-cloud.html
+│   ├── templatetags/         # `sanitise_markup` (bleach) + `cloud` / `most_viewed` / `most_searched`
+│   └── tests/                # conftest fixtures + test_models + test_views (35 tests)
 ├── tagging/                  # home-grown Tag model
-├── pagehit/                  # privacy-respecting view counter
-├── pages/                    # front page, about, search
-│   └── templates/pages/
-├── kg/                       # knowledge graph (citations, co-authorship) — Phase 13
-├── templates/                # base.html + 404/500
-├── utils/                    # helpers (unique_slugify, ensuredir, ...)
+├── pagehit/                  # privacy-respecting view counter (no UA / IP stored)
+├── pages/                    # front page, about, search, healthz
+│   └── templates/pages/      # base.html lives at top-level templates/, this dir has the pages-specific ones
+├── utils/                    # ensuredir, get_IP_address (logging only), paginated_queryset, unique_slugify
+├── templates/                # base.html, 404.html, 500.html
+├── docs/
+│   ├── deploy.md             # Hetzner host bootstrap runbook (Cloudflare DNS + Origin Cert + Caddy + SSH)
+│   └── legacy-todo.md        # 2010-era todo.txt archive, mapped to revival phases
 ├── .pre-commit-config.yaml
 ├── .flake8
+├── .editorconfig
+├── .python-version           # 3.11
 ├── .gitignore
+├── .dockerignore
 ├── .env.example              # copy to .env and fill in
 ├── README.md
 ├── CLAUDE.md                 # repo orientation + revival roadmap
 └── LICENSE
 ```
 
-The revival is a multi-PR effort tracked in [CLAUDE.md](CLAUDE.md). Phases not yet landed are noted in the layout above.
-
 ## Requirements
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) for dependency management
-- PostgreSQL 16 (both dev and prod use Postgres so the FTS / pgvector code paths are exercised identically; create a local `literature` user + database first — see below).
+- PostgreSQL 16 (both dev and prod use Postgres so the FTS / `pg_trgm` / pgvector code paths are exercised identically). Docker Compose can run Postgres as a sidecar so a host install is **not** required.
 
 Dependencies are declared in `pyproject.toml` and pinned in `uv.lock`.
 
@@ -65,15 +78,17 @@ Dependencies are declared in `pyproject.toml` and pinned in `uv.lock`.
 
 ### Native (uv)
 
+This path runs `runserver` natively against a host-installed Postgres. If you'd rather keep Postgres in a container, use the Docker compose path below — it's strictly simpler and avoids the host-Postgres bootstrap.
+
 ```bash
-# 1. Clone and enter the repo.
+# 1. Clone and enter the repo
 git clone https://github.com/kgdunn/Django-app-Literature-database.git literature
 cd literature
 
 # 2. Bootstrap a local Postgres role + database (one-time; PostgreSQL 16
-#    must be installed and running). Match the defaults baked into
-#    .env.example so a fresh checkout boots without further config.
-sudo -u postgres psql -c "CREATE USER literature WITH PASSWORD 'literature';"
+#    must be installed and running on the host). Match the defaults baked
+#    into .env.example so a fresh checkout boots without further config.
+sudo -u postgres psql -c "CREATE USER literature WITH PASSWORD 'literature' CREATEDB;"
 sudo -u postgres psql -c "CREATE DATABASE literature OWNER literature;"
 
 # 3. Install Python deps + write a .env with a real SECRET_KEY.
@@ -83,36 +98,43 @@ python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(50))" \
     | tee -a .env >/dev/null
 sed -i.bak '/^SECRET_KEY=change-me$/d' .env && rm .env.bak
 
-# 4. Run migrations + the dev server.
-make debug                 # collectstatic + migrate + createcachetable + runserver:8080
+# 4. Run migrations + the dev server (collectstatic + migrate + createcachetable + runserver:8080)
+make debug
 ```
+
+The `CREATEDB` privilege on the `literature` Postgres user is needed so `pytest`'s test runner can spin up a `test_literature` database (see *Testing & CI* below).
 
 ### Docker compose
 
+No host Postgres install required — the compose file ships a `postgres:16-alpine` sidecar.
+
 ```bash
-cp .env.example .env       # set SECRET_KEY
+cp .env.example .env       # set SECRET_KEY (Postgres defaults are fine for dev)
 make docker-up             # builds + runs Postgres + runserver in sidecars
 ```
 
-Both paths target <http://127.0.0.1:8080/>. To rehearse the production stack locally (Postgres + gunicorn + `literature.settings.prod` on offset loopback ports `:8002` / `:5435`), use `docker compose -f docker-compose.prod.yml up --build` instead.
+Both paths use `literature.settings.dev` and serve <http://127.0.0.1:8080/>. To rehearse the production stack locally (Postgres + gunicorn + `literature.settings.prod` on offset loopback ports `:8002` / `:5435`), use `docker compose -f docker-compose.prod.yml up --build` instead.
 
-Create a superuser with `uv run python manage.py createsuperuser` (native) or `docker compose exec web python manage.py createsuperuser` (Docker) to log into `/admin/` and add Items, Authors, Tags.
+Create a superuser with `uv run python manage.py createsuperuser` (native) or `docker compose exec web python manage.py createsuperuser` (Docker) to log into `/admin/` and add Items / Authors / Tags.
 
 ## Testing & CI
 
-- `make test` — runs `uv run pytest`. Smoke tests land in Phase 8.
+- `make test` — runs the smoke-test suite (`uv run pytest`).
 - `make lint` — runs `pre-commit run --all-files`.
-- `.github/workflows/ci.yml` (Phase 8+) runs both on every PR and on pushes to `main`, against a `postgres:16-alpine` service container.
+- `.github/workflows/ci.yml` runs both on every PR and on pushes to `main`, against a `postgres:16-alpine` service container.
 
 ## Production notes
 
-Once Phase 9 lands the production stack runs at `literature.learnche.org` on the same Hetzner VPS as openmv.net. `DJANGO_SETTINGS_MODULE=literature.settings.prod` selects PostgreSQL via `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SQL_HOST`, `SQL_PORT` from the environment (or `.env`) and turns off `DEBUG`. Settings read process environment first, then fall back to `.env`.
+Production runs at `https://literature.learnche.org` on the same Hetzner VPS as `openmv.net`. Caddy (host-installed, shared) terminates TLS via a Cloudflare Origin Certificate; the literature stack itself is two Docker containers bound to loopback (`127.0.0.1:8002` for gunicorn, `127.0.0.1:5435` for Postgres). Auto-deploy is wired through `.github/workflows/deploy.yml` — every push to `main` SSHes to Hetzner via a forced-command key and runs `bin/deploy-impl.sh`.
 
-`ALLOWED_HOSTS` reads from the `ALLOWED_HOSTS` env var (comma-separated). Defaults: `.literature.learnche.org,127.0.0.1` in prod, `127.0.0.1,localhost` in dev. Override the env var to deploy under a different hostname.
+The full host-bootstrap runbook (Cloudflare DNS, Origin Cert, Caddy server block, SSH deploy key, GitHub repo secrets) lives in [`docs/deploy.md`](docs/deploy.md).
 
-PDFs land in `BASE_DIR / 'media' / 'literature' / 'pdf' / <slug[0]> / <slug>.pdf`. Caddy serves `/media/` and `/static/` directly from bind-mounted host directories; `download_item` streams the PDF body via `FileResponse` (after Phase 5) to dodge Cloudflare's Bot Fight Mode false-positives.
+Highlights worth knowing before deploying:
 
-The `PageHit` table grows with every page view. After Phase 4 lands it holds only `(item, item_pk, datetime, extra_info)` — no IP, user-agent, or referrer is stored.
+- `DJANGO_SETTINGS_MODULE=literature.settings.prod` (forced by `docker-compose.prod.yml`'s `web.environment` block) selects PostgreSQL via `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SQL_HOST`, `SQL_PORT` from `.env` and turns off `DEBUG`. Settings read process environment first, then fall back to `.env`.
+- `ALLOWED_HOSTS` reads from the `ALLOWED_HOSTS` env var (comma-separated). Defaults: `.literature.learnche.org,127.0.0.1` in prod, `127.0.0.1,localhost` in dev.
+- Static files land in `BASE_DIR / 'static'` (host-side `data/static/`) after `collectstatic`. Admin-uploaded PDFs land in `BASE_DIR / 'media'` (host-side `data/media/`). Caddy serves `/static/` directly off disk; **`/media/literature/pdf/*` is explicitly 404'd** at the Caddy layer (copyright — Phase 5 rule). Locally, `runserver` only serves `/media/` when `DEBUG=True`.
+- The `PageHit` table grows with every request. There is no automatic pruning; the schema holds no PII (Phase 4) so unbounded growth is privacy-safe.
 
 ## Tooling
 
@@ -123,6 +145,7 @@ The `PageHit` table grows with every page view. After Phase 4 lands it holds onl
 - `make lint` — `uv run pre-commit run --all-files`.
 - `make debug` — collectstatic + migrate + createcachetable + runserver on `:8080`.
 - `make docker-up` / `make docker-down` — wrappers over `docker compose` (dev compose).
+- `make sri` — recompute Subresource Integrity hashes for the CDN scripts in `templates/base.html`.
 - `make clean` — remove `__pycache__`, caches, etc.
 
 ## License

@@ -21,7 +21,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 6     | Templates modernization (design tokens, MathJax, mobile) | done     |
 | 7     | Dockerize (Dockerfile + compose dev/prod)            | done     |
 | 8     | Tests + CI workflow + Dependabot                     | done     |
-| 9     | Hetzner provisioning + deploy workflow               | pending  |
+| 9     | Hetzner provisioning + deploy workflow               | done     |
 | 10    | Data import from legacy dump                         | pending  |
 | 11    | S3 nightly backups                                   | pending  |
 | 12    | pgvector semantic search (Stage 2)                   | pending  |
@@ -29,7 +29,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 14    | Meilisearch sidecar (Stage 3)                        | pending  |
 | 15    | RELEASES.md + release workflow                       | pending  |
 
-The site is **not yet in production** at the time of writing — there is no live `literature.learnche.org` to break. Once Phase 9 lands the staging hostname `test.literature.learnche.org` is the rehearsal target; once Phase 11 lands the apex flips live and the openmv-style "live site cannot break" rule applies.
+The site is **not yet in production** at the time of writing — Phase 9 landed the deploy *automation*, but the actual host bootstrap (Cloudflare DNS, Origin Cert, Caddy server block, SSH deploy key) is a manual one-time runbook in [`docs/deploy.md`](docs/deploy.md) and is the operator's call to execute. Once `https://literature.learnche.org/healthz` returns 200 the site is live and the openmv-style "live site cannot break" rule applies; until then the staging hostname `test.literature.learnche.org` is the rehearsal target.
 
 ## Project shape
 
@@ -56,7 +56,7 @@ The site is **not yet in production** at the time of writing — there is no liv
 - **Views** (`items/views.py`, `pages/views.py`):
   - `pages.front_page` — `/` — homepage. Renders 10 latest items + a search box.
   - `pages.about_page` — `/about` — static about page.
-  - `pages.healthz` — `/healthz` — plain-text liveness probe (always returns `ok`, `Cache-Control: no-store`, no DB hit). Consumed by the Dockerfile `HEALTHCHECK` and the Phase-9 deploy script's post-deploy sanity curl.
+  - `pages.healthz` — `/healthz` — plain-text liveness probe (always returns `ok`, `Cache-Control: no-store`, no DB hit). Consumed by the Dockerfile `HEALTHCHECK` and `bin/deploy-impl.sh`'s post-deploy sanity curl.
   - `pages.search` — `/search?q=<terms>` — search results. After Phase 3, this is the canonical Postgres-FTS endpoint (whitespace-AND tokens, weighted `SearchVector` over title/abstract/other_search_text + `TrigramSimilarity` for fuzzy author matching). Pre-Phase 3, this is a Haystack passthrough. Empty / missing `q` returns the front page.
   - `items.show_items` — `/item/show-all`, `/item/<view>/<slug>/`, `/item/pub-by-year/<year>/` — paginated list view, parameterized by `what_view` (`all`, `tag`, `author`, `journal`, `pub-by-year`, `sort`).
   - `items.view_item` — `/item/<id>/<slug>` (slug optional) — detail page.
@@ -110,7 +110,7 @@ Both paths use `literature.settings.dev` and serve <http://127.0.0.1:8080/>. To 
 
 ## Production deployment (Hetzner)
 
-Architecture (after Phase 9 lands):
+Architecture (per `docs/deploy.md`):
 
 ```
 Cloudflare (proxied, orange cloud) ──HTTPS──> Caddy on Hetzner host (TLS terminator + static)
@@ -194,7 +194,7 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
 
 2. **Legacy `media/` prefix on `Item.pdf_file`.** Pre-revival data may have stored paths as `media/literature/pdf/<slug>.pdf`. The new `upload_to` builds `literature/pdf/<slug[0]>/<slug>.pdf` (no `media/`). The Phase 10 import script strips the prefix; if you ever re-restore from a stale legacy dump, re-run: `UPDATE items_item SET pdf_file = regexp_replace(pdf_file, '^media/', '') WHERE pdf_file LIKE 'media/%';`
 
-3. **PDFs are not downloadable. Period.** Phase 5 removed `items.download_item`, the `lit-download-pdf` URL pattern, and the `Item.private_pdf` / `Item.can_show_pdf` flags. The site holds copyright-restricted PDFs that the admin uploads for FTS extraction only — the only consumer of `Item.pdf_file` is `__extract_extra__`, which reads the bytes inside the gunicorn worker and writes the extracted text into `Item.other_search_text`. **If you add a view that returns `Item.pdf_file.read()` or builds a URL pointing at `/media/literature/pdf/...`, you've reintroduced the bug.** In production, Caddy's `/media/*` `file_server` rule must explicitly exclude `/media/literature/pdf/*` (Phase 9 wires this up). Locally, `runserver`'s `static()` serves `/media/` only when `DEBUG=True`, so the dev box is fine without the exclusion — but don't link to `/media/literature/pdf/...` from any template.
+3. **PDFs are not downloadable. Period.** Phase 5 removed `items.download_item`, the `lit-download-pdf` URL pattern, and the `Item.private_pdf` / `Item.can_show_pdf` flags. The site holds copyright-restricted PDFs that the admin uploads for FTS extraction only — the only consumer of `Item.pdf_file` is `__extract_extra__`, which reads the bytes inside the gunicorn worker and writes the extracted text into `Item.other_search_text`. **If you add a view that returns `Item.pdf_file.read()` or builds a URL pointing at `/media/literature/pdf/...`, you've reintroduced the bug.** In production, the Caddy server block in `docs/deploy.md` 404s `/media/literature/pdf/*` explicitly, in front of the generic `/media/*` `file_server`. Locally, `runserver`'s `static()` serves `/media/` only when `DEBUG=True`, so the dev box is fine without the exclusion — but don't link to `/media/literature/pdf/...` from any template.
 
 4. **`__extract_extra__` is admin-only via `request.user.is_authenticated`** — there is no per-permission gate. Anyone with a Django superuser/staff session can run it. That's the right level of access for an internal back-office tool, but if `pages.views` ever grew unauthenticated paths to log-in, this endpoint would inherit that surface; treat it as part of the admin trust boundary.
 
