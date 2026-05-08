@@ -1,0 +1,70 @@
+# Production compose for literature.learnche.org on the Hetzner VPS that
+# also runs openmv.net. Caddy (host-installed) is the shared reverse proxy;
+# both services bind to loopback only and Caddy is the sole public-facing
+# process.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Ports are offset from the openmv compose stack on the same host:
+#   - openmv-app:           127.0.0.1:8001 -> 8000
+#   - openmv-postgres:      127.0.0.1:5434 -> 5432
+#   - literature-app:       127.0.0.1:8002 -> 8000
+#   - literature-postgres:  127.0.0.1:5435 -> 5432
+
+services:
+  db:
+    # Pinned by digest so a Docker Hub repoint of postgres:16-alpine can't
+    # land silently on the next deploy. Same digest the openmv stack uses
+    # — same image bytes, so we don't pull twice.
+    image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
+    container_name: literature-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - literature_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    build: .
+    image: literature-app:latest
+    container_name: literature-app
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: literature.settings.prod
+      SQL_HOST: db
+      SQL_PORT: 5432
+    volumes:
+      # `env_file:` already exports every .env key as a process env var, and
+      # `literature/settings/base.py:env()` reads `os.environ` first, so the
+      # bind-mount below is redundant for the primary code path. We keep it
+      # so the dotenv_values() fallback in base.py finds values too —
+      # `.dockerignore` excludes the host `.env` from the image.
+      - ./.env:/app/.env:ro
+      - ./data/media:/app/media
+      - ./data/static:/app/static
+    ports:
+      - "127.0.0.1:8002:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - |
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        gunicorn literature.wsgi:application --bind 0.0.0.0:8000 --workers 3 --access-logfile - --error-logfile -
+
+volumes:
+  literature_postgres_data:

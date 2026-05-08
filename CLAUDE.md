@@ -19,7 +19,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 4     | Trim PageHit (drop UA/IP) + drop IP gate on download | done     |
 | 5     | Remove public PDF download (copyright); add bleach   | done     |
 | 6     | Templates modernization (design tokens, MathJax, mobile) | done     |
-| 7     | Dockerize (Dockerfile + compose dev/prod)            | pending  |
+| 7     | Dockerize (Dockerfile + compose dev/prod)            | done     |
 | 8     | Tests + CI workflow                                  | pending  |
 | 9     | Hetzner provisioning + deploy workflow               | pending  |
 | 10    | Data import from legacy dump                         | pending  |
@@ -56,6 +56,7 @@ The site is **not yet in production** at the time of writing — there is no liv
 - **Views** (`items/views.py`, `pages/views.py`):
   - `pages.front_page` — `/` — homepage. Renders 10 latest items + a search box.
   - `pages.about_page` — `/about` — static about page.
+  - `pages.healthz` — `/healthz` — plain-text liveness probe (always returns `ok`, `Cache-Control: no-store`, no DB hit). Consumed by the Dockerfile `HEALTHCHECK` and the Phase-9 deploy script's post-deploy sanity curl.
   - `pages.search` — `/search?q=<terms>` — search results. After Phase 3, this is the canonical Postgres-FTS endpoint (whitespace-AND tokens, weighted `SearchVector` over title/abstract/other_search_text + `TrigramSimilarity` for fuzzy author matching). Pre-Phase 3, this is a Haystack passthrough. Empty / missing `q` returns the front page.
   - `items.show_items` — `/item/show-all`, `/item/<view>/<slug>/`, `/item/pub-by-year/<year>/` — paginated list view, parameterized by `what_view` (`all`, `tag`, `author`, `journal`, `pub-by-year`, `sort`).
   - `items.view_item` — `/item/<id>/<slug>` (slug optional) — detail page.

@@ -19,9 +19,9 @@ The site lets visitors:
 ├── Makefile                  # dev tasks (install, migrate, test, lint, debug, docker-up, ...)
 ├── pyproject.toml            # uv-managed dependencies + pytest config
 ├── uv.lock                   # committed lockfile (added in Phase 1 once deps resolve)
-├── Dockerfile                # multi-stage image (Phase 7)
-├── docker-compose.yml        # local dev (Postgres sidecar + runserver) — Phase 7
-├── docker-compose.prod.yml   # production (Postgres, gunicorn) — Phase 7
+├── Dockerfile                # multi-stage image (uv builder + python:3.11-slim runtime)
+├── docker-compose.yml        # local dev (Postgres sidecar + runserver, hot-reload)
+├── docker-compose.prod.yml   # production (Postgres + gunicorn, loopback-only on :8002 / :5435)
 ├── .github/workflows/        # ci.yml + deploy.yml + release.yml — Phase 8/9/15
 ├── literature/               # Django project (settings, root URLs, WSGI)
 │   ├── settings/             # base.py + dev.py + prod.py + ci.py — Phase 2
@@ -87,14 +87,14 @@ sed -i.bak '/^SECRET_KEY=change-me$/d' .env && rm .env.bak
 make debug                 # collectstatic + migrate + createcachetable + runserver:8080
 ```
 
-### Docker compose (Phase 7+)
+### Docker compose
 
 ```bash
 cp .env.example .env       # set SECRET_KEY
 make docker-up             # builds + runs Postgres + runserver in sidecars
 ```
 
-Both paths target <http://127.0.0.1:8080/>. To rehearse the production stack locally (Postgres + gunicorn + `literature.settings.prod`), use `docker compose -f docker-compose.prod.yml up --build` (Phase 7+).
+Both paths target <http://127.0.0.1:8080/>. To rehearse the production stack locally (Postgres + gunicorn + `literature.settings.prod` on offset loopback ports `:8002` / `:5435`), use `docker compose -f docker-compose.prod.yml up --build` instead.
 
 Create a superuser with `uv run python manage.py createsuperuser` (native) or `docker compose exec web python manage.py createsuperuser` (Docker) to log into `/admin/` and add Items, Authors, Tags.
 
@@ -122,7 +122,7 @@ The `PageHit` table grows with every page view. After Phase 4 lands it holds onl
 - `make test` — `uv run pytest`.
 - `make lint` — `uv run pre-commit run --all-files`.
 - `make debug` — collectstatic + migrate + createcachetable + runserver on `:8080`.
-- `make docker-up` / `make docker-down` — wrappers over `docker compose` (Phase 7+).
+- `make docker-up` / `make docker-down` — wrappers over `docker compose` (dev compose).
 - `make clean` — remove `__pycache__`, caches, etc.
 
 ## License

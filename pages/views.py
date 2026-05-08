@@ -36,6 +36,16 @@ def front_page(request):
     })
 
 
+def healthz(request):
+    """Liveness probe consumed by the Dockerfile HEALTHCHECK and the
+    Phase-9 deploy script. Plain text, never cached, no DB hit so a
+    Postgres outage doesn't fail the container's healthcheck.
+    """
+    response = HttpResponse('ok', content_type='text/plain')
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
 def about_page(request):
     return render(request, 'pages/about-page.html')
 

@@ -1,0 +1,56 @@
+# Local development compose: Postgres sidecar + Django `runserver` with
+# hot reload (source bind-mounted at /app). Matches `literature.settings.dev`,
+# which reads the same POSTGRES_* / SQL_* env vars as `prod` but defaults
+# them to local-friendly values. The compose `environment` block below sets
+# `SQL_HOST=db` so the web container reaches the sidecar via Docker's
+# internal DNS rather than the host's 127.0.0.1.
+#
+# Usage:
+#   cp .env.example .env       # then edit SECRET_KEY
+#   docker compose up --build
+# Visit http://127.0.0.1:8080/
+#
+# For a prod-parity stack (gunicorn + Postgres on offset loopback ports
+# 8002 / 5435 — matching the Hetzner deploy), use `docker-compose.prod.yml`
+# instead.
+
+services:
+  db:
+    image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
+    container_name: literature-postgres-dev
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-literature}
+      POSTGRES_USER: ${POSTGRES_USER:-literature}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-literature}
+    volumes:
+      - literature_postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-literature} -d ${POSTGRES_DB:-literature}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: literature.settings.dev
+      SQL_HOST: db
+      SQL_PORT: 5432
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Override the image's gunicorn CMD with runserver for hot reload.
+    command:
+      - sh
+      - -c
+      - |
+        python manage.py migrate --noinput &&
+        python manage.py runserver 0.0.0.0:8000
+
+volumes:
+  literature_postgres_data_dev:
