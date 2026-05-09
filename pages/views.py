@@ -131,6 +131,7 @@ def search(request):
             "conferenceproceeding__organization", weight="C", config="english"
         )
         + SearchVector("conferenceproceeding__location", weight="C", config="english")
+        + SearchVector("incollection__book_title", weight="B", config="english")
     )
     # `websearch` parses the user input forgivingly: bare terms ANDed,
     # quoted phrases preserved, `-foo` excludes.
