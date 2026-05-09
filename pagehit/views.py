@@ -7,8 +7,20 @@ from datetime import datetime, timezone
 from .models import PageHit
 
 static_items = {
+    # Item-pks here are sentinel negatives — they don't reference a real
+    # row in items_item, they just keep PageHit's `item_pk` column distinct
+    # per static surface so the admin's date_hierarchy / list_filter still
+    # group cleanly. Filtering by `item=` is the canonical way to slice
+    # static-page traffic; `item_pk` is just an extra coordinate.
     "lit-main-page": -1,
     "haystack_search": -2,
+    "lit-about-page": -3,
+    "lit-show-all-items": -4,
+    "lit-show-all-tags": -5,
+    "lit-tag-page": -6,
+    "lit-author-page": -7,
+    "lit-year-page": -8,
+    "lit-journal-page": -9,
 }
 
 PROFANITIES_LIST = (
