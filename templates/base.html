@@ -359,9 +359,21 @@ p  { margin: 0 0 var(--sp-3) 0; }
     font-size: var(--fs-sm);
 }
 
-/* List of items table */
+/* List of items table.
+   Mobile renders the same 4-column layout as desktop (per design choice
+   "mobile == desktop"); the wrapper provides horizontal scroll on
+   viewports narrower than the table's min-width. The pre-2026-05-09
+   reflow that turned each row into a stacked card looked OK in
+   isolation but the .col-year { width: 8% } rule outranked the
+   reflow's `width: 100%` on cells (specificity 0,2,0 > 0,1,2), so
+   year cells stayed ~29 px wide on a 360 px viewport and rendered
+   "Published 1998" character-by-character. */
+.lit-items-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
 .lit-items-table {
-    width: 100%; table-layout: fixed;
+    width: 100%; min-width: 720px; table-layout: fixed;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
@@ -395,34 +407,6 @@ p  { margin: 0 0 var(--sp-3) 0; }
 .lit-items-table .col-year     { width: 8%; }
 .lit-items-table .col-tags     { width: 24%; }
 .lit-items-table .col-year     { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-text-muted); }
-
-@media (max-width: 767px) {
-    .lit-items-table, .lit-items-table tbody, .lit-items-table tr,
-    .lit-items-table tbody td { display: block; width: 100%; }
-    .lit-items-table thead { display: none; }
-    .lit-items-table { background: transparent; border: 0; box-shadow: none; }
-    .lit-items-table tbody tr {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius);
-        margin-bottom: var(--sp-3);
-        padding: var(--sp-3);
-    }
-    .lit-items-table tbody tr:hover { background: var(--color-surface); }
-    .lit-items-table tbody td { border: 0; padding: var(--sp-1) 0; }
-    .lit-items-table tbody td.col-title {
-        font-family: var(--font-serif); font-size: var(--fs-h4); font-weight: 600;
-        margin-bottom: var(--sp-2);
-    }
-    .lit-items-table tbody td.col-authors::before {
-        content: "By ";
-        color: var(--color-text-subtle);
-    }
-    .lit-items-table tbody td.col-year::before {
-        content: "Published ";
-        color: var(--color-text-subtle);
-    }
-}
 
 /* Item detail page */
 .lit-detail-meta { margin: 0 0 var(--sp-5) 0; }

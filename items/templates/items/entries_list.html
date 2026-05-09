@@ -1,5 +1,6 @@
 {% if entries.object_list %}
 
+<div class="lit-items-table-wrap">
 <table class="lit-items-table">
     <colgroup>
         <col class="col-title">
@@ -21,6 +22,7 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 
 {% if entries.has_previous or entries.has_next %}
 <div class="lit-pagination">
