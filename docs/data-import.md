@@ -130,7 +130,36 @@ In the admin (`/admin/`), spot-check 5 random `Item`s: title, authors, tags, ful
 
 **Doesn't handle (do separately):**
 
-- The actual PDF byte payload. Copy `data/media/literature/pdf/` from the legacy host to the new `data/media/literature/pdf/` (e.g. via `rsync`).
+- **The actual PDF byte payload.** The legacy filesystem layout is `<legacy MEDIA_ROOT>/pdf/<slug[0]>/<slug>.pdf` (no `literature/` subdir), but the in-DB `Item.pdf_file` values point at `literature/pdf/<slug[0]>/<slug>.pdf`. Bridge with a one-level rsync remap — the trailing slash on the source means "copy contents", so `pdf/a/<file>.pdf` from the legacy host lands at `literature/pdf/a/<file>.pdf` on Hetzner where the in-DB rows expect it:
+
+  ```bash
+  ssh deploy@<hetzner-host>
+  mkdir -p /home/deploy/literature/repo/data/media/literature/pdf
+
+  # Dry-run first
+  rsync -avzn --stats --human-readable \
+      <legacy-user>@<legacy-host>:/path/to/legacy/media/pdf/ \
+      /home/deploy/literature/repo/data/media/literature/pdf/
+
+  # Real run
+  rsync -avz --stats --human-readable \
+      <legacy-user>@<legacy-host>:/path/to/legacy/media/pdf/ \
+      /home/deploy/literature/repo/data/media/literature/pdf/
+  ```
+
+  Verify by sampling 5 random in-DB paths and confirming each resolves to a file:
+
+  ```bash
+  cd /home/deploy/literature/repo
+  docker compose -f docker-compose.prod.yml exec -T db sh -c \
+    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
+     "SELECT pdf_file FROM items_item WHERE pdf_file <> '\'''\'' ORDER BY random() LIMIT 5;"' \
+  | while read p; do
+      [ -z "$p" ] && continue
+      echo -n "$p ... "
+      [ -f "/home/deploy/literature/repo/data/media/$p" ] && echo OK || echo MISSING
+    done
+  ```
 - A pre-existing PageHit table on the new install. If you've been running the new site and accumulated hits, the import's `update_or_create(pk=...)` could conflict with new PageHit rows that share a legacy `pk`. In practice this is unlikely (the new install starts at `pk=1` and the legacy table has thousands of rows), but if you want to be paranoid, `psql -c "TRUNCATE pagehit_pagehit;"` before importing.
 - Schema migrations for new constraints introduced post-Phase-1. The dump's field shapes have to be compatible with the current model definitions; if a field type narrowed (e.g. `max_length` shrank), some rows might fail.
 
