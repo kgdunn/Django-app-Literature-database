@@ -455,8 +455,10 @@ class TestItemList:
         assert "lit-year-nav__prev" not in body  # no prev link
 
     def test_tag_page_renders_sparkline(self, client, journalpub_factory, author, tag):
-        # Issue #27: tag-results page shows an inline SVG sparkline of
-        # article counts per year above the entries list.
+        # Issue #27: tag-results page shows an interactive ECharts
+        # sparkline of article counts per year above the entries list.
+        # (Originally inline SVG; switched to ECharts so hover shows
+        # year + article count.)
         journalpub_factory(authors=[author], tags=[tag], year=2008)
         journalpub_factory(authors=[author], tags=[tag], year=2010)
         journalpub_factory(authors=[author], tags=[tag], year=2024)
@@ -468,20 +470,27 @@ class TestItemList:
         # the latter also appears in base.html's inline <style> block
         # on every page (same trap PR #55 hit with .lit-tag-description).
         assert '<div class="lit-sparkline-wrap"' in body
-        assert '<svg class="lit-sparkline"' in body
+        # ECharts mount point + data carrier.
+        assert '<div id="lit-sparkline"' in body
+        assert 'id="lit-sparkline-data"' in body
+        # ECharts CDN script with SRI pin.
+        assert "echarts.min.js" in body
+        assert 'integrity="sha384-' in body
 
     def test_tag_page_omits_sparkline_when_single_year(
         self, client, journalpub_factory, author, tag
     ):
         # Only one year of data → wrapper suppressed via the template's
-        # ``{% if sparkline_data|length > 1 %}`` guard, since the SVG
-        # itself would render empty for a single-point series.
+        # ``{% if sparkline_data|length > 1 %}`` guard. The whole
+        # ECharts script tag is suppressed too — non-sparkline pages
+        # don't pay the load cost.
         journalpub_factory(authors=[author], tags=[tag], year=2024)
 
         r = client.get(f"/item/tag/{tag.slug}/")
         assert r.status_code == 200
         body = r.content.decode("utf-8")
         assert '<div class="lit-sparkline-wrap"' not in body
+        assert "echarts.min.js" not in body
 
     def test_tag_filter(self, client, journalpub_factory, author, tag):
         journalpub_factory(authors=[author], tags=[tag], title="Has Fourier tag")

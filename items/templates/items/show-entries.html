@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load extra_tags %}
 
 {% block title %}{{ page_title }}{% if extra_info %}{{ extra_info }}{% endif %}{% endblock %}
 
@@ -22,10 +21,48 @@
 {% endif %}
 
 {% if sparkline_data|length > 1 %}
-<div class="lit-sparkline-wrap" title="Articles per year">
+{{ sparkline_data|json_script:"lit-sparkline-data" }}
+<div class="lit-sparkline-wrap">
     <span class="lit-sparkline-label">Articles per year:</span>
-    {% sparkline_svg sparkline_data %}
+    <div id="lit-sparkline" class="lit-sparkline"></div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"
+        integrity="sha384-rRoXxn2yHlrZYB587Ki9RO1tONhLdM6XfORg7Rw4uwH4/Fh/5nP7IUX91bkaKUgs"
+        crossorigin="anonymous"></script>
+<script>
+(function () {
+    // ECharts is loaded synchronously above so the global is ready
+    // here. Pull the (year, count) data from the json_script tag and
+    // mount a small line chart with hover tooltips. Issue #27 followup.
+    var node = document.getElementById('lit-sparkline-data');
+    var mount = document.getElementById('lit-sparkline');
+    if (!node || !mount || typeof echarts === 'undefined') return;
+    var data = JSON.parse(node.textContent);
+    if (data.length < 2) return;
+    var years = data.map(function (p) { return p[0]; });
+    var counts = data.map(function (p) { return p[1]; });
+    var chart = echarts.init(mount);
+    chart.setOption({
+        grid: {top: 4, bottom: 4, left: 2, right: 2, containLabel: false},
+        xAxis: {type: 'category', data: years, show: false, boundaryGap: false},
+        yAxis: {type: 'value', show: false, min: 0},
+        tooltip: {
+            trigger: 'axis',
+            formatter: function (p) {
+                var n = p[0].data;
+                return p[0].axisValue + ': ' + n + ' article' + (n === 1 ? '' : 's');
+            }
+        },
+        series: [{
+            type: 'line', data: counts,
+            smooth: true, symbol: 'circle', symbolSize: 4,
+            lineStyle: {width: 1.5},
+            areaStyle: {opacity: 0.15}
+        }]
+    });
+    window.addEventListener('resize', function () { chart.resize(); });
+})();
+</script>
 {% endif %}
 
 {% include 'items/entries_list.html' %}
