@@ -99,7 +99,12 @@ def show_items(request, what_view="", extra_info=""):
         page_title = "All tags"
         template_name = "items/show-tag-cloud.html"
 
-    elif what_view == "show" and extra_info == "all-items":
+    elif (what_view == "show" and extra_info == "all-items") or what_view == "all":
+        # Two URL shapes land here:
+        #   /item/show-all       (legacy, ``what_view='all'``, no extra_info)
+        #   /item/show/all-items (regex ``lit-show-items``, ``what_view='show'``)
+        # Pre-PR the legacy shape silently fell through every branch and
+        # rendered an empty page. Treat them identically.
         _track_hit(request, "lit-show-all-items")
         all_items = Item.objects.all().order_by("-year")
         page_title = "All items in our database "
