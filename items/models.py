@@ -1,11 +1,35 @@
 import re
 import unicodedata
 
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import models
+from django.db.models.functions import Lower
 from django.template.defaultfilters import slugify
 from django.urls import reverse
 
 from utils import unique_slugify
+
+
+def validate_doi_or_url(value):
+    """Accept either a full URL or a bare DOI suffix (e.g. ``10.1234/foo``).
+
+    Bare suffixes get prefixed with ``https://doi.org/`` by
+    ``Item.save()``. This loosened validator (vs. plain URLField) lets
+    admins paste DOIs directly off a publisher's page without manually
+    typing the doi.org prefix every time.
+    """
+    if not value:
+        return
+    if value.startswith(("http://", "https://")):
+        URLValidator()(value)
+        return
+    # Common DOI shorthands the admin might paste; normalised at save.
+    if value.startswith(("doi.org/", "dx.doi.org/", "10.")):
+        return
+    raise ValidationError(
+        "Enter a full URL (https://...) or a DOI starting with '10.'."
+    )
 
 
 # Custom manager for the items
@@ -94,6 +118,19 @@ class Journal(models.Model):
     website = models.URLField()
     slug = models.SlugField(max_length=510, editable=False)
 
+    class Meta:
+        # Issue #23: case-insensitive uniqueness on Journal.name.
+        # Postgres builds a functional unique index on LOWER(name) so
+        # "Analytica Chimica Acta" and "analytica chimica acta" can't
+        # coexist. The data merge that runs alongside this constraint
+        # lives in migration 0007.
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                name="unique_journal_name_case_insensitive",
+            ),
+        ]
+
     def __str__(self):
         return self.name
 
@@ -159,7 +196,19 @@ class Item(models.Model):
     slug = models.SlugField(max_length=255, editable=False)
     item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
     year = models.PositiveIntegerField()
-    doi_link = models.URLField(blank=True, null=True, verbose_name="DOI link")
+    # CharField (not URLField) so the validator can accept bare DOI
+    # suffixes — see validate_doi_or_url above. Item.save() normalises
+    # accepted values to a canonical https://doi.org/<suffix> URL so
+    # downstream code (full_citation, doi_link_cleaned, the admin
+    # list_display column) sees one shape only.
+    doi_link = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="DOI link",
+        help_text="Full URL or bare DOI (e.g. 10.1234/foo).",
+        validators=[validate_doi_or_url],
+    )
     web_link = models.URLField(
         blank=True,
         null=True,
@@ -379,7 +428,25 @@ class Item(models.Model):
     def save(self, *args, **kwargs):
         self.title = self.title.strip()
         unique_slugify(self, self.title[0:255], "slug")
+        if self.doi_link:
+            self.doi_link = self._normalize_doi_link(self.doi_link)
         super(Item, self).save(*args, **kwargs)
+
+    @staticmethod
+    def _normalize_doi_link(value):
+        """Coerce admin-pasted DOI shorthands to the canonical
+        ``https://doi.org/<suffix>`` URL. See ``validate_doi_or_url``
+        for the accepted input shapes."""
+        value = value.strip()
+        if not value:
+            return value
+        if value.startswith(("http://", "https://")):
+            return value
+        if value.startswith(("doi.org/", "dx.doi.org/")):
+            return "https://" + value
+        if value.startswith("10."):
+            return "https://doi.org/" + value
+        return value  # the validator already gated this, defensive only
 
 
 class JournalPub(Item):
