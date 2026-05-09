@@ -336,6 +336,32 @@ p  { margin: 0 0 var(--sp-3) 0; }
 }
 .lit-tag-description p { margin: 0; }
 
+/* Prev/next year navigation on /item/pub-by-year/<year>/ (issue #17). */
+.lit-year-nav {
+    margin: 0 0 var(--sp-3) 0;
+    font-size: var(--fs-sm);
+    color: var(--color-text-subtle);
+}
+.lit-year-nav a { font-family: var(--font-mono); }
+.lit-year-nav__sep { opacity: 0.6; }
+
+/* Inline-SVG article-count sparkline above the entries list on
+   tag/author results pages (issue #27). The SVG itself uses
+   ``currentColor`` for the stroke so light/dark themes Just Work. */
+.lit-sparkline-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin: 0 0 var(--sp-3) 0;
+    color: var(--color-accent);
+    font-size: var(--fs-sm);
+}
+.lit-sparkline-label {
+    color: var(--color-text-subtle);
+    font-family: var(--font-sans);
+}
+.lit-sparkline { vertical-align: middle; }
+
 /* Site-statement card on the front page */
 .lit-site-statement {
     margin: 0 0 var(--sp-4) 0;

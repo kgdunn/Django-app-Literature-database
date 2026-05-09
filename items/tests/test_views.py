@@ -22,6 +22,14 @@ class TestStaticPages:
         r = client.get("/about")
         assert r.status_code == 200
 
+    def test_about_page_mentions_mistake_reporting(self, client):
+        # Issue #21: the about page tells visitors how to report a
+        # wrong-author / missing-tag / broken-DOI etc.
+        r = client.get("/about")
+        assert b"mistake" in r.content.lower() or b"mistakes" in r.content.lower()
+        # And the email address is the reporting channel.
+        assert b"kgdunn@gmail.com" in r.content
+
     def test_healthz_returns_200_with_no_store(self, client):
         for path in ("/healthz", "/healthz/"):
             r = client.get(path)
@@ -287,6 +295,63 @@ class TestItemList:
         assert r.status_code == 200
         assert b"Y2024" in r.content
         assert b"Y2023" not in r.content
+
+    def test_pub_by_year_renders_prev_next_links(
+        self, client, journalpub_factory, author
+    ):
+        # Issue #17: closest neighbouring years that have items get
+        # prev/next links above the entries list.
+        journalpub_factory(authors=[author], year=2008)
+        journalpub_factory(authors=[author], year=2010)
+        journalpub_factory(authors=[author], year=2024)
+
+        r = client.get("/item/pub-by-year/2010/")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        # Both prev (2008) and next (2024) should appear as links.
+        assert "lit-year-nav" in body
+        assert "/item/pub-by-year/2008/" in body
+        assert "/item/pub-by-year/2024/" in body
+
+    def test_pub_by_year_no_prev_when_oldest(self, client, journalpub_factory, author):
+        # Oldest year → only "next" link, no "prev".
+        journalpub_factory(authors=[author], year=2008)
+        journalpub_factory(authors=[author], year=2024)
+
+        r = client.get("/item/pub-by-year/2008/")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        assert "/item/pub-by-year/2024/" in body
+        assert "lit-year-nav__prev" not in body  # no prev link
+
+    def test_tag_page_renders_sparkline(self, client, journalpub_factory, author, tag):
+        # Issue #27: tag-results page shows an inline SVG sparkline of
+        # article counts per year above the entries list.
+        journalpub_factory(authors=[author], tags=[tag], year=2008)
+        journalpub_factory(authors=[author], tags=[tag], year=2010)
+        journalpub_factory(authors=[author], tags=[tag], year=2024)
+
+        r = client.get(f"/item/tag/{tag.slug}/")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        # Assert on the rendered <div ...>, not the bare class name —
+        # the latter also appears in base.html's inline <style> block
+        # on every page (same trap PR #55 hit with .lit-tag-description).
+        assert '<div class="lit-sparkline-wrap"' in body
+        assert '<svg class="lit-sparkline"' in body
+
+    def test_tag_page_omits_sparkline_when_single_year(
+        self, client, journalpub_factory, author, tag
+    ):
+        # Only one year of data → wrapper suppressed via the template's
+        # ``{% if sparkline_data|length > 1 %}`` guard, since the SVG
+        # itself would render empty for a single-point series.
+        journalpub_factory(authors=[author], tags=[tag], year=2024)
+
+        r = client.get(f"/item/tag/{tag.slug}/")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        assert '<div class="lit-sparkline-wrap"' not in body
 
     def test_tag_filter(self, client, journalpub_factory, author, tag):
         journalpub_factory(authors=[author], tags=[tag], title="Has Fourier tag")
