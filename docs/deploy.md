@@ -106,7 +106,13 @@ docker compose -f docker-compose.prod.yml ps
 # web should be up; the Dockerfile HEALTHCHECK will flip it to (healthy)
 # within ~30 s of gunicorn binding to 8000.
 
-curl -fsS http://127.0.0.1:8002/healthz
+# /healthz goes through Django's SecurityMiddleware, which 301-redirects
+# every plain-HTTP request to HTTPS (because prod.py sets
+# SECURE_SSL_REDIRECT). On the loopback we're bypassing Caddy, so we have
+# to forge the header that Caddy would normally add. Without it,
+# `curl -fsS` exits 0 silently on the 301 with no body — looks like
+# success but tells you nothing about gunicorn.
+curl -fsS -H 'X-Forwarded-Proto: https' http://127.0.0.1:8002/healthz
 # → ok
 ```
 
@@ -222,7 +228,25 @@ Validate and reload:
 
 ```bash
 sudo caddy validate --config /etc/caddy/Caddyfile
+```
+
+The `log { output file ... }` block above writes to `/var/log/caddy/literature.log`. Create that file with `caddy` ownership **before** reloading — Caddy isn't allowed to create new files in `/var/log/caddy/` itself, and without this step the reload fails with `open /var/log/caddy/literature.log: permission denied`, hangs against systemd's reload timeout, and the running Caddy silently keeps serving its previous config (so Cloudflare returns 525 for the new hostname even though `caddy validate` looked fine):
+
+```bash
+sudo install -d -o caddy -g caddy /var/log/caddy
+sudo install -o caddy -g caddy -m 644 /dev/null /var/log/caddy/literature.log
+```
+
+Now reload:
+
+```bash
 sudo systemctl reload caddy
+sudo systemctl status caddy --no-pager | head -5
+# Expect: Active: active (running). If you see "reloading" for more than
+# a second or two, the reload is hung — `systemctl status` will print the
+# real error in the Status: line. Once fixed, `sudo systemctl restart
+# caddy` (NOT another reload) clears the stuck-reload state cleanly; this
+# briefly drops the other sites Caddy fronts (~1s).
 ```
 
 Smoke-test:
