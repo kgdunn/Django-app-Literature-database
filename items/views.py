@@ -1,4 +1,5 @@
 import logging
+import re
 
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.exceptions import ObjectDoesNotExist
@@ -55,22 +56,35 @@ def _get_related_items(item, limit=5):
     """Items most similar to ``item`` by FTS overlap on title + abstract.
 
     Issue #36 — cheap precursor to the Phase-12 pgvector "Similar
-    papers" panel. Builds a websearch SearchQuery from the current
-    item's title + abstract, ranks the rest of the corpus by
-    cover-density overlap, returns the top ``limit`` non-zero matches.
-    The same template slot will swap to vector-cosine ranking once
-    embeddings land — only the body of this helper changes.
+    papers" panel. Tokenizes the current item's title + abstract into
+    alpha words ≥4 chars (filters most English stop words), caps at
+    20 words to keep the parse tree bounded, and OR-joins them as
+    individual ``plain`` SearchQuery objects. Cover-density ranking
+    then rewards items with multiple overlapping terms clustered
+    close together. Returns the top non-zero matches.
 
-    Returns ``[]`` for empty title+abstract (zero signal) or when no
-    other item has any overlap.
+    OR semantics matter here: a websearch-style AND of every word
+    would require *all* words to match, so a sibling paper missing
+    one or two would rank zero and disappear from the panel.
+
+    Returns ``[]`` for empty title+abstract, no extractable words
+    after filtering, or no overlap with any other item.
     """
     query_text = ((item.title or "") + " " + (item.abstract or "")).strip()
     if not query_text:
         return []
+    # Alpha-only, ≥4 chars, deduped, capped at 20 — drops most English
+    # stop words and keeps the OR-tree bounded.
+    words = re.findall(r"[a-zA-Z]{4,}", query_text.lower())
+    words = list(dict.fromkeys(words))[:20]
+    if not words:
+        return []
+    query = SearchQuery(words[0], config="english", search_type="plain")
+    for w in words[1:]:
+        query = query | SearchQuery(w, config="english", search_type="plain")
     vector = SearchVector("title", weight="A", config="english") + SearchVector(
         "abstract", weight="B", config="english"
     )
-    query = SearchQuery(query_text, config="english", search_type="websearch")
     return list(
         Item.objects.exclude(pk=item.pk)
         .annotate(rank=SearchRank(vector, query, cover_density=True))
