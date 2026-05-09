@@ -98,6 +98,20 @@ class TestSecurityHeaders:
         assert "https://cdn.jsdelivr.net" in csp
         assert "frame-ancestors 'none'" in csp
 
+    def test_csp_drops_unsafe_inline(self, client):
+        # Issue #80: the inline <style> + <script> blocks were extracted
+        # into ``literature/static/literature/{site.css, theme-preload.js,
+        # theme-toggle.js, sparkline.js}`` so the CSP can refuse inline
+        # script and style execution. A future regression that re-adds
+        # an inline ``<script>...</script>`` block in any template would
+        # show up as a browser-side CSP violation; this test pins the
+        # header so a *settings* regression (someone re-adding
+        # 'unsafe-inline' to bypass the issue) gets caught at CI time.
+        r = client.get("/")
+        csp = r.get("Content-Security-Policy", "")
+        assert "'unsafe-inline'" not in csp
+        assert "'unsafe-eval'" not in csp
+
     def test_permissions_policy_present(self, client):
         r = client.get("/")
         assert "interest-cohort=()" in r.get("Permissions-Policy", "")
