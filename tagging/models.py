@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import IntegrityError, models
 from django.template.defaultfilters import slugify
 
 
@@ -25,21 +25,37 @@ class Tag(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """Slug is a primary key: don't save a new tag if one already exists
-        with the identical slug.
-        """
-        slug = slugify(self.name)
+        """Set the slug from the name on first save; raise loudly on a
+        slug collision.
 
-        # happens if the slug is totally unicode characters
-        if len(slug) == 0:
+        Issue #83: the legacy implementation silently no-op'd when the
+        slug already existed, which produced two surprising outcomes:
+
+        1. ``Tag.objects.create(name="Already taken")`` returned a Tag
+           instance that was *never persisted*, so callers thought the
+           tag was saved when it wasn't.
+        2. Editing an existing tag's ``description`` and re-saving was
+           rejected, because the row treated *itself* as a collision
+           via ``Tag.objects.filter(slug=slug)``.
+
+        The fix: only check for a collision when this is a new row
+        (``self.pk is None``). On the update path, the DB-level
+        ``unique=True`` constraint on ``slug`` is the safety net.
+        Real collisions raise ``IntegrityError`` instead of silently
+        dropping the write.
+        """
+        new_slug = slugify(self.name)
+
+        # Happens if the name is purely unicode characters slugify can't
+        # handle, e.g. an emoji-only tag name.
+        if not new_slug:
             raise ValidationError("Tag contains invalid characters")
 
-        if Tag.objects.filter(slug=slug):
-            return
-        else:
-            # Call the "real" save() method.
-            self.slug = slug
-            super(Tag, self).save(*args, **kwargs)
+        if self.pk is None and Tag.objects.filter(slug=new_slug).exists():
+            raise IntegrityError("A tag with slug '%s' already exists" % new_slug)
+
+        self.slug = new_slug
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["slug"]

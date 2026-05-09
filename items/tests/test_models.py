@@ -169,6 +169,100 @@ class TestBookFullCitation:
 
 
 @pytest.mark.django_db
+class TestPdfFileValidator:
+    """Issue #82: ``Item.pdf_file`` carries a ``FileExtensionValidator``
+    so a non-`.pdf` admin upload fails at form-validation time instead
+    of slipping through and only blowing up later in
+    ``__extract_extra__`` when pdfplumber raises."""
+
+    def test_field_has_pdf_extension_validator(self):
+        from django.core.validators import FileExtensionValidator
+
+        from items.models import Item
+
+        field = Item._meta.get_field("pdf_file")
+        pdf_validators = [
+            v for v in field.validators if isinstance(v, FileExtensionValidator)
+        ]
+        assert (
+            len(pdf_validators) == 1
+        ), "Item.pdf_file should carry exactly one FileExtensionValidator"
+        assert pdf_validators[0].allowed_extensions == ["pdf"]
+
+    def test_validator_rejects_docx(self):
+        from django.core.exceptions import ValidationError
+        from django.core.files.base import ContentFile
+        from django.core.validators import FileExtensionValidator
+
+        validator = FileExtensionValidator(allowed_extensions=["pdf"])
+        bad = ContentFile(b"PK\x03\x04 not a pdf", name="paper.docx")
+        with pytest.raises(ValidationError):
+            validator(bad)
+
+    def test_validator_accepts_pdf(self):
+        from django.core.files.base import ContentFile
+        from django.core.validators import FileExtensionValidator
+
+        validator = FileExtensionValidator(allowed_extensions=["pdf"])
+        good = ContentFile(b"%PDF-1.4 stub", name="paper.pdf")
+        validator(good)  # should not raise
+
+
+@pytest.mark.django_db
+class TestTagSave:
+    """Issue #83: ``Tag.save()`` used to silently no-op on slug
+    collision, leading to two surprising behaviours:
+
+    1. ``Tag.objects.create(...)`` for a duplicate slug returned a
+       Tag instance that wasn't persisted (no DB row).
+    2. Editing a tag's description and re-saving was rejected because
+       the row treated *itself* as a collision.
+
+    The fix: only check for collision on insert (``self.pk is None``),
+    and raise ``IntegrityError`` instead of silently skipping the save.
+    On update, the DB-level ``unique=True`` on slug remains the safety
+    net.
+    """
+
+    def test_distinct_slugs_can_coexist(self, db):
+        from tagging.models import Tag
+
+        Tag.objects.create(name="Fourier")
+        Tag.objects.create(name="Spectroscopy")
+        assert Tag.objects.count() == 2
+
+    def test_collision_raises_integrity_error(self, db):
+        from django.db import IntegrityError
+
+        from tagging.models import Tag
+
+        Tag.objects.create(name="Fourier methods")
+        with pytest.raises(IntegrityError):
+            Tag.objects.create(name="Fourier methods")  # same slug
+
+    def test_update_existing_tag_persists(self, db):
+        # Pre-fix bug: re-saving an existing Tag was rejected because
+        # ``Tag.objects.filter(slug=slug)`` matched the row itself.
+        from tagging.models import Tag
+
+        tag = Tag.objects.create(name="Optics", description="initial")
+        tag.description = "updated description"
+        tag.save()
+
+        reloaded = Tag.objects.get(pk=tag.pk)
+        assert reloaded.description == "updated description"
+
+    def test_empty_slug_raises_validation_error(self, db):
+        from django.core.exceptions import ValidationError
+
+        from tagging.models import Tag
+
+        # An emoji-only or punctuation-only name slugifies to "".
+        with pytest.raises(ValidationError):
+            Tag.objects.create(name="🌟")
+
+
+@pytest.mark.django_db
 class TestJournalUniqueName:
     """Issue #23: ``Journal.name`` is unique case-insensitively. Two
     rows whose names differ only in case can't coexist after migration
