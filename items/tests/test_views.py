@@ -334,20 +334,24 @@ class TestItemList:
         r = client.get(f"/item/tag/{tag.slug}/")
         assert r.status_code == 200
         body = r.content.decode("utf-8")
-        assert "lit-sparkline-wrap" in body
+        # Assert on the rendered <div ...>, not the bare class name —
+        # the latter also appears in base.html's inline <style> block
+        # on every page (same trap PR #55 hit with .lit-tag-description).
+        assert '<div class="lit-sparkline-wrap"' in body
         assert '<svg class="lit-sparkline"' in body
 
     def test_tag_page_omits_sparkline_when_single_year(
         self, client, journalpub_factory, author, tag
     ):
-        # Only one year of data → sparkline_svg returns "" and the
-        # wrapper isn't rendered.
+        # Only one year of data → wrapper suppressed via the template's
+        # ``{% if sparkline_data|length > 1 %}`` guard, since the SVG
+        # itself would render empty for a single-point series.
         journalpub_factory(authors=[author], tags=[tag], year=2024)
 
         r = client.get(f"/item/tag/{tag.slug}/")
         assert r.status_code == 200
         body = r.content.decode("utf-8")
-        assert "lit-sparkline-wrap" not in body
+        assert '<div class="lit-sparkline-wrap"' not in body
 
     def test_tag_filter(self, client, journalpub_factory, author, tag):
         journalpub_factory(authors=[author], tags=[tag], title="Has Fourier tag")
