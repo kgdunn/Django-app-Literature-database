@@ -120,6 +120,108 @@ class TestSearch:
         assert r.status_code == 302
         assert r["Location"].rstrip("/").endswith(f"/item/{pub.pk}")
 
+    def test_exact_title_returns_own_item(self, client, journalpub_factory, author):
+        """Regression for issue #15: typing an exact title (with hyphenated
+        terms and English stop words) should return that item.
+
+        Reproduces the legacy report: the query "Process Monitoring and
+        Diagnosis by Multi-Block" did not return the item titled exactly
+        that. Two suspect mechanics, both worth pinning:
+
+        1. ``websearch_to_tsquery('english', ...)`` ANDs bare terms after
+           stemming + stop-word removal, so "Process Monitoring and
+           Diagnosis by Multi-Block" should reduce to roughly
+           ``process & monitor & diagnos & multi & block`` — a strict
+           subset of the title's own SearchVector tokens.
+        2. Hyphenated terms (``Multi-Block``) are tokenized into two
+           lexemes by the english config, but only if both vector and
+           query tokenize them the same way.
+
+        If this test fails, the failure mode tells us which side is the
+        culprit.
+        """
+        journalpub_factory(
+            authors=[author],
+            title="Process Monitoring and Diagnosis by Multi-Block PCA and PLS Models",
+        )
+        r = client.get("/search?q=Process+Monitoring+and+Diagnosis+by+Multi-Block")
+        assert r.status_code == 200
+        assert b"Process Monitoring and Diagnosis by Multi-Block" in r.content
+
+    def test_hyphenated_word_in_query(self, client, journalpub_factory, author):
+        """Narrower probe: hyphenated single term in query should match a
+        title that also contains the hyphenated term."""
+        journalpub_factory(authors=[author], title="Multi-Block PLS overview")
+        r = client.get("/search?q=multi-block")
+        assert r.status_code == 200
+        assert b"Multi-Block PLS overview" in r.content
+
+    def test_exact_title_ranks_above_distractors(
+        self, client, journalpub_factory, author
+    ):
+        """Issue #15 follow-up: on the live site, an exact-title query
+        returns the matching item but it ranked ~12th because the default
+        SearchRank (Postgres ``ts_rank``) is frequency-based. A paper
+        whose ``other_search_text`` repeats "monitoring" / "process"
+        dozens of times scores higher than a paper whose **title** says
+        those words once, even though title has weight A and
+        other_search_text has weight C — frequency × weight beats a
+        single high-weight occurrence.
+
+        Switching to ``cover_density=True`` (Postgres ``ts_rank_cd``)
+        scores by query-term proximity instead. An exact phrase in the
+        title scores near 1.0 because the terms are adjacent; scattered
+        mentions across an extracted-PDF body score much lower.
+        """
+        # The target: exact phrase in its own title (weight A).
+        target = journalpub_factory(
+            authors=[author],
+            title="Process Monitoring and Diagnosis by Multi-Block PCA and PLS Models",
+            year=2008,
+        )
+
+        # Distractors: each one mentions the query terms many times in
+        # ``other_search_text`` (weight C) but does NOT have the phrase
+        # in its title. Without cover-density ranking, ts_rank's
+        # frequency boost pushes these above the target.
+        distractor_body = (
+            "monitoring monitoring monitoring process process diagnosis "
+            "diagnosis multi block multi block. " * 30
+        )
+        for i in range(11):
+            journalpub_factory(
+                authors=[author],
+                title=f"Unrelated paper {i}",
+                other_search_text=distractor_body,
+                year=2024,  # newer than target — also a tiebreaker risk
+            )
+
+        # Pre-flight: the 12 items genuinely exist in the DB; this isn't
+        # an empty-corpus pass.
+        from items.models import Item
+
+        assert Item.objects.count() == 12
+
+        r = client.get("/search?q=Process+Monitoring+and+Diagnosis+by+Multi-Block")
+        assert r.status_code == 200
+
+        # The target's title must appear before any "Unrelated paper"
+        # heading in the rendered page. cover_density is allowed to
+        # *filter the distractors out entirely* (their ts_rank_cd on a
+        # weight-C-only body match is below the rank__gt=0 threshold) —
+        # that's a stronger fix than just reordering. The bad outcome
+        # we're guarding against is the pre-fix one: target ranked
+        # below distractors that frequency-boosted ahead of it.
+        target_phrase = b"Process Monitoring and Diagnosis by Multi-Block"
+        target_pos = r.content.find(target_phrase)
+        first_distractor_pos = r.content.find(b"Unrelated paper")
+        assert target_pos != -1, "Target not present in results at all"
+        assert first_distractor_pos == -1 or target_pos < first_distractor_pos, (
+            f"Target ranked below distractors: target at {target_pos}, "
+            f"first distractor at {first_distractor_pos}"
+        )
+        assert target.title.encode() in r.content
+
 
 @pytest.mark.django_db
 class TestNoPdfDownloadEndpoint:

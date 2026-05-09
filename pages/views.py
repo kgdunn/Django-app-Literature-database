@@ -127,7 +127,13 @@ def search(request):
 
     results = (
         Item.objects.annotate(
-            rank=SearchRank(vector, query),
+            # cover_density=True switches the underlying Postgres function
+            # from ts_rank (term-frequency) to ts_rank_cd (cover-density,
+            # i.e. proximity-aware). Without it an exact phrase in the
+            # title — weight A, single occurrence — was outranked by a
+            # different paper whose other_search_text (weight C, extracted
+            # PDF body) repeated the same terms dozens of times. Issue #15.
+            rank=SearchRank(vector, query, cover_density=True),
             author_sim=TrigramSimilarity("authorgroup__author__last_name", q),
         )
         .filter(Q(rank__gt=0) | Q(author_sim__gt=AUTHOR_TRIGRAM_THRESHOLD))
