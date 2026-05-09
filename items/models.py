@@ -2,7 +2,7 @@ import re
 import unicodedata
 
 from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
+from django.core.validators import FileExtensionValidator, URLValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.template.defaultfilters import slugify
@@ -226,12 +226,19 @@ class Item(models.Model):
     # public ``download_item`` view was removed in Phase 5. Caddy's
     # ``/media/literature/pdf/*`` path is excluded from the static
     # file_server in production for the same reason.
+    #
+    # Issue #82: ``FileExtensionValidator(allowed_extensions=["pdf"])``
+    # rejects non-.pdf uploads at the admin form level — pure data-quality
+    # since PDFs aren't publicly served. Mismatched extensions used to slip
+    # through and only fail later in ``__extract_extra__`` when pdfplumber
+    # raised on a non-PDF body.
     pdf_file = models.FileField(
         upload_to=upload_dest,
         max_length=255,
         blank=True,
         null=True,
         verbose_name="PDF file (admin-only; not exposed for download)",
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
     )
 
     # Contains unstructured text (auto-extracted from PDF, cut/paste, whatever)

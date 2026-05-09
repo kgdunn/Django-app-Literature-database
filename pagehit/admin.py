@@ -15,7 +15,10 @@ class PageHitAdmin(admin.ModelAdmin):
     date_hierarchy = "datetime"
     search_fields = ("item", "extra_info")
     readonly_fields = ("datetime", "item", "item_pk", "extra_info")
-    list_per_page = 200
+    # Issue #84: 100 (matches `items/admin.py`'s anchor + the openmv
+    # audit baseline). 200 was an anomaly from the early PageHit
+    # broadening work.
+    list_per_page = 100
 
     def has_add_permission(self, request):
         # PageHit rows are written only by `pagehit.views.create_hit`, never
