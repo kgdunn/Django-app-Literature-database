@@ -42,78 +42,92 @@ def _authors(item):
     return [a.author.full_name for a in rows]
 
 
+def _venue_journalpub(item):
+    sub = JournalPub.objects.filter(pk=item.pk).select_related("journal").first()
+    if not sub:
+        return ""
+    parts = [sub.journal.name]
+    if sub.volume:
+        parts.append(f"vol. {sub.volume}")
+    if sub.page_start and sub.page_end:
+        parts.append(f"pp. {sub.page_start}-{sub.page_end}")
+    elif sub.page_start:
+        parts.append(f"p. {sub.page_start}")
+    return ", ".join(parts)
+
+
+def _venue_book(item):
+    sub = Book.objects.filter(pk=item.pk).select_related("publisher").first()
+    if not sub:
+        return ""
+    parts = []
+    if sub.edition:
+        parts.append(sub.edition)
+    if sub.publisher:
+        parts.append(sub.publisher.name)
+    if sub.isbn:
+        parts.append(f"ISBN {sub.isbn}")
+    return ", ".join(parts)
+
+
+def _venue_conference(item):
+    sub = (
+        ConferenceProceeding.objects.filter(pk=item.pk)
+        .select_related("publisher")
+        .first()
+    )
+    if not sub:
+        return ""
+    parts = [p for p in [sub.conference_name, sub.organization, sub.location] if p]
+    if sub.page_start and sub.page_end:
+        parts.append(f"pp. {sub.page_start}-{sub.page_end}")
+    if sub.publisher:
+        parts.append(sub.publisher.name)
+    return ", ".join(parts)
+
+
+def _venue_thesis(item):
+    sub = Thesis.objects.filter(pk=item.pk).select_related("school").first()
+    if not sub:
+        return ""
+    thesis_type = dict(Thesis.THESIS_CHOICES).get(sub.thesis_type, sub.thesis_type)
+    return f"{thesis_type}, {sub.school.name}"
+
+
+def _venue_incollection(item):
+    sub = InCollection.objects.filter(pk=item.pk).select_related("publisher").first()
+    if not sub:
+        return ""
+    parts = [f'in "{sub.book_title}"']
+    if sub.edition:
+        parts.append(sub.edition)
+    if sub.publisher:
+        parts.append(sub.publisher.name)
+    if sub.page_start and sub.page_end:
+        parts.append(f"pp. {sub.page_start}-{sub.page_end}")
+    return ", ".join(parts)
+
+
+_VENUE_BY_TYPE = {
+    "journalpub": _venue_journalpub,
+    "book": _venue_book,
+    "conferenceproc": _venue_conference,
+    "thesis": _venue_thesis,
+    "incollection": _venue_incollection,
+}
+
+
 def _venue(item):
     """One-line description of where the item was published.
 
-    Branches by ``item.item_type`` and pulls the relevant subclass
-    fields (journal, publisher + ISBN, conference details, school,
-    parent book). Returns "" if the subclass row is missing — defensive
-    for legacy data where the typed row hasn't been created.
+    Dispatches to the per-subclass renderer via ``_VENUE_BY_TYPE``.
+    Returns "" if ``item.item_type`` is unrecognised or the typed
+    subclass row is missing (defensive for legacy / partial data).
     """
-    if item.item_type == "journalpub":
-        sub = JournalPub.objects.filter(pk=item.pk).select_related("journal").first()
-        if not sub:
-            return ""
-        parts = [sub.journal.name]
-        if sub.volume:
-            parts.append(f"vol. {sub.volume}")
-        if sub.page_start and sub.page_end:
-            parts.append(f"pp. {sub.page_start}-{sub.page_end}")
-        elif sub.page_start:
-            parts.append(f"p. {sub.page_start}")
-        return ", ".join(parts)
-
-    if item.item_type == "book":
-        sub = Book.objects.filter(pk=item.pk).select_related("publisher").first()
-        if not sub:
-            return ""
-        parts = []
-        if sub.edition:
-            parts.append(sub.edition)
-        if sub.publisher:
-            parts.append(sub.publisher.name)
-        if sub.isbn:
-            parts.append(f"ISBN {sub.isbn}")
-        return ", ".join(parts)
-
-    if item.item_type == "conferenceproc":
-        sub = (
-            ConferenceProceeding.objects.filter(pk=item.pk)
-            .select_related("publisher")
-            .first()
-        )
-        if not sub:
-            return ""
-        parts = [p for p in [sub.conference_name, sub.organization, sub.location] if p]
-        if sub.page_start and sub.page_end:
-            parts.append(f"pp. {sub.page_start}-{sub.page_end}")
-        if sub.publisher:
-            parts.append(sub.publisher.name)
-        return ", ".join(parts)
-
-    if item.item_type == "thesis":
-        sub = Thesis.objects.filter(pk=item.pk).select_related("school").first()
-        if not sub:
-            return ""
-        thesis_type = dict(Thesis.THESIS_CHOICES).get(sub.thesis_type, sub.thesis_type)
-        return f"{thesis_type}, {sub.school.name}"
-
-    if item.item_type == "incollection":
-        sub = (
-            InCollection.objects.filter(pk=item.pk).select_related("publisher").first()
-        )
-        if not sub:
-            return ""
-        parts = [f'in "{sub.book_title}"']
-        if sub.edition:
-            parts.append(sub.edition)
-        if sub.publisher:
-            parts.append(sub.publisher.name)
-        if sub.page_start and sub.page_end:
-            parts.append(f"pp. {sub.page_start}-{sub.page_end}")
-        return ", ".join(parts)
-
-    return ""
+    fn = _VENUE_BY_TYPE.get(item.item_type)
+    if fn is None:
+        return ""
+    return fn(item)
 
 
 class Command(BaseCommand):
