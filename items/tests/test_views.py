@@ -156,6 +156,33 @@ class TestSearch:
         assert r.status_code == 200
         assert b"Multi-Block PLS overview" in r.content
 
+    def test_multi_author_item_not_duplicated_in_results(
+        self, client, journalpub_factory, three_authors
+    ):
+        """Regression: a multi-author item used to render 2–3× in the
+        search results because the ``TrigramSimilarity`` annotation
+        joins through ``AuthorGroup → Author`` and produces one row per
+        author. The queryset's ``.distinct()`` couldn't collapse them:
+        each joined row had a different ``author_sim`` value (the
+        trigram for that specific author's last name), and Postgres'
+        ``SELECT DISTINCT`` considers every column in the SELECT list
+        — different ``author_sim`` → different row → no dedup.
+
+        Wrapping the trigram in ``Max()`` forces a ``GROUP BY`` on
+        Item.id, so each item produces one row with the max similarity
+        across its authors.
+        """
+        pub = journalpub_factory(
+            authors=three_authors,
+            title="Multi-author paper on Fourier transforms",
+        )
+        r = client.get("/search?q=fourier")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        target_link = f"/item/{pub.pk}/{pub.slug}"
+        occurrences = body.count(target_link)
+        assert occurrences == 1, f"Item appeared {occurrences}× in results (expected 1)"
+
     def test_exact_title_ranks_above_distractors(
         self, client, journalpub_factory, author
     ):
