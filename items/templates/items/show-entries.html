@@ -21,7 +21,7 @@
 <div class="lit-tag-description"><p>{{ description }}</p></div>
 {% endif %}
 
-{% if sparkline_data %}
+{% if sparkline_data|length > 1 %}
 <div class="lit-sparkline-wrap" title="Articles per year">
     <span class="lit-sparkline-label">Articles per year:</span>
     {% sparkline_svg sparkline_data %}
