@@ -91,8 +91,20 @@ class BookAdmin(admin.ModelAdmin):
     filter_horizontal = ["editors", "tags"]
 
 
+class JournalAdmin(admin.ModelAdmin):
+    """Sorted alphabetical list + a search box (issue #23) so admins can
+    spot duplicates ("Analytica Chimica Acta" vs. variants) at a glance
+    before merging them. The case-insensitive UniqueConstraint added in
+    migration 0007 prevents *new* duplicates from being created."""
+
+    list_display = ("name", "website")
+    ordering = ["name"]
+    search_fields = ("name",)
+    list_per_page = 100
+
+
 admin.site.register(Author, AuthorAdmin)
-admin.site.register(Journal)
+admin.site.register(Journal, JournalAdmin)
 admin.site.register(Publisher)
 admin.site.register(School)
 

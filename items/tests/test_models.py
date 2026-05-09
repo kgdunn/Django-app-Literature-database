@@ -1,6 +1,7 @@
 """Tests for the items domain layer (models + properties)."""
 
 import pytest
+from django.db import IntegrityError
 
 from items.models import Author
 
@@ -165,6 +166,89 @@ class TestBookFullCitation:
         # the edition block cleanly.
         cit = book_factory(authors=[author], edition=None).full_citation()
         assert "Multivariate Calibration" in cit
+
+
+@pytest.mark.django_db
+class TestJournalUniqueName:
+    """Issue #23: ``Journal.name`` is unique case-insensitively. Two
+    rows whose names differ only in case can't coexist after migration
+    0007 (the data merge folds existing duplicates into a survivor and
+    the functional unique index prevents new ones)."""
+
+    def test_distinct_names_can_coexist(self, db):
+        from items.models import Journal
+
+        Journal.objects.create(
+            name="Analytica Chimica Acta", website="https://a.example"
+        )
+        Journal.objects.create(name="Chemometrics Journal", website="https://b.example")
+        assert Journal.objects.count() == 2
+
+    def test_case_insensitive_duplicate_rejected(self, db):
+        from items.models import Journal
+
+        Journal.objects.create(
+            name="Analytica Chimica Acta", website="https://a.example"
+        )
+        with pytest.raises(IntegrityError):
+            Journal.objects.create(
+                name="analytica chimica acta", website="https://b.example"
+            )
+
+
+@pytest.mark.django_db
+class TestDoiLinkNormalisation:
+    """Issue #20: admins can paste either a full URL or a bare DOI suffix
+    in the ``doi_link`` field. ``Item.save()`` normalises everything to
+    ``https://doi.org/<suffix>`` so downstream code sees one shape only."""
+
+    def test_bare_doi_suffix_gets_doi_org_prefix(self, journalpub_factory, author):
+        item = journalpub_factory(authors=[author], doi_link="10.1234/foo-bar")
+        assert item.doi_link == "https://doi.org/10.1234/foo-bar"
+
+    def test_doi_org_without_scheme_gets_https_prefix(self, journalpub_factory, author):
+        item = journalpub_factory(authors=[author], doi_link="doi.org/10.1234/foo")
+        assert item.doi_link == "https://doi.org/10.1234/foo"
+
+    def test_dx_doi_org_without_scheme_gets_https_prefix(
+        self, journalpub_factory, author
+    ):
+        item = journalpub_factory(authors=[author], doi_link="dx.doi.org/10.1234/foo")
+        assert item.doi_link == "https://dx.doi.org/10.1234/foo"
+
+    def test_full_https_url_preserved(self, journalpub_factory, author):
+        item = journalpub_factory(
+            authors=[author], doi_link="https://doi.org/10.1234/foo"
+        )
+        assert item.doi_link == "https://doi.org/10.1234/foo"
+
+    def test_full_http_url_preserved(self, journalpub_factory, author):
+        item = journalpub_factory(
+            authors=[author], doi_link="http://doi.org/10.1234/foo"
+        )
+        assert item.doi_link == "http://doi.org/10.1234/foo"
+
+    def test_whitespace_stripped(self, journalpub_factory, author):
+        item = journalpub_factory(authors=[author], doi_link="  10.1234/foo  ")
+        assert item.doi_link == "https://doi.org/10.1234/foo"
+
+    def test_validator_rejects_garbage(self, db):
+        from django.core.exceptions import ValidationError
+
+        from items.models import validate_doi_or_url
+
+        with pytest.raises(ValidationError):
+            validate_doi_or_url("not a url not a doi")
+
+    def test_validator_accepts_bare_doi(self, db):
+        from items.models import validate_doi_or_url
+
+        # Should not raise.
+        validate_doi_or_url("10.1234/foo-bar")
+
+    def test_blank_doi_link_stays_empty(self, journalpub_factory, author):
+        item = journalpub_factory(authors=[author], doi_link="")
+        assert item.doi_link == ""
 
 
 @pytest.mark.django_db
