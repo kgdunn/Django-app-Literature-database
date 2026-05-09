@@ -32,9 +32,11 @@ class Command(BaseCommand):
     help = "Walk every Item and report data-integrity warnings."
 
     def add_arguments(self, parser):
+        # NB: don't add `-v` as a short flag — Django's BaseCommand already
+        # registers `-v` for `--verbosity`, and argparse refuses
+        # conflicting short options.
         parser.add_argument(
             "--verbose",
-            "-v",
             action="store_true",
             default=False,
             help="Print one line per item checked, not just the warnings.",
