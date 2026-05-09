@@ -273,8 +273,9 @@ class Item(models.Model):
             return out
         elif len(auth_list) == 2:
             return " and ".join(authors)
-        else:
+        elif len(auth_list) == 1:
             return authors[0]
+        return ""
 
     @property
     def author_list_all_lastnames(self):
