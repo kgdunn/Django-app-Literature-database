@@ -21,6 +21,17 @@ from utils import paginated_queryset
 logger = logging.getLogger(__name__)
 
 
+def _track_hit(request, item_key, slug=""):
+    """Record a PageHit for a tag / author / year / journal landing page,
+    or for one of the static "all" listings. Skipped on paginated requests
+    (``?page=…``) so a user clicking through the result list doesn't
+    inflate the visit count for that landing page — same convention used
+    by ``pages.search``."""
+    if "page" in request.GET:
+        return
+    create_hit(request, item_key, extra_info=slug)
+
+
 def get_items_or_404(view_function):
     """
     Decorator that resolves an ``Item`` from ``item_id`` and downcasts
@@ -69,26 +80,39 @@ def show_items(request, what_view="", extra_info=""):
     """
     what_view = what_view.lower()
     extra_info = extra_info.lower()
+    # Slug captured before the per-branch `extra_info` rewrites below
+    # decorate it for display ('"foo"' / 'foo: "bar"' / etc). Keep the
+    # raw slug for the PageHit row so analytics can group cleanly.
+    hit_slug = extra_info
     entry_order = []
     page_title = ""
     template_name = "items/show-entries.html"
     if what_view == "tag":
+        _track_hit(request, "lit-tag-page", hit_slug)
         all_items = Item.objects.all().filter(tags__slug=slugify(extra_info))
         page_title = "All entries tagged"
         extra_info = ': "%s"' % extra_info
         entry_order = list(all_items)
 
     elif what_view == "show" and extra_info == "all-tags":
+        _track_hit(request, "lit-show-all-tags")
         page_title = "All tags"
         template_name = "items/show-tag-cloud.html"
 
-    elif what_view == "show" and extra_info == "all-items":
+    elif (what_view == "show" and extra_info == "all-items") or what_view == "all":
+        # Two URL shapes land here:
+        #   /item/show-all       (legacy, ``what_view='all'``, no extra_info)
+        #   /item/show/all-items (regex ``lit-show-items``, ``what_view='show'``)
+        # Pre-PR the legacy shape silently fell through every branch and
+        # rendered an empty page. Treat them identically.
+        _track_hit(request, "lit-show-all-items")
         all_items = Item.objects.all().order_by("-year")
         page_title = "All items in our database "
         extra_info = "(reverse publication date order)"
         entry_order = list(all_items)
 
     elif what_view == "pub-by-year":
+        _track_hit(request, "lit-year-page", hit_slug)
         all_items = Item.objects.all().filter(year=extra_info)
         page_title = "All entries published in "
         extra_info = "%s" % extra_info
@@ -101,6 +125,7 @@ def show_items(request, what_view="", extra_info=""):
                 request, 'There are no publications by "%s"' % extra_info
             )
 
+        _track_hit(request, "lit-author-page", hit_slug)
         author_items = Item.objects.all().filter(authors__slug=extra_info)
         page_title = "All entries by author"
         extra_info = ' "%s"' % author[0].full_name
@@ -113,6 +138,7 @@ def show_items(request, what_view="", extra_info=""):
                 request, 'There are no publications in "%s"' % extra_info
             )
 
+        _track_hit(request, "lit-journal-page", hit_slug)
         journal_items = JournalPub.objects.all().filter(journal=journal[0])
         page_title = "All entries in "
         extra_info = ' "%s"' % journal[0].name

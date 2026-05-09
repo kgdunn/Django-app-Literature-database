@@ -25,6 +25,7 @@ def front_page(request):
     most recent publication years, each with the count of items in
     that year. ORDER BY year DESC so the list is human-readable.
     """
+    create_hit(request, "lit-main-page")
     years = (
         Item.objects.values("year").annotate(count=Count("id")).order_by("-year")[:15]
     )
@@ -49,6 +50,7 @@ def healthz(request):
 
 
 def about_page(request):
+    create_hit(request, "lit-about-page")
     return render(request, "pages/about-page.html")
 
 

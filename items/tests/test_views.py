@@ -166,3 +166,111 @@ class TestItemList:
         assert r.status_code == 200
         assert b"Has Fourier tag" in r.content
         assert b"No tag" not in r.content
+
+
+@pytest.mark.django_db
+class TestPageHitTracking:
+    """Closes umbrella #48 → Theme E (#18 + #16). Every public landing
+    page now writes a PageHit; tag/author/year/journal pages capture the
+    slug in ``extra_info`` so analytics can group cleanly.
+
+    Item-detail tracking (``view_item`` calling ``create_hit(request,
+    the_item.pk)``) was already in place from Phase 4 and is not retested
+    here — see TestItemDetail."""
+
+    def test_front_page_records_hit(self, client):
+        from pagehit.models import PageHit
+
+        r = client.get("/")
+        assert r.status_code == 200
+        assert PageHit.objects.filter(item="lit-main-page").count() == 1
+
+    def test_about_page_records_hit(self, client):
+        from pagehit.models import PageHit
+
+        r = client.get("/about")
+        assert r.status_code == 200
+        assert PageHit.objects.filter(item="lit-about-page").count() == 1
+
+    def test_show_all_items_records_hit(self, client, journalpub_factory, author):
+        from pagehit.models import PageHit
+
+        journalpub_factory(authors=[author])
+        r = client.get("/item/show-all")
+        assert r.status_code == 200
+        assert PageHit.objects.filter(item="lit-show-all-items").count() == 1
+
+    def test_show_all_tags_records_hit(self, client, tag):
+        from pagehit.models import PageHit
+
+        r = client.get("/item/show/all-tags/")
+        assert r.status_code == 200
+        assert PageHit.objects.filter(item="lit-show-all-tags").count() == 1
+
+    def test_tag_page_records_hit_with_slug(
+        self, client, journalpub_factory, author, tag
+    ):
+        from pagehit.models import PageHit
+
+        journalpub_factory(authors=[author], tags=[tag])
+        r = client.get(f"/item/tag/{tag.slug}/")
+        assert r.status_code == 200
+        rows = PageHit.objects.filter(item="lit-tag-page")
+        assert rows.count() == 1
+        assert rows.first().extra_info == tag.slug
+
+    def test_author_page_records_hit_with_slug(
+        self, client, journalpub_factory, author
+    ):
+        from pagehit.models import PageHit
+
+        journalpub_factory(authors=[author])
+        r = client.get(f"/item/author/{author.slug}/")
+        assert r.status_code == 200
+        rows = PageHit.objects.filter(item="lit-author-page")
+        assert rows.count() == 1
+        assert rows.first().extra_info == author.slug
+
+    def test_year_page_records_hit_with_year(self, client, journalpub_factory, author):
+        from pagehit.models import PageHit
+
+        journalpub_factory(authors=[author], year=2024)
+        r = client.get("/item/pub-by-year/2024/")
+        assert r.status_code == 200
+        rows = PageHit.objects.filter(item="lit-year-page")
+        assert rows.count() == 1
+        assert rows.first().extra_info == "2024"
+
+    def test_journal_page_records_hit_with_slug(
+        self, client, journalpub_factory, author
+    ):
+        from pagehit.models import PageHit
+
+        # ``journal`` fixture is auto-injected via journalpub_factory.
+        pub = journalpub_factory(authors=[author])
+        r = client.get(f"/item/journal/{pub.journal.slug}/")
+        assert r.status_code == 200
+        rows = PageHit.objects.filter(item="lit-journal-page")
+        assert rows.count() == 1
+        assert rows.first().extra_info == pub.journal.slug
+
+    def test_paginated_request_does_not_double_count(
+        self, client, journalpub_factory, author, tag
+    ):
+        """Mirror of pages.search's existing skip — clicking page 2 of a
+        landing page is the same visit, not a new one."""
+        from pagehit.models import PageHit
+
+        journalpub_factory(authors=[author], tags=[tag])
+        client.get(f"/item/tag/{tag.slug}/")  # initial visit
+        client.get(f"/item/tag/{tag.slug}/?page=2")  # paginated click
+        assert PageHit.objects.filter(item="lit-tag-page").count() == 1
+
+    def test_unknown_author_404_does_not_record_hit(self, client):
+        """The view returns 404 before reaching the create_hit call when
+        the slug doesn't resolve, so no PageHit row should be written."""
+        from pagehit.models import PageHit
+
+        r = client.get("/item/author/nobody/")
+        assert r.status_code == 404
+        assert PageHit.objects.filter(item="lit-author-page").count() == 0
