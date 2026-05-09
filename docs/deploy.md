@@ -297,7 +297,14 @@ Push any trivial change to `main` (or use the GitHub Actions UI's `workflow_disp
 5. Curl `127.0.0.1:8002/healthz` ten times until it gets a 200
 6. Exit 0
 
-If step 5 times out, the workflow fails red and the deploy log lines (`docker compose logs --tail=40 web`) print into the Action output.
+If step 5 times out, the workflow fails red and the last 40 lines of `web` container logs print into the Action output. To re-run the same diagnostic by hand from the host:
+
+```bash
+cd /home/deploy/literature/repo
+docker compose -f docker-compose.prod.yml logs --tail=40 web
+```
+
+(Both the `-f docker-compose.prod.yml` flag and the `cd` matter — a bare `docker compose logs` from anywhere else on the host produces `no configuration file provided: not found`. The compose-project-name pin in `docker-compose.prod.yml` doesn't help compose discover the file; it only avoids stack-name collisions once compose has loaded the file.)
 
 ## 9. Manual deploys (rollback / hotfix)
 
