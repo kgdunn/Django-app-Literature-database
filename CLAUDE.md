@@ -125,6 +125,7 @@ Cloudflare (proxied, orange cloud) ──HTTPS──> Caddy on Hetzner host (TLS
 - **VPS**: same Hetzner Cloud Ubuntu 24.04 host that runs openmv.net and Factori.al. The literature stack coexists via offset ports (gunicorn `:8002`, postgres `:5435` — openmv uses `:8001/:5434`) and the shared host-installed Caddy.
 - **Code path**: `/home/deploy/literature/repo/` — git checkout of `main`.
 - **Compose file**: `docker-compose.prod.yml` runs two services bound to loopback only — `web` (gunicorn on `127.0.0.1:8002`) and `db` (`postgres:16-alpine` on `127.0.0.1:5435`). Phase 14 adds `meilisearch` on `127.0.0.1:7701`.
+- **Compose project name**: both compose files pin `name: literature` at the top — load-bearing for sibling-stack isolation (without it Compose defaults the project to the directory basename `repo`, which collides with openmv's `/home/deploy/openmv/repo/`) and for the on-disk Postgres volume name (`literature_literature_postgres_data`). The migration playbook for "what to do if the project name ever changes" lives in [`docs/deploy.md`](docs/deploy.md) under "Compose project name and on-disk volumes".
 - **Bind-mounted data dirs** (under `/home/deploy/literature/repo/data/`):
   - `media/` — Django uploads served by Caddy and mounted into the container as `/app/media`. **This is the PDF library — irreplaceable.** Always backed up to S3.
   - `static/` — `collectstatic` output, mounted as `/app/static`. Re-populated by the `web` container's startup command. Not backed up (regenerated).
