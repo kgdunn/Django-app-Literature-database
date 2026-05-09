@@ -120,6 +120,42 @@ class TestSearch:
         assert r.status_code == 302
         assert r["Location"].rstrip("/").endswith(f"/item/{pub.pk}")
 
+    def test_exact_title_returns_own_item(self, client, journalpub_factory, author):
+        """Regression for issue #15: typing an exact title (with hyphenated
+        terms and English stop words) should return that item.
+
+        Reproduces the legacy report: the query "Process Monitoring and
+        Diagnosis by Multi-Block" did not return the item titled exactly
+        that. Two suspect mechanics, both worth pinning:
+
+        1. ``websearch_to_tsquery('english', ...)`` ANDs bare terms after
+           stemming + stop-word removal, so "Process Monitoring and
+           Diagnosis by Multi-Block" should reduce to roughly
+           ``process & monitor & diagnos & multi & block`` — a strict
+           subset of the title's own SearchVector tokens.
+        2. Hyphenated terms (``Multi-Block``) are tokenized into two
+           lexemes by the english config, but only if both vector and
+           query tokenize them the same way.
+
+        If this test fails, the failure mode tells us which side is the
+        culprit.
+        """
+        journalpub_factory(
+            authors=[author],
+            title="Process Monitoring and Diagnosis by Multi-Block PCA and PLS Models",
+        )
+        r = client.get("/search?q=Process+Monitoring+and+Diagnosis+by+Multi-Block")
+        assert r.status_code == 200
+        assert b"Process Monitoring and Diagnosis by Multi-Block" in r.content
+
+    def test_hyphenated_word_in_query(self, client, journalpub_factory, author):
+        """Narrower probe: hyphenated single term in query should match a
+        title that also contains the hyphenated term."""
+        journalpub_factory(authors=[author], title="Multi-Block PLS overview")
+        r = client.get("/search?q=multi-block")
+        assert r.status_code == 200
+        assert b"Multi-Block PLS overview" in r.content
+
 
 @pytest.mark.django_db
 class TestNoPdfDownloadEndpoint:
