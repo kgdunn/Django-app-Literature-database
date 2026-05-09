@@ -63,6 +63,27 @@ def noop_reverse(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
+    # Run each operation in its own transaction. The default
+    # ``atomic = True`` wrapped the RunPython merge AND the
+    # AddConstraint in one transaction, which Postgres refused
+    # with::
+    #
+    #     OperationalError: cannot CREATE INDEX "items_journal"
+    #     because it has pending trigger events
+    #
+    # The merge does bulk UPDATE on JournalPub.journal_id (firing
+    # cascade-FK triggers) and DELETE on the duplicate Journal rows;
+    # those triggers are deferred to transaction commit, but
+    # ``CREATE UNIQUE INDEX`` for the new ``UniqueConstraint`` has
+    # to verify the table state and won't run alongside pending
+    # triggers. Splitting the transactions lets the merge commit
+    # first, fires the triggers, then the constraint adds cleanly.
+    #
+    # The merge function is idempotent — re-running it after a
+    # partial failure picks up where it left off (lowest-pk row
+    # wins each cluster, already-merged rows produce no work).
+    atomic = False
+
     dependencies = [
         ("items", "0006_item_doi_link_charfield"),
     ]
