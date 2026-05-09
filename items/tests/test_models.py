@@ -50,6 +50,124 @@ class TestAuthorSlugs:
 
 
 @pytest.mark.django_db
+class TestAuthorList:
+    """Lastname-only join (used by JournalPub / Book / Conference / Thesis
+    full_citation). Exercises the same 0/1/2/3+ shape as author_slugs."""
+
+    def test_no_authors(self, journalpub_factory):
+        # Mirror of issue #35 in author_list — same legacy
+        # `return auth_list[0].last_name` fall-through.
+        item = journalpub_factory(authors=None)
+        assert item.author_list == ""
+
+    def test_one_author(self, journalpub_factory, author):
+        item = journalpub_factory(authors=[author])
+        assert item.author_list == "Einstein"
+
+    def test_two_authors(self, journalpub_factory, two_authors):
+        item = journalpub_factory(authors=two_authors)
+        assert item.author_list == "Einstein and Curie"
+
+    def test_three_authors_uses_et_al(self, journalpub_factory, three_authors):
+        item = journalpub_factory(authors=three_authors)
+        assert item.author_list == "Joyce <i>et al</i>."
+
+
+@pytest.mark.django_db
+class TestFullAuthorListing:
+    """Hyperlinked full-name byline. Shared with full_editor_listing."""
+
+    def test_no_authors(self, journalpub_factory):
+        item = journalpub_factory(authors=None)
+        assert item.full_author_listing == ""
+
+    def test_one_author(self, journalpub_factory, author):
+        item = journalpub_factory(authors=[author])
+        assert ">Albert Einstein</a>" in item.full_author_listing
+        # No trailing " and" or commas for a single author.
+        assert " and " not in item.full_author_listing
+
+    def test_two_authors_use_and(self, journalpub_factory, two_authors):
+        item = journalpub_factory(authors=two_authors)
+        out = item.full_author_listing
+        assert " and " in out
+        assert ", " not in out  # no comma between exactly two
+
+    def test_three_authors_use_oxford_and(self, journalpub_factory, three_authors):
+        item = journalpub_factory(authors=three_authors)
+        out = item.full_author_listing
+        # "<a>Joyce</a>, <a>Smith</a> and <a>Smythe</a>"
+        assert ", " in out
+        assert " and " in out
+
+
+@pytest.mark.django_db
+class TestFullEditorListing:
+    """Editor byline on Book. Same English-list-join as authors."""
+
+    def test_no_editors_renders_empty(self, book_factory, author):
+        # No editors set on the M2M.
+        book = book_factory(authors=[author])
+        assert book.full_editor_listing == ""
+
+    def test_one_editor(self, book_factory, two_authors):
+        book = book_factory(authors=None, editors=[two_authors[0]])
+        assert ">Albert Einstein</a>" in book.full_editor_listing
+
+    def test_two_editors(self, book_factory, two_authors):
+        book = book_factory(authors=None, editors=two_authors)
+        assert " and " in book.full_editor_listing
+        assert ", " not in book.full_editor_listing
+
+
+@pytest.mark.django_db
+class TestBookFullCitation:
+    """Issue #29: book citation should mention editors and not mangle the
+    edition string."""
+
+    def test_authored_book(self, book_factory, author):
+        cit = book_factory(authors=[author], edition="").full_citation()
+        # Authored book without an edition: "<authors>: "<i>Title</i>", <publisher>, <year>."
+        assert ">Albert Einstein</a>:" in cit
+        assert "(ed.)" not in cit
+        assert "(eds.)" not in cit
+
+    def test_edited_volume_renders_eds_suffix(self, book_factory, two_authors):
+        cit = book_factory(authors=None, editors=two_authors).full_citation()
+        assert "(eds.)" in cit
+        # Single colon between byline and title; not "<editors>: <editors> (eds.)"
+        assert cit.count("(eds.)") == 1
+
+    def test_single_editor_renders_singular_suffix(self, book_factory, author):
+        cit = book_factory(authors=None, editors=[author]).full_citation()
+        assert "(ed.)" in cit
+        assert "(eds.)" not in cit
+
+    def test_authored_with_editors_appends_eds(self, book_factory, author, two_authors):
+        # An authored monograph in an edited series — both bylines render.
+        cit = book_factory(authors=[author], editors=two_authors).full_citation()
+        assert "(eds.)" in cit
+        assert "; " in cit  # author and editor blocks separated by ";"
+
+    def test_edition_is_not_per_char_stripped(self, book_factory, author):
+        # Issue #29 latent bug: pre-fix code did
+        # `self.edition.lower().rstrip("edition")` which is a per-character
+        # rstrip — "2nd edition" → "2nd " by accident; "2nd ed." → "2nd"
+        # (the trailing ".d.e " characters all get stripped). Plus AttributeError
+        # if edition is None, since `.lower()` was called before the truthy
+        # check. Pin "2nd ed." renders as-is, no characters chewed off.
+        cit = book_factory(authors=[author], edition="2nd ed.").full_citation()
+        assert "2nd ed." in cit
+
+    def test_no_edition_no_attribute_error(self, book_factory, author):
+        # Pre-fix code crashed with AttributeError when edition was None
+        # (it called `.lower()` before checking truthy). Now blank skips
+        # the edition block cleanly.
+        cit = book_factory(authors=[author], edition=None).full_citation()
+        assert "Multivariate Calibration" in cit
+
+
+@pytest.mark.django_db
 class TestDoiLinkCleaned:
     def test_strips_https_dx_doi_org(self, journalpub_factory):
         item = journalpub_factory(doi_link="https://dx.doi.org/10.1234/foo")
