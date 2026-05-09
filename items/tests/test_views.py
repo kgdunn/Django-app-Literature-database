@@ -78,6 +78,17 @@ class TestItemDetail:
         r = client.get("/item/999/")
         assert r.status_code == 404
 
+    def test_incollection_detail_renders(self, client, incollection_factory, author):
+        """Theme D: a book-chapter detail page resolves and shows
+        the chapter + book titles via full_citation."""
+        chap = incollection_factory(authors=[author], title="A chapter title")
+        r = client.get(f"/item/{chap.pk}/{chap.slug}")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        assert "A chapter title" in body
+        # Book title is italicised in the citation.
+        assert "Multivariate Statistical Methods for Process Modelling" in body
+
     def test_related_items_panel_shows_overlapping_titles(
         self, client, journalpub_factory, author
     ):
@@ -247,6 +258,19 @@ class TestSearch:
         r = client.get("/search?q=9781234567890")
         assert r.status_code == 200
         assert b"An obscure-titled book" in r.content
+
+    def test_book_title_finds_incollection(self, client, incollection_factory, author):
+        """Theme D / #33 follow-up: a query against the parent book's
+        title returns the InCollection chapter, even though the chapter's
+        own title doesn't contain the term."""
+        incollection_factory(
+            authors=[author],
+            title="A specific chapter on PCA",
+            book_title="Statistical methods in chemometrics",
+        )
+        r = client.get("/search?q=chemometrics")
+        assert r.status_code == 200
+        assert b"A specific chapter on PCA" in r.content
 
     def test_conference_name_in_search_vector(self, client, db):
         """Issue #33: search by conference name returns the matching

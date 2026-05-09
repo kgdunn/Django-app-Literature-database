@@ -6,6 +6,7 @@ from items.models import (
     Author,
     AuthorGroup,
     Book,
+    InCollection,
     Journal,
     JournalPub,
     Publisher,
@@ -102,5 +103,33 @@ def book_factory(db, publisher):
         if tags:
             book.tags.add(*tags)
         return book
+
+    return _make
+
+
+@pytest.fixture
+def incollection_factory(db, publisher):
+    """Create an InCollection (book chapter) with authors / editors / tags."""
+
+    def _make(authors=None, editors=None, tags=None, **kwargs):
+        defaults = dict(
+            title="Soft sensors in batch processes",
+            item_type="incollection",
+            year=2018,
+            book_title="Multivariate Statistical Methods for Process Modelling",
+            publisher=publisher,
+            page_start="123",
+            page_end="155",
+        )
+        defaults.update(kwargs)
+        chap = InCollection.objects.create(**defaults)
+        if authors:
+            for order, a in enumerate(authors):
+                AuthorGroup.objects.create(author=a, item=chap, order=order)
+        if editors:
+            chap.editors.add(*editors)
+        if tags:
+            chap.tags.add(*tags)
+        return chap
 
     return _make

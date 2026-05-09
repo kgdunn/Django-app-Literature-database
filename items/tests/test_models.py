@@ -252,6 +252,50 @@ class TestDoiLinkNormalisation:
 
 
 @pytest.mark.django_db
+class TestInCollection:
+    """Theme D (#14 + #31): book-chapter subclass with multi-table
+    inheritance off Item. Same shape as Book / JournalPub / Thesis /
+    ConferenceProceeding."""
+
+    def test_full_citation_includes_chapter_and_book_titles(
+        self, incollection_factory, author
+    ):
+        chap = incollection_factory(authors=[author], title="Chapter X")
+        cit = chap.full_citation()
+        # Chapter title (in quotes) and book title (italicised) both appear.
+        assert "Chapter X" in cit
+        assert "Multivariate Statistical Methods for Process Modelling" in cit
+        assert "<i>Multivariate Statistical Methods for Process Modelling</i>" in cit
+
+    def test_full_citation_renders_eds_suffix_for_editors(
+        self, incollection_factory, two_authors
+    ):
+        chap = incollection_factory(authors=None, editors=two_authors)
+        cit = chap.full_citation()
+        assert "(eds.)" in cit
+        assert "in " in cit  # "in <editors> (eds.), <book title>"
+
+    def test_full_citation_singular_ed_for_one_editor(
+        self, incollection_factory, author
+    ):
+        chap = incollection_factory(authors=None, editors=[author])
+        cit = chap.full_citation()
+        assert "(ed.)" in cit
+        assert "(eds.)" not in cit
+
+    def test_full_citation_renders_pages(self, incollection_factory, author):
+        chap = incollection_factory(authors=[author], page_start="123", page_end="155")
+        assert "pp. 123" in chap.full_citation()
+
+    def test_no_authors_no_crash(self, incollection_factory):
+        # Issue #35-shape regression: InCollection should not blow up
+        # on a 0-author item; full_author_listing returns "" cleanly.
+        chap = incollection_factory(authors=None, title="Anonymous chapter")
+        cit = chap.full_citation()
+        assert "Anonymous chapter" in cit
+
+
+@pytest.mark.django_db
 class TestDoiLinkCleaned:
     def test_strips_https_dx_doi_org(self, journalpub_factory):
         item = journalpub_factory(doi_link="https://dx.doi.org/10.1234/foo")

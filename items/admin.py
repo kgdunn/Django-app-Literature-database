@@ -5,6 +5,7 @@ from items.models import (
     AuthorGroup,
     Book,
     ConferenceProceeding,
+    InCollection,
     Item,
     Journal,
     JournalPub,
@@ -108,8 +109,24 @@ admin.site.register(Journal, JournalAdmin)
 admin.site.register(Publisher)
 admin.site.register(School)
 
+
+class InCollectionAdmin(admin.ModelAdmin):
+    inlines = (AuthorGroupInline,)
+    list_display = (
+        "author_list",
+        "title",
+        "book_title",
+        "year",
+        "publisher",
+    )
+    list_display_links = ("title",)
+    ordering = ["-date_created"]
+    filter_horizontal = ["editors", "tags"]
+
+
 admin.site.register(Item, ItemAdmin)
 admin.site.register(JournalPub, JournalPubAdmin)
 admin.site.register(Book, BookAdmin)
 admin.site.register(ConferenceProceeding)
 admin.site.register(Thesis, ThesisAdmin)
+admin.site.register(InCollection, InCollectionAdmin)

@@ -183,6 +183,7 @@ class Item(models.Model):
         ("journalpub", "Journal publication"),
         ("book", "Book"),
         ("conferenceproc", "Conference proceeding"),
+        ("incollection", "Book chapter"),
     )
 
     def upload_dest(instance, filename):
@@ -592,3 +593,67 @@ class Thesis(Item):
 
     class Meta:
         verbose_name_plural = "theses"
+
+
+class InCollection(Item):
+    """A chapter within an edited (or authored) book — typically a
+    book chapter or contribution in a multi-author volume.
+
+    Multi-table inheritance via the implicit ``item_ptr`` OneToOne to
+    ``Item`` (mirrors the JournalPub / Book / ConferenceProceeding /
+    Thesis pattern). ``Item.title`` is the chapter title; ``book_title``
+    on this subclass is the parent book's title.
+    """
+
+    book_title = models.CharField(
+        max_length=510,
+        help_text="Title of the book containing this chapter.",
+    )
+    editors = models.ManyToManyField(Author, blank=True)
+    publisher = models.ForeignKey(
+        Publisher, on_delete=models.CASCADE, blank=True, null=True
+    )
+    edition = models.CharField(max_length=100, blank=True, null=True)
+    isbn = models.CharField(max_length=20, blank=True, null=True, verbose_name="ISBN")
+    page_start = models.CharField(max_length=10, blank=True, null=True)
+    page_end = models.CharField(max_length=10, blank=True, null=True)
+
+    class Meta:
+        verbose_name = "book chapter"
+        verbose_name_plural = "book chapters"
+
+    @property
+    def full_editor_listing(self):
+        """Hyperlinked editor names — same shape as ``full_author_listing``.
+        Reuses ``Item._format_authors_html`` so the byline rendering is
+        identical to Book / ConferenceProceeding."""
+        return self._format_authors_html(self.editors.all())
+
+    def full_citation(self):
+        """Returns details about the book chapter in HTML form.
+
+        Format: ``Author: "Chapter title" in Editors (eds.) "Book Title",
+        edition, publisher, pp. X–Y, year.``
+        """
+        authors = self.full_author_listing
+        editors_html = self.full_editor_listing
+        in_phrase = '"<i>%s</i>"' % self.book_title
+        if editors_html:
+            plural = "eds." if self.editors.count() > 1 else "ed."
+            in_phrase = "in %s (%s), %s" % (editors_html, plural, in_phrase)
+        else:
+            in_phrase = "in %s" % in_phrase
+        parts = ['"%s"' % self.title, in_phrase]
+        if self.edition:
+            parts.append(self.edition)
+        if self.publisher:
+            parts.append(str(self.publisher))
+        if self.page_start and self.page_end:
+            parts.append("pp. %s–%s" % (self.page_start, self.page_end))
+        elif self.page_start:
+            parts.append("p. %s" % self.page_start)
+        parts.append(str(self.year_as_url))
+        body = ", ".join(parts) + "."
+        if authors:
+            return "%s: %s" % (authors, body)
+        return body

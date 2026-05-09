@@ -12,6 +12,7 @@ from items.models import (
     Author,
     Book,
     ConferenceProceeding,
+    InCollection,
     Item,
     Journal,
     JournalPub,
@@ -143,6 +144,8 @@ def get_items_or_404(view_function):
             the_item = JournalPub.objects.get(id=item_id)
         if the_item.item_type == "book":
             the_item = Book.objects.get(id=item_id)
+        if the_item.item_type == "incollection":
+            the_item = InCollection.objects.get(id=item_id)
 
         return view_function(request, the_item, slug)
 
