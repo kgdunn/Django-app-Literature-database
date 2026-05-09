@@ -18,12 +18,17 @@ CSRF_TRUSTED_ORIGINS = [
     "https://test.literature.learnche.org",
 ]
 
-# Security headers. HSTS is staged: start at 300 s to verify the proxy is
-# forwarding X-Forwarded-Proto correctly, then bump to 31536000 (1 year) via
-# SECURE_HSTS_SECONDS in .env and flip SECURE_HSTS_PRELOAD to True once
-# confirmed on staging + prod.
+# Security headers. HSTS is now at one year (the policy a browser
+# remembers after seeing the header once). Issue #71 staged rollout
+# week 1: bumped from 300 s → 31536000 s once Caddy was confirmed
+# forwarding ``X-Forwarded-Proto: https`` correctly. ``SECURE_HSTS_PRELOAD``
+# stays False until a follow-up week confirms no SSL-redirect / mixed-
+# content regressions; only then does ``literature.learnche.org`` get
+# submitted to hstspreload.org. Override via .env still allowed for
+# ad-hoc rollback (set ``SECURE_HSTS_SECONDS=0`` to clear, but expect
+# returning visitors to keep the policy until their cached year expires).
 SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "300") or "300")
+SECURE_HSTS_SECONDS = int(env("SECURE_HSTS_SECONDS", "31536000") or "31536000")
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = False
 SECURE_CONTENT_TYPE_NOSNIFF = True

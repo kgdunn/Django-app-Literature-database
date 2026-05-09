@@ -63,6 +63,12 @@ INSTALLED_APPS = [
     "tagging",
     "pagehit",
     "pages",
+    # Per-account admin login throttling. Issue #74 — locks an
+    # (username, ip_address) tuple after AXES_FAILURE_LIMIT failed
+    # login attempts for AXES_COOLOFF_TIME hours; one of three layers
+    # in the /admin/-hardening epic (#73) alongside Caddy/CF rate-
+    # limiting (#75/#76).
+    "axes",
 ]
 
 MIDDLEWARE = [
@@ -74,7 +80,27 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # AxesMiddleware MUST be the last middleware so it sees the request
+    # after all auth processing — the docs are explicit about this.
+    "axes.middleware.AxesMiddleware",
 ]
+
+# django-axes piggybacks on Django's auth backend chain. AxesStandalone
+# Backend goes first so the lockout check runs before ModelBackend
+# attempts the password compare. (Using AxesStandaloneBackend rather
+# than AxesBackend so we don't have to subclass our own backend.)
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# django-axes config — Issue #74. Lock per (username, ip_address) tuple
+# after 5 failures for 30 minutes. Reset the counter on a successful
+# login so a legitimate fat-finger doesn't accumulate forever.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 0.5  # hours
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
 
 ROOT_URLCONF = "literature.urls"
 
