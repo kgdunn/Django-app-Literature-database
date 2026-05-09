@@ -10,7 +10,7 @@
 # digest as the openmv stack uses — same image bytes, no double pull.
 # Dependabot (`docker` ecosystem in `.github/dependabot.yml`) opens weekly
 # bump PRs; CI catches breakage before merge. Issue #70.
-FROM python:3.14-slim@sha256:5b3879b6f3cb77e712644d50262d05a7c146b7312d784a18eff7ff5462e77033 AS builder
+FROM python:3.14-slim@sha256:1697e8e8d39bf168e177ac6b5fdab6df86d81cfc24dae17dfb96cfc3ef76b4dd AS builder
 
 # Pinned to a specific uv version so a malicious push to ghcr.io/astral-sh/uv
 # can't land in our build. Bump in lockstep with `uv self update` and the host
@@ -27,7 +27,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
 # ---- runtime ------------------------------------------------------------
-FROM python:3.14-slim@sha256:5b3879b6f3cb77e712644d50262d05a7c146b7312d784a18eff7ff5462e77033 AS runtime
+FROM python:3.14-slim@sha256:1697e8e8d39bf168e177ac6b5fdab6df86d81cfc24dae17dfb96cfc3ef76b4dd AS runtime
 
 # `libpq5` is required by `psycopg2-binary` at runtime (it ships its own
 # wheel but still wants the system libpq.so.5). `curl` is only here for the
