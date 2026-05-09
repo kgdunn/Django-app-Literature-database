@@ -1,6 +1,7 @@
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.defaultfilters import slugify
@@ -31,6 +32,36 @@ def _track_hit(request, item_key, slug=""):
     if "page" in request.GET:
         return
     create_hit(request, item_key, extra_info=slug)
+
+
+def _year_count_series(items_qs):
+    """Year → article-count distribution for a filtered Items queryset.
+
+    Issue #27: powers the small inline-SVG sparkline rendered above the
+    entries list on tag/author landing pages. Returns a list of
+    ``(year, count)`` tuples ordered by year ascending — empty list if
+    no items.
+    """
+    return list(
+        items_qs.values("year")
+        .annotate(count=Count("id"))
+        .order_by("year")
+        .values_list("year", "count")
+    )
+
+
+def _adjacent_years_with_items(current_year):
+    """Closest years (below and above ``current_year``) that have at
+    least one Item. Issue #17 — powers the prev/next year navigation
+    on ``/item/pub-by-year/<year>/``. Returns ``(prev_year, next_year)``
+    where either side may be ``None`` if no such year exists.
+    """
+    other_years = list(
+        Item.objects.values_list("year", flat=True).distinct().order_by("year")
+    )
+    prev_year = max((y for y in other_years if y < current_year), default=None)
+    next_year = min((y for y in other_years if y > current_year), default=None)
+    return prev_year, next_year
 
 
 def get_items_or_404(view_function):
@@ -89,6 +120,9 @@ def show_items(request, what_view="", extra_info=""):
     page_title = ""
     template_name = "items/show-entries.html"
     description = ""
+    sparkline_data = []  # Issue #27: only populated for tag/author branches
+    prev_year = None  # Issue #17: only populated for pub-by-year branch
+    next_year = None
     if what_view == "tag":
         _track_hit(request, "lit-tag-page", hit_slug)
         # Issue #12: surface the tag's description on its own results
@@ -99,6 +133,7 @@ def show_items(request, what_view="", extra_info=""):
         tag = Tag.objects.filter(slug=slugify(hit_slug)).first()
         description = (tag.description if tag else "") or ""
         all_items = Item.objects.all().filter(tags__slug=slugify(extra_info))
+        sparkline_data = _year_count_series(all_items)
         page_title = "All entries tagged"
         extra_info = ': "%s"' % extra_info
         entry_order = list(all_items)
@@ -123,6 +158,14 @@ def show_items(request, what_view="", extra_info=""):
     elif what_view == "pub-by-year":
         _track_hit(request, "lit-year-page", hit_slug)
         all_items = Item.objects.all().filter(year=extra_info)
+        # Issue #17: prev/next year navigation. Closest neighbours that
+        # actually have at least one item.
+        try:
+            current_year_int = int(hit_slug)
+        except (TypeError, ValueError):
+            current_year_int = None
+        if current_year_int is not None:
+            prev_year, next_year = _adjacent_years_with_items(current_year_int)
         page_title = "All entries published in "
         extra_info = "%s" % extra_info
         entry_order = list(all_items)
@@ -136,6 +179,7 @@ def show_items(request, what_view="", extra_info=""):
 
         _track_hit(request, "lit-author-page", hit_slug)
         author_items = Item.objects.all().filter(authors__slug=extra_info)
+        sparkline_data = _year_count_series(author_items)
         page_title = "All entries by author"
         extra_info = ' "%s"' % author[0].full_name
         entry_order = list(author_items)
@@ -162,6 +206,9 @@ def show_items(request, what_view="", extra_info=""):
             "page_title": page_title,
             "extra_info": extra_info,
             "description": description,
+            "sparkline_data": sparkline_data,
+            "prev_year": prev_year,
+            "next_year": next_year,
         },
     )
 

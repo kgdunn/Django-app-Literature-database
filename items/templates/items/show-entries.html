@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load extra_tags %}
 
 {% block title %}{{ page_title }}{% if extra_info %}{{ extra_info }}{% endif %}{% endblock %}
 
@@ -8,8 +9,23 @@
 
 <h3>{{ page_title }}{% if extra_info %} {{ extra_info }}{% endif %}</h3>
 
+{% if prev_year or next_year %}
+<nav class="lit-year-nav">
+    {% if prev_year %}<a class="lit-year-nav__prev" href="{% url 'show-items--pub-by-year' extra_info=prev_year %}">&larr; {{ prev_year }}</a>{% endif %}
+    {% if prev_year and next_year %}<span class="lit-year-nav__sep"> &middot; </span>{% endif %}
+    {% if next_year %}<a class="lit-year-nav__next" href="{% url 'show-items--pub-by-year' extra_info=next_year %}">{{ next_year }} &rarr;</a>{% endif %}
+</nav>
+{% endif %}
+
 {% if description %}
 <div class="lit-tag-description"><p>{{ description }}</p></div>
+{% endif %}
+
+{% if sparkline_data %}
+<div class="lit-sparkline-wrap" title="Articles per year">
+    <span class="lit-sparkline-label">Articles per year:</span>
+    {% sparkline_svg sparkline_data %}
+</div>
 {% endif %}
 
 {% include 'items/entries_list.html' %}
