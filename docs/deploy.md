@@ -317,6 +317,54 @@ ssh -i literature-deploy deploy@<host>
 # (or trigger workflow_dispatch in the GitHub Actions UI)
 ```
 
+## Compose project name and on-disk volumes
+
+Both `docker-compose.yml` and `docker-compose.prod.yml` pin a top-level `name: literature` directive. **Don't remove it.** It's load-bearing for two distinct reasons:
+
+1. **Teardown isolation.** Without it, Compose defaults the project name to the basename of the directory you invoke from — `repo`. The openmv stack at `/home/deploy/openmv/repo/` would also default to `repo`, and `docker compose -f docker-compose.prod.yml down` from either repo would tear out the *other* stack's containers too (literally observed on 2026-05-09 — `openmv-app` and `openmv-postgres` disappeared during a literature redeploy).
+
+2. **Volume naming.** Compose names every named volume `<project>_<volume>` on disk. The pin means our Postgres data lives in **`literature_literature_postgres_data`**. The double `literature_` is intentional: the first comes from `name: literature`, the second from the volume key in `docker-compose.prod.yml`. Renaming the project also renames the volume — Compose creates a fresh, empty volume under the new name and the old data sits orphaned under the old name. The site would come back up with no data.
+
+### Migration playbook (only if the project name ever changes)
+
+If the project name ever changes (e.g. unpinning `name:` and going back to the directory-basename default, or moving the checkout to a differently-named directory), the old data sits in `<old_project>_literature_postgres_data` and the new compose will mount a freshly-empty `<new_project>_literature_postgres_data`. Migrate **before** bringing the new stack up — once the new compose boots it'll create the empty destination volume itself, and the safety of the cp step depends on the destination not pre-existing:
+
+```bash
+# 1. Verify the old volume exists and has data.
+docker volume inspect <old_project>_literature_postgres_data
+docker run --rm -v <old_project>_literature_postgres_data:/data alpine ls /data | head
+
+# 2. Stop & remove the old containers — NOT with -v / --volumes
+#    (that flag would destroy the volume too).
+docker stop literature-app literature-postgres 2>/dev/null
+docker rm   literature-app literature-postgres 2>/dev/null
+
+# 3. Create the destination volume and copy the data across.
+docker volume create <new_project>_literature_postgres_data
+docker run --rm \
+    -v <old_project>_literature_postgres_data:/from:ro \
+    -v <new_project>_literature_postgres_data:/to \
+    alpine sh -c 'cp -a /from/. /to/ && echo OK'
+
+# 4. Sanity-check the destination.
+docker run --rm -v <new_project>_literature_postgres_data:/data alpine ls /data | head
+
+# 5. Bring up the new stack and verify.
+cd /home/deploy/literature/repo
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec -T db \
+    psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\dt' | head
+curl -fsS http://127.0.0.1:8002/healthz
+
+# 6. Only after verifying the site loads with the right row counts,
+#    free the old volume:
+# docker volume rm <old_project>_literature_postgres_data
+```
+
+This is the same playbook run against the openmv stack on 2026-05-09, when its project name was pinned: old volume `repo_openmv_postgres_data` → new volume `openmv_openmv_postgres_data`. (No literature data needed migrating because the legacy dump hadn't been imported into prod yet — but the same shape applies if it ever comes up.)
+
+The `data/media/`, `data/static/`, and `data/public/` host directories are **bind mounts**, not named volumes. They're addressed by host path, so they survive a project rename untouched. Only the named Postgres volume is project-scoped.
+
 ## What's not in this runbook
 
 - Off-host backups to S3 — **Phase 11**. `bin/backup-literature.sh` + a cron entry.
