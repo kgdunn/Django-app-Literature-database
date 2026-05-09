@@ -78,6 +78,54 @@ class TestItemDetail:
         r = client.get("/item/999/")
         assert r.status_code == 404
 
+    def test_related_items_panel_shows_overlapping_titles(
+        self, client, journalpub_factory, author
+    ):
+        """Issue #36: the detail page surfaces a small list of items
+        most similar (by FTS title+abstract overlap) to the current
+        one. A paper with overlapping subject vocabulary should appear;
+        an unrelated paper should not.
+        """
+        target = journalpub_factory(
+            authors=[author],
+            title="Process monitoring with multivariate methods",
+            abstract="<p>Latent-variable diagnostics for batch processes.</p>",
+        )
+        related = journalpub_factory(
+            authors=[author],
+            title="Multivariate methods for process diagnostics",
+            abstract="<p>Latent variables and SPC.</p>",
+        )
+        unrelated = journalpub_factory(
+            authors=[author],
+            title="Bayesian inference for ecology",
+            abstract="<p>Population dynamics and MCMC.</p>",
+        )
+
+        r = client.get(f"/item/{target.pk}/{target.slug}")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        assert "Related items" in body
+        assert related.title in body
+        assert unrelated.title not in body
+        # Self-link must not appear in its own related list.
+        # (Title appears once — in the page heading. Count = 1.)
+        assert body.count(target.title) == 1
+
+    def test_related_items_panel_omitted_when_no_overlap(
+        self, client, journalpub_factory, author
+    ):
+        """No overlap with any other item → no panel rendered."""
+        target = journalpub_factory(
+            authors=[author], title="Solo paper on a unique topic"
+        )
+        # Single item in the DB → nothing else to relate to.
+        r = client.get(f"/item/{target.pk}/{target.slug}")
+        assert r.status_code == 200
+        # The CSS class lives in base.html's <style> block on every page,
+        # so check for the rendered <section> heading instead.
+        assert "<h4>Related items</h4>" not in r.content.decode("utf-8")
+
 
 @pytest.mark.django_db
 class TestSearch:
@@ -163,6 +211,62 @@ class TestSearch:
         r = client.get("/search?q=multi-block")
         assert r.status_code == 200
         assert b"Multi-Block PLS overview" in r.content
+
+    def test_journal_name_in_search_vector(self, client, db):
+        """Issue #33: a query matching the journal name finds JournalPubs
+        in that journal even if title/abstract don't contain the word.
+        """
+        from items.models import Author, AuthorGroup, Journal, JournalPub
+
+        author = Author.objects.create(first_name="Svante", last_name="Wold")
+        analytica = Journal.objects.create(
+            name="Analytica Chimica Acta", website="https://example.com/aca"
+        )
+        # Title and abstract intentionally don't contain "Analytica".
+        pub = JournalPub.objects.create(
+            title="Calibration in chemometrics",
+            item_type="journalpub",
+            year=2010,
+            abstract="<p>Latent-variable methods for spectroscopic data.</p>",
+            show_abstract=True,
+            journal=analytica,
+        )
+        AuthorGroup.objects.create(author=author, item=pub, order=0)
+
+        r = client.get("/search?q=Analytica")
+        assert r.status_code == 200
+        assert b"Calibration in chemometrics" in r.content
+
+    def test_isbn_in_search_vector(self, client, book_factory, author):
+        """Issue #33: search by ISBN returns the matching Book."""
+        book_factory(
+            authors=[author], title="An obscure-titled book", isbn="9781234567890"
+        )
+        r = client.get("/search?q=9781234567890")
+        assert r.status_code == 200
+        assert b"An obscure-titled book" in r.content
+
+    def test_conference_name_in_search_vector(self, client, db):
+        """Issue #33: search by conference name returns the matching
+        ConferenceProceeding."""
+        from items.models import Author, AuthorGroup, ConferenceProceeding
+
+        author = Author.objects.create(first_name="John", last_name="MacGregor")
+        proc = ConferenceProceeding.objects.create(
+            title="Some unique-titled paper",
+            item_type="conferenceproc",
+            year=2014,
+            abstract="<p>About process monitoring.</p>",
+            show_abstract=True,
+            conference_name="MACC Annual Meeting",
+            organization="McMaster",
+            location="Hamilton, ON",
+        )
+        AuthorGroup.objects.create(author=author, item=proc, order=0)
+
+        r = client.get("/search?q=MACC")
+        assert r.status_code == 200
+        assert b"Some unique-titled paper" in r.content
 
     def test_multi_author_item_not_duplicated_in_results(
         self, client, journalpub_factory, three_authors

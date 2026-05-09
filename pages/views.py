@@ -111,10 +111,26 @@ def search(request):
         create_hit(request, "haystack_search", extra_info=q)
         logger.info("SEARCH [%s]: %s", get_IP_address(request), q)
 
+    # Issue #33: include subclass-specific fields so a query like
+    # "Analytica" (the journal) or an ISBN finds the relevant items
+    # even though those strings live on the JournalPub / Book /
+    # ConferenceProceeding tables, not on the parent Item. Each Item
+    # is at most one subclass; the LEFT JOINs to the others produce
+    # NULLs that SearchVector coalesces to empty strings (so
+    # non-matching subclasses contribute nothing to the row's vector).
     vector = (
         SearchVector("title", weight="A", config="english")
         + SearchVector("abstract", weight="B", config="english")
         + SearchVector("other_search_text", weight="C", config="english")
+        + SearchVector("journalpub__journal__name", weight="B", config="english")
+        + SearchVector("book__isbn", weight="C", config="english")
+        + SearchVector(
+            "conferenceproceeding__conference_name", weight="B", config="english"
+        )
+        + SearchVector(
+            "conferenceproceeding__organization", weight="C", config="english"
+        )
+        + SearchVector("conferenceproceeding__location", weight="C", config="english")
     )
     # `websearch` parses the user input forgivingly: bare terms ANDed,
     # quoted phrases preserved, `-foo` excludes.
