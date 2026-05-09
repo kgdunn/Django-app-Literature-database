@@ -13,7 +13,8 @@
     {% for item in "item"|cloud:0 %}
     <a href="{% url 'lit-show-items' what_view='tag' extra_info=item.tag.slug %}"
        class="lit-tag-cloud"
-       style="font-size: {{ item.score }}%">{{ item.tag.name }}</a>
+       title="{{ item.tag.description|default:item.tag.name }}"
+       style="font-size: {{ item.score }}%">{{ item.tag.name }}<sup class="lit-tag-cloud__count">{{ item.count }}</sup></a>
     {% endfor %}
 </div>
 

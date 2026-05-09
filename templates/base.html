@@ -296,16 +296,45 @@ p  { margin: 0 0 var(--sp-3) 0; }
 }
 .lit-year-list a:hover .count { color: var(--color-accent-fg); opacity: 0.85; }
 
-/* Tag cloud */
+/* Tag cloud.
+   Arial here is a deliberate departure from the page-wide IBM Plex
+   stack — the cloud reads as a separate visual unit, and the geometric
+   sans is a hair tighter at small sizes. Issue #34 also tightened the
+   font-size range (in items/templatetags/core_tags.py) so the most-used
+   tags don't dwarf the rest. */
 .lit-tag-cloud {
     display: inline-block;
     margin: 2px var(--sp-1);
     padding: 1px 6px;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
     color: var(--color-link);
     border-radius: var(--radius-sm);
     line-height: 1.4;
 }
 .lit-tag-cloud:hover { background: var(--color-accent-soft); color: var(--color-accent-soft-fg); text-decoration: none; }
+/* Per-tag entry count, rendered as a small superscript next to the
+   tag name (issue #38). Sized in em so it scales with the cloud
+   entry's own (variable) font-size. */
+.lit-tag-cloud__count {
+    font-size: 0.55em;
+    margin-left: 2px;
+    color: var(--color-text-subtle);
+    font-weight: normal;
+}
+.lit-tag-cloud:hover .lit-tag-cloud__count { color: inherit; }
+
+/* Tag description block on the per-tag results page (issue #12). */
+.lit-tag-description {
+    margin: 0 0 var(--sp-4) 0;
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-accent);
+    border-radius: var(--radius);
+    color: var(--color-text);
+    font-size: var(--fs-sm);
+}
+.lit-tag-description p { margin: 0; }
 
 /* Site-statement card on the front page */
 .lit-site-statement {

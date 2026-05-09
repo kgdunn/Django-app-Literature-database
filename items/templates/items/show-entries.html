@@ -8,6 +8,10 @@
 
 <h3>{{ page_title }}{% if extra_info %} {{ extra_info }}{% endif %}</h3>
 
+{% if description %}
+<div class="lit-tag-description"><p>{{ description }}</p></div>
+{% endif %}
+
 {% include 'items/entries_list.html' %}
 
 {% endblock %}
