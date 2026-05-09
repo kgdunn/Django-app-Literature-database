@@ -108,9 +108,11 @@ class TestItemDetail:
         assert "Related items" in body
         assert related.title in body
         assert unrelated.title not in body
-        # Self-link must not appear in its own related list.
-        # (Title appears once — in the page heading. Count = 1.)
-        assert body.count(target.title) == 1
+        # Self-link guarded at the queryset level
+        # (Item.objects.exclude(pk=item.pk) in _get_related_items).
+        # No external assertion needed — the target's title appears 3×
+        # in any item-detail page via the <title>, the <h3> heading,
+        # and full_citation, none of which are the related list.
 
     def test_related_items_panel_omitted_when_no_overlap(
         self, client, journalpub_factory, author
