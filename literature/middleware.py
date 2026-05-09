@@ -17,30 +17,33 @@ that Django's `SecurityMiddleware` does not set:
   in ``/robots.txt`` (also issue #72) keep ``/admin/`` etc. out of
   search results without blanket-blocking the public catalogue.
 
-CSP currently allows ``'unsafe-inline'`` for both `script-src` and
-`style-src` because `templates/base.html` ships an inline ``<style>``
-block (the design tokens + layout) and a couple of small inline
-``<script>`` blocks (the early-applied theme preference and the theme
-toggle button). Externalising them is queued for a future phase that
-moves the CSS / JS into static files; the bleach filter on
-`Item.abstract` already keeps the high-risk surface (admin-pasted HTML)
-out of the inline-script ambit.
+CSP no longer allows ``'unsafe-inline'`` on either ``script-src`` or
+``style-src`` (issue #80, PR landing this comment). The previous
+inline blocks — the theme-preload + theme-toggle ``<script>``s and
+the giant ``<style>`` in ``templates/base.html``, plus the ECharts
+init in ``items/templates/items/show-entries.html`` — were extracted
+to ``literature/static/literature/{theme-preload,theme-toggle,sparkline}.js``
+and ``…/site.css``. ``style-src`` keeps ``'unsafe-inline'`` only for
+the Google Fonts ``<link rel="stylesheet">`` workaround… actually no,
+Google Fonts CSS comes from a remote stylesheet, no inline needed.
+``style-src`` now is ``'self' https://fonts.googleapis.com``.
 
 CDN allowlist:
-* `cdn.jsdelivr.net` — host of the SRI-pinned MathJax 2.7.9 script
-  (Phase 6) used to render LaTeX in `Item.abstract`. The integrity
-  hash in `templates/base.html` ensures the bytes can't drift without
-  the browser refusing to execute the script.
-* `fonts.googleapis.com` + `fonts.gstatic.com` — Google Fonts (IBM Plex
-  Sans / Serif / Mono) loaded from base.html.
+* ``cdn.jsdelivr.net`` — host of the SRI-pinned MathJax 2.7.9 script
+  (Phase 6) used to render LaTeX in ``Item.abstract``, and the
+  SRI-pinned ECharts 5.5.1 (PR #61) used by the sparkline. Both
+  ``integrity="sha384-…"`` attributes ensure the bytes can't drift
+  without the browser refusing to execute the script.
+* ``fonts.googleapis.com`` + ``fonts.gstatic.com`` — Google Fonts
+  (IBM Plex Sans / Serif / Mono) loaded from ``base.html``.
 """
 
 from django.conf import settings
 
 CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "script-src 'self' https://cdn.jsdelivr.net; "
+    "style-src 'self' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; "
     "img-src 'self' data:; "
     "connect-src 'self'; "
