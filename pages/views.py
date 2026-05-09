@@ -6,7 +6,7 @@ from django.contrib.postgres.search import (
     SearchVector,
     TrigramSimilarity,
 )
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import get_template
@@ -134,11 +134,18 @@ def search(request):
             # different paper whose other_search_text (weight C, extracted
             # PDF body) repeated the same terms dozens of times. Issue #15.
             rank=SearchRank(vector, query, cover_density=True),
-            author_sim=TrigramSimilarity("authorgroup__author__last_name", q),
+            # Max() collapses the AuthorGroup→Author join from N rows
+            # (one per author) to one row per Item: the max trigram
+            # similarity across the item's authors. Without this a
+            # 3-author paper rendered 3× in the results because each
+            # joined row carried a different ``author_sim`` value and
+            # ``.distinct()`` couldn't dedupe. The implicit ``GROUP BY
+            # items_item.id`` also makes the trailing ``.distinct()``
+            # redundant — dropped.
+            author_sim=Max(TrigramSimilarity("authorgroup__author__last_name", q)),
         )
         .filter(Q(rank__gt=0) | Q(author_sim__gt=AUTHOR_TRIGRAM_THRESHOLD))
         .order_by("-rank", "-author_sim", "-year")
-        .distinct()
     )
 
     entries = paginated_queryset(request, results)
