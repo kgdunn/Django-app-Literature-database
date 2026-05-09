@@ -81,9 +81,9 @@ def journalpub_factory(db, journal):
 
 @pytest.fixture
 def book_factory(db, publisher):
-    """Create a Book with the given authors / tags / kwargs."""
+    """Create a Book with the given authors / editors / tags / kwargs."""
 
-    def _make(authors=None, tags=None, **kwargs):
+    def _make(authors=None, editors=None, tags=None, **kwargs):
         defaults = dict(
             title="Multivariate Calibration",
             item_type="book",
@@ -97,6 +97,8 @@ def book_factory(db, publisher):
         if authors:
             for order, a in enumerate(authors):
                 AuthorGroup.objects.create(author=a, item=book, order=order)
+        if editors:
+            book.editors.add(*editors)
         if tags:
             book.tags.add(*tags)
         return book

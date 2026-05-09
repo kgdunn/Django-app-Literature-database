@@ -238,10 +238,11 @@ class Item(models.Model):
         auth_list = self.authors.all().order_by("authorgroup__order")
         if len(auth_list) > 2:
             return auth_list[0].last_name + " <i>et al</i>."
-        elif len(auth_list) == 2:
+        if len(auth_list) == 2:
             return " and ".join([auth.last_name for auth in auth_list])
-        else:
+        if len(auth_list) == 1:
             return auth_list[0].last_name
+        return ""
 
     # author_list.allow_tags = True
 
@@ -311,20 +312,33 @@ class Item(models.Model):
         2: John R. Smith and P. Q. Weston
         3: R. W. Joyce, P. J. Smith and T. Y. Smythe
         """
-        auth_list = list(self.authors.all().order_by("authorgroup__order"))
+        return self._format_authors_html(
+            self.authors.all().order_by("authorgroup__order")
+        )
 
-        def urlize(author):
-            return '<a href="%s">%s</a>' % (author.get_absolute_url(), author.full_name)
+    @staticmethod
+    def _format_authors_html(authors):
+        """English-list-join an iterable of Author objects as hyperlinked
+        full names. Used for both author and editor bylines so the rendering
+        stays identical and we don't drift if one shape gets tweaked.
 
-        out = ""
-        if len(auth_list) >= 3:
-            out = ", ".join([urlize(auth) for auth in auth_list[0:-1]])
-            out += " and " + urlize(auth_list[-1])
-        if len(auth_list) == 2:
-            out = " and ".join([urlize(auth) for auth in auth_list])
-        if len(auth_list) == 1:
-            out = urlize(auth_list[0])
-        return out
+        0  → ""
+        1  → <a>X</a>
+        2  → <a>X</a> and <a>Y</a>
+        3+ → <a>X</a>, <a>Y</a> and <a>Z</a>
+        """
+        items = list(authors)
+        if not items:
+            return ""
+
+        def urlize(a):
+            return '<a href="%s">%s</a>' % (a.get_absolute_url(), a.full_name)
+
+        if len(items) == 1:
+            return urlize(items[0])
+        if len(items) == 2:
+            return " and ".join(urlize(a) for a in items)
+        return ", ".join(urlize(a) for a in items[:-1]) + " and " + urlize(items[-1])
 
     @property
     def doi_link_cleaned(self):
@@ -403,25 +417,39 @@ class Book(Item):
     edition = models.CharField(max_length=100, blank=True, null=True)
     isbn = models.CharField(max_length=20, blank=True, null=True, verbose_name="ISBN")
 
+    @property
+    def full_editor_listing(self):
+        """Hyperlinked editor names, English-list-joined. Same shape as
+        ``full_author_listing`` so the byline stays uniform between authored
+        and edited volumes."""
+        return self._format_authors_html(self.editors.all())
+
     def full_citation(self):
-        """
-        Returns details about the book in HTML form
-        """
-        edition = self.edition.lower().rstrip("edition")
+        """Returns details about the book in HTML form."""
+        byline = self._book_byline()
+        parts = ['"<i>%s</i>"' % self.title]
         if self.edition:
-            return '%s: "<i>%s</i>", %s, %s, %s.' % (
-                self.full_author_listing,
-                self.title,
-                edition,
-                self.publisher,
-                self.year_as_url,
-            )
-        return '%s: "<i>%s</i>", %s, %s.' % (
-            self.author_list,
-            self.title,
-            self.publisher,
-            self.year_as_url,
-        )
+            parts.append(self.edition)
+        parts.append(str(self.publisher))
+        parts.append(str(self.year_as_url))
+        body = ", ".join(parts) + "."
+        if byline:
+            return "%s: %s" % (byline, body)
+        return body
+
+    def _book_byline(self):
+        """Compose the leading byline for ``full_citation``. Authors come
+        first; if editors are also present (e.g. an authored monograph in an
+        edited series) they're appended with the ``(ed.)`` / ``(eds.)``
+        suffix. An editors-only volume renders as "<editors> (eds.):"."""
+        authors_html = self.full_author_listing
+        editors_html = self.full_editor_listing
+        if not editors_html:
+            return authors_html
+        suffix = "eds." if self.editors.count() > 1 else "ed."
+        if authors_html:
+            return "%s; %s (%s)" % (authors_html, editors_html, suffix)
+        return "%s (%s)" % (editors_html, suffix)
 
 
 class ConferenceProceeding(Item):
@@ -434,6 +462,11 @@ class ConferenceProceeding(Item):
     publisher = models.ForeignKey(
         Publisher, on_delete=models.CASCADE, blank=True, null=True
     )
+
+    @property
+    def full_editor_listing(self):
+        """Hyperlinked editor names — same shape as ``full_author_listing``."""
+        return self._format_authors_html(self.editors.all())
 
     def full_citation(self):
         """
