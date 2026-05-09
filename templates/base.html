@@ -345,22 +345,30 @@ p  { margin: 0 0 var(--sp-3) 0; }
 .lit-year-nav a { font-family: var(--font-mono); }
 .lit-year-nav__sep { opacity: 0.6; }
 
-/* Inline-SVG article-count sparkline above the entries list on
-   tag/author results pages (issue #27). The SVG itself uses
-   ``currentColor`` for the stroke so light/dark themes Just Work. */
+/* Article-count sparkline above the entries list on tag/author
+   landing pages (issue #27). Initially shipped as a static inline
+   SVG; switched to ECharts so hovering shows year + article count
+   in a tooltip. The script tag pinning ECharts is in
+   ``items/templates/items/show-entries.html`` so non-sparkline
+   pages don't pay the load cost. */
 .lit-sparkline-wrap {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: var(--sp-2);
+    gap: var(--sp-3);
     margin: 0 0 var(--sp-3) 0;
-    color: var(--color-accent);
     font-size: var(--fs-sm);
+    color: var(--color-accent);
 }
 .lit-sparkline-label {
     color: var(--color-text-subtle);
     font-family: var(--font-sans);
+    flex: 0 0 auto;
 }
-.lit-sparkline { vertical-align: middle; }
+.lit-sparkline {
+    width: 240px;
+    height: 36px;
+    flex: 0 0 auto;
+}
 
 /* Site-statement card on the front page */
 .lit-site-statement {
