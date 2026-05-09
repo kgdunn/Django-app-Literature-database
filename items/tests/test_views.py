@@ -312,7 +312,9 @@ class TestItemList:
         r = client.get(f"/item/tag/{tagged.slug}/")
         assert r.status_code == 200
         assert b"Spectral and harmonic analysis tools." in r.content
-        assert b"lit-tag-description" in r.content
+        # The rendered <div ...> element, not the CSS-class definition
+        # which lives in base.html's inline <style> on every page.
+        assert b'<div class="lit-tag-description">' in r.content
 
     def test_tag_results_omits_description_block_when_blank(
         self, client, journalpub_factory, author, tag
@@ -321,7 +323,7 @@ class TestItemList:
         journalpub_factory(authors=[author], tags=[tag])
         r = client.get(f"/item/tag/{tag.slug}/")
         assert r.status_code == 200
-        assert b"lit-tag-description" not in r.content
+        assert b'<div class="lit-tag-description">' not in r.content
 
 
 @pytest.mark.django_db
