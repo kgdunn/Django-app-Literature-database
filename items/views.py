@@ -1,5 +1,7 @@
 import logging
+import re
 
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count
 from django.http import HttpResponse
@@ -47,6 +49,47 @@ def _year_count_series(items_qs):
         .annotate(count=Count("id"))
         .order_by("year")
         .values_list("year", "count")
+    )
+
+
+def _get_related_items(item, limit=5):
+    """Items most similar to ``item`` by FTS overlap on title + abstract.
+
+    Issue #36 — cheap precursor to the Phase-12 pgvector "Similar
+    papers" panel. Tokenizes the current item's title + abstract into
+    alpha words ≥4 chars (filters most English stop words), caps at
+    20 words to keep the parse tree bounded, and OR-joins them as
+    individual ``plain`` SearchQuery objects. Cover-density ranking
+    then rewards items with multiple overlapping terms clustered
+    close together. Returns the top non-zero matches.
+
+    OR semantics matter here: a websearch-style AND of every word
+    would require *all* words to match, so a sibling paper missing
+    one or two would rank zero and disappear from the panel.
+
+    Returns ``[]`` for empty title+abstract, no extractable words
+    after filtering, or no overlap with any other item.
+    """
+    query_text = ((item.title or "") + " " + (item.abstract or "")).strip()
+    if not query_text:
+        return []
+    # Alpha-only, ≥4 chars, deduped, capped at 20 — drops most English
+    # stop words and keeps the OR-tree bounded.
+    words = re.findall(r"[a-zA-Z]{4,}", query_text.lower())
+    words = list(dict.fromkeys(words))[:20]
+    if not words:
+        return []
+    query = SearchQuery(words[0], config="english", search_type="plain")
+    for w in words[1:]:
+        query = query | SearchQuery(w, config="english", search_type="plain")
+    vector = SearchVector("title", weight="A", config="english") + SearchVector(
+        "abstract", weight="B", config="english"
+    )
+    return list(
+        Item.objects.exclude(pk=item.pk)
+        .annotate(rank=SearchRank(vector, query, cover_density=True))
+        .filter(rank__gt=0)
+        .order_by("-rank")[:limit]
     )
 
 
@@ -220,7 +263,7 @@ def view_item(request, the_item, slug):
 
     No PDF download path exists (Phase 5 removed it for copyright
     reasons). The detail page surfaces citation, abstract, DOI /
-    external link, and tags only.
+    external link, tags, and a "Related items" panel (issue #36).
     """
     logger.debug("Viewing: %s", the_item)
 
@@ -231,6 +274,7 @@ def view_item(request, the_item, slug):
         {
             "item": the_item,
             "tag_list": the_item.tags.all(),
+            "related_items": _get_related_items(the_item, limit=5),
         },
     )
 

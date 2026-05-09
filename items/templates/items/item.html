@@ -55,4 +55,15 @@
     {% endif %}
 </nav>
 
+{% if related_items %}
+<section class="lit-related">
+    <h4>Related items</h4>
+    <ul class="lit-related__list">
+    {% for r in related_items %}
+        <li><a href="{{ r.get_absolute_url }}">{{ r.title }}</a> <span class="lit-related__year">({{ r.year }})</span></li>
+    {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
 {% endblock %}

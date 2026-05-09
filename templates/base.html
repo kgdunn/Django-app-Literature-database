@@ -504,6 +504,22 @@ p  { margin: 0 0 var(--sp-3) 0; }
 .lit-detail-nav .nav-prev { margin-right: auto; }
 .lit-detail-nav .nav-next { margin-left: auto; }
 
+/* Related-items panel on item detail (issue #36). FTS-overlap-ranked
+   for now; will swap to pgvector cosine in Phase 12 — same template
+   slot, different ranker. */
+.lit-related {
+    margin-top: var(--sp-5); padding-top: var(--sp-4);
+    border-top: 1px solid var(--color-border);
+}
+.lit-related h4 {
+    margin: 0 0 var(--sp-2) 0;
+    font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-xs);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--color-text-subtle);
+}
+.lit-related__list { margin: 0; padding-left: var(--sp-5); font-size: var(--fs-sm); line-height: 1.6; }
+.lit-related__year { color: var(--color-text-muted); font-family: var(--font-mono); font-size: var(--fs-xs); }
+
 /* Pagination on list pages */
 .lit-pagination {
     display: flex; justify-content: center; align-items: center; gap: var(--sp-3);
