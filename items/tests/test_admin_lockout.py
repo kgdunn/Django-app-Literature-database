@@ -36,11 +36,13 @@ class TestAdminLoginLockout:
             self._post_login(client, "admin", "wrong")
 
         # 6th attempt — even with the right password, axes blocks it.
-        # Default lockout response is 403; the user-facing page
-        # explains the cooloff.
+        # django-axes 8.x returns 429 Too Many Requests (RFC 6585 — the
+        # semantically right status for rate-limiting; older versions
+        # returned 403). Accept either so we don't pin the assertion to
+        # one minor release.
         r = self._post_login(client, "admin", "correct-horse-battery-staple")
-        assert r.status_code == 403, (
-            "Expected django-axes to block the 6th attempt with 403; "
+        assert r.status_code in (403, 429), (
+            "Expected django-axes to block the 6th attempt (403 or 429); "
             f"got {r.status_code}. Check AXES_FAILURE_LIMIT="
             "5 in literature/settings/base.py."
         )
