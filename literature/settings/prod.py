@@ -41,6 +41,16 @@ CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 
+# Issue #72: full-site noindex flag, read by SecurityHeadersMiddleware.
+# Set LITERATURE_NOINDEX=true in the staging .env so search engines
+# leave test.literature.learnche.org alone; prod leaves it false /
+# unset and uses the per-path Disallow rules in /robots.txt instead.
+LITERATURE_NOINDEX = (env("LITERATURE_NOINDEX", "false") or "false").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
 _db_keys = ["POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD", "SQL_HOST", "SQL_PORT"]
 _db_settings = {}
 for _key in _db_keys:

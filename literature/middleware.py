@@ -10,6 +10,12 @@ that Django's `SecurityMiddleware` does not set:
 * ``Permissions-Policy`` — opt out of legacy interest-cohort and the
   device-sensor APIs we don't need.
 * ``Cross-Origin-Opener-Policy`` — isolate browsing-context groups.
+* ``X-Robots-Tag`` — emitted only when the ``LITERATURE_NOINDEX``
+  setting is truthy (issue #72). Staging deploys flip this in their
+  ``.env`` so search engines don't index the rehearsal hostname.
+  Production deploys leave it off; the per-path ``Disallow`` rules
+  in ``/robots.txt`` (also issue #72) keep ``/admin/`` etc. out of
+  search results without blanket-blocking the public catalogue.
 
 CSP currently allows ``'unsafe-inline'`` for both `script-src` and
 `style-src` because `templates/base.html` ships an inline ``<style>``
@@ -28,6 +34,8 @@ CDN allowlist:
 * `fonts.googleapis.com` + `fonts.gstatic.com` — Google Fonts (IBM Plex
   Sans / Serif / Mono) loaded from base.html.
 """
+
+from django.conf import settings
 
 CSP = (
     "default-src 'self'; "
@@ -53,4 +61,8 @@ class SecurityHeadersMiddleware:
         response.setdefault("Content-Security-Policy", CSP)
         response.setdefault("Permissions-Policy", PERMISSIONS_POLICY)
         response.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        # Issue #72: full-site noindex on staging. Set LITERATURE_NOINDEX=true
+        # in the staging .env; prod leaves the setting unset / false.
+        if getattr(settings, "LITERATURE_NOINDEX", False):
+            response.setdefault("X-Robots-Tag", "noindex, nofollow")
         return response
