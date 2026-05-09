@@ -5,11 +5,12 @@
 # uv + the resolved venv from `uv.lock`, the runtime stage copies just the
 # venv (no uv binary, no apt build deps).
 #
-# `python:3.11-slim` matches `.python-version`. The image is *not* yet pinned
-# by sha256 digest — the host operator should run `docker pull python:3.11-slim`
-# once on the prod box and switch this `FROM` to `python:3.11-slim@sha256:…`
-# before the first deploy. Phase 9 (Hetzner provisioning) will document this.
-FROM python:3.14-slim AS builder
+# Both stages pin the multi-arch manifest list digest of `python:3.14-slim`
+# so a Docker Hub repoint can't land silently on the next deploy. Same
+# digest as the openmv stack uses — same image bytes, no double pull.
+# Dependabot (`docker` ecosystem in `.github/dependabot.yml`) opens weekly
+# bump PRs; CI catches breakage before merge. Issue #70.
+FROM python:3.14-slim@sha256:5b3879b6f3cb77e712644d50262d05a7c146b7312d784a18eff7ff5462e77033 AS builder
 
 # Pinned to a specific uv version so a malicious push to ghcr.io/astral-sh/uv
 # can't land in our build. Bump in lockstep with `uv self update` and the host
@@ -26,7 +27,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
 # ---- runtime ------------------------------------------------------------
-FROM python:3.14-slim AS runtime
+FROM python:3.14-slim@sha256:5b3879b6f3cb77e712644d50262d05a7c146b7312d784a18eff7ff5462e77033 AS runtime
 
 # `libpq5` is required by `psycopg2-binary` at runtime (it ships its own
 # wheel but still wants the system libpq.so.5). `curl` is only here for the
