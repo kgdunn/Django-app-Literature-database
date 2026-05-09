@@ -42,6 +42,12 @@ class TestAuthorSlugs:
         item = journalpub_factory(authors=[a])
         assert item.author_slugs == "Schrodinger"
 
+    def test_no_authors(self, journalpub_factory):
+        # Regression for issue #35: legacy code raised IndexError on the
+        # `return authors[0]` fall-through when an item had no authors.
+        item = journalpub_factory(authors=None)
+        assert item.author_slugs == ""
+
 
 @pytest.mark.django_db
 class TestDoiLinkCleaned:
