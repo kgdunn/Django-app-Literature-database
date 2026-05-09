@@ -38,7 +38,16 @@ def most_viewed(field, num=5):
 
 @register.filter
 def cloud(model_or_obj, num=5):
-    """Get a tag cloud. If num==0 it will return all the tags."""
+    """Get a tag cloud. If num==0 it will return all the tags.
+
+    Returns a list of namedtuples ``(slug, tag, score, count)``:
+        - ``score`` is the rendered font-size percentage for the cloud
+          entry (logarithmic scaling, tightened in 2026-05 to a
+          smaller range — see issue #34).
+        - ``count`` is the raw number of items using the tag, surfaced
+          so templates can render it as a superscript next to the tag
+          name (issue #38).
+    """
     tag_uses = get_tag_uses()
     if not (tag_uses):
         return []
@@ -48,17 +57,26 @@ def cloud(model_or_obj, num=5):
     max_uses = max(tag_uses[0][0], 5)
     min_uses = tag_uses[-1][0]
 
-    # Use a logarithmic scaling between 1.0 to 170% of baseline font size
-    # We could consider a logarithmic scale
-    min_font, max_font = 3, 6
+    # Logarithmic scaling. Issue #34 asked for a smaller cloud overall;
+    # tightening max_font from 6 → 5 narrows the rendered font-size
+    # range from ~100–170% to ~100–148%, so the most-used tags don't
+    # dwarf the rest.
+    min_font, max_font = 3, 5
     slope = (max_font - min_font) / (max_uses - min_uses + 0.0)
     intercept = min_font - slope * min_uses
 
     out = []
-    Item = namedtuple("Item", "slug tag score")
+    Item = namedtuple("Item", "slug tag score count")
     for score, pk in tag_uses:
         tag = Tag.objects.get(id=pk)
-        out.append(Item(tag.slug, tag, int(log(slope * score + intercept) * 100) - 9))
+        out.append(
+            Item(
+                tag.slug,
+                tag,
+                int(log(slope * score + intercept) * 100) - 9,
+                score,
+            )
+        )
 
     out.sort()
     return out

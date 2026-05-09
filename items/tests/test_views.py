@@ -296,6 +296,75 @@ class TestItemList:
         assert b"Has Fourier tag" in r.content
         assert b"No tag" not in r.content
 
+    def test_tag_results_renders_description_block(
+        self, client, journalpub_factory, author, db
+    ):
+        """Issue #12: a tag's description (if set) renders as a small
+        block at the top of the per-tag results page."""
+        from tagging.models import Tag
+
+        tagged = Tag.objects.create(
+            name="Fourier methods",
+            description="Spectral and harmonic analysis tools.",
+        )
+        journalpub_factory(authors=[author], tags=[tagged], title="Hit")
+
+        r = client.get(f"/item/tag/{tagged.slug}/")
+        assert r.status_code == 200
+        assert b"Spectral and harmonic analysis tools." in r.content
+        assert b"lit-tag-description" in r.content
+
+    def test_tag_results_omits_description_block_when_blank(
+        self, client, journalpub_factory, author, tag
+    ):
+        """No description set → no rendered block; just the entries list."""
+        journalpub_factory(authors=[author], tags=[tag])
+        r = client.get(f"/item/tag/{tag.slug}/")
+        assert r.status_code == 200
+        assert b"lit-tag-description" not in r.content
+
+
+@pytest.mark.django_db
+class TestTagCloud:
+    """Issue #34 + #38 + #12: tag-cloud rendering on the homepage and the
+    /item/show/all-tags/ page."""
+
+    def test_cloud_anchor_carries_description_as_title(
+        self, client, journalpub_factory, author, db
+    ):
+        """Hover-tooltip via the standard ``title=`` attr (#12).
+        Falls back to the tag's name when no description is set so
+        the hover is never empty."""
+        from tagging.models import Tag
+
+        tagged = Tag.objects.create(
+            name="Spectroscopy",
+            description="Light-matter interaction techniques.",
+        )
+        journalpub_factory(authors=[author], tags=[tagged])
+
+        r = client.get("/item/show/all-tags/")
+        assert r.status_code == 200
+        assert b'title="Light-matter interaction techniques."' in r.content
+
+    def test_cloud_anchor_renders_count_superscript(
+        self, client, journalpub_factory, author, db
+    ):
+        """Per-tag entry count rendered as a small superscript next to
+        the name (#38). Three items tagged → ``<sup ...>3</sup>``."""
+        from tagging.models import Tag
+
+        tagged = Tag.objects.create(name="Optics")
+        for i in range(3):
+            journalpub_factory(authors=[author], tags=[tagged], title=f"Paper {i}")
+
+        r = client.get("/item/show/all-tags/")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        # Count superscript element shows up with the right number for
+        # the tag we just tagged 3 items with.
+        assert 'class="lit-tag-cloud__count">3</sup>' in body
+
 
 @pytest.mark.django_db
 class TestPageHitTracking:

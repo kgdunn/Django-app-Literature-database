@@ -34,7 +34,8 @@
         {% for tag_item in "item"|cloud:28 %}
             <a href="{% url 'lit-show-items' what_view='tag' extra_info=tag_item.tag.slug %}"
                class="lit-tag-cloud"
-               style="font-size: {{ tag_item.score }}%">{{ tag_item.tag.name }}</a>
+               title="{{ tag_item.tag.description|default:tag_item.tag.name }}"
+               style="font-size: {{ tag_item.score }}%">{{ tag_item.tag.name }}<sup class="lit-tag-cloud__count">{{ tag_item.count }}</sup></a>
         {% endfor %}
         </div>
         <a class="lit-portal__more" href="{% url 'lit-show-items' what_view='show' extra_info='all-tags' %}">See complete tag cloud</a>

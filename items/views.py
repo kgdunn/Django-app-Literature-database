@@ -16,6 +16,7 @@ from items.models import (
 )
 from pagehit.views import create_hit
 from pages.views import page_404_error
+from tagging.models import Tag
 from utils import paginated_queryset
 
 logger = logging.getLogger(__name__)
@@ -87,8 +88,16 @@ def show_items(request, what_view="", extra_info=""):
     entry_order = []
     page_title = ""
     template_name = "items/show-entries.html"
+    description = ""
     if what_view == "tag":
         _track_hit(request, "lit-tag-page", hit_slug)
+        # Issue #12: surface the tag's description on its own results
+        # page when one is set. Falls through to "" (template skips
+        # rendering the block) when the tag has no description, the
+        # slug doesn't resolve to a Tag at all (legacy data), or the
+        # tag exists but description is None.
+        tag = Tag.objects.filter(slug=slugify(hit_slug)).first()
+        description = (tag.description if tag else "") or ""
         all_items = Item.objects.all().filter(tags__slug=slugify(extra_info))
         page_title = "All entries tagged"
         extra_info = ': "%s"' % extra_info
@@ -152,6 +161,7 @@ def show_items(request, what_view="", extra_info=""):
             "entries": entries,
             "page_title": page_title,
             "extra_info": extra_info,
+            "description": description,
         },
     )
 
