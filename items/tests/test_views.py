@@ -50,6 +50,44 @@ class TestStaticPages:
         assert "&copy; 2010 &ndash;" in body or "© 2010 –" in body
         assert str(date.today().year) in body
 
+    def test_robots_txt_returns_text_plain_with_admin_disallow(self, client):
+        # Issue #72: /robots.txt keeps /admin/ out of search-engine
+        # indexes. Served by Django so the file lives in the repo and
+        # tracks the URL surface (no Caddy config to drift).
+        r = client.get("/robots.txt")
+        assert r.status_code == 200
+        assert r["Content-Type"].startswith("text/plain")
+        body = r.content.decode("utf-8")
+        assert "User-agent: *" in body
+        assert "Disallow: /admin/" in body
+        assert "Disallow: /accounts/" in body
+        assert "Disallow: /__extract_extra__/" in body
+
+
+@pytest.mark.django_db
+class TestStagingNoindex:
+    """Issue #72: when LITERATURE_NOINDEX is truthy (set in the
+    staging .env), every response carries an ``X-Robots-Tag: noindex,
+    nofollow`` header so search engines leave the staging hostname
+    alone. Production deploys leave the setting unset / false and use
+    the per-path ``Disallow`` rules in /robots.txt instead."""
+
+    def test_header_emitted_when_setting_true(self, client, settings):
+        settings.LITERATURE_NOINDEX = True
+        r = client.get("/")
+        assert r.get("X-Robots-Tag") == "noindex, nofollow"
+
+    def test_header_omitted_when_setting_false(self, client, settings):
+        settings.LITERATURE_NOINDEX = False
+        r = client.get("/")
+        assert r.get("X-Robots-Tag") is None
+
+    def test_header_omitted_when_setting_unset(self, client):
+        # Default: setting absent. Middleware uses ``getattr(...,
+        # False)``; no header should be emitted.
+        r = client.get("/")
+        assert r.get("X-Robots-Tag") is None
+
 
 @pytest.mark.django_db
 class TestSecurityHeaders:

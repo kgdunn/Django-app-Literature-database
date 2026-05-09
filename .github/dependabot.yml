@@ -1,12 +1,18 @@
-# Dependabot config — weekly bumps for SHA-pinned third-party actions and
-# digest-pinned Docker base images. The pins themselves live in:
+# Dependabot config — weekly bumps for SHA-pinned third-party actions,
+# digest-pinned Docker base images, and Python runtime / dev deps. Pin
+# locations:
 #   .github/workflows/ci.yml   (actions/checkout, astral-sh/setup-uv,
 #                               postgres:16-alpine service container)
-#   Dockerfile                 (python:3.11-slim once digest-pinned;
-#                               see Phase 9 for the host-side `docker pull`
-#                               + digest-swap step)
+#   Dockerfile                 (python:3.14-slim — digest-pinned PR #87,
+#                               issue #70)
 #   docker-compose.yml         (postgres:16-alpine)
 #   docker-compose.prod.yml    (postgres:16-alpine)
+#   pyproject.toml + uv.lock   (Django, psycopg2-binary, gunicorn,
+#                               bleach, pdfplumber, django-axes, +
+#                               dev group). Issue #81 added the `pip`
+#                               ecosystem so transitive-CVE bumps no
+#                               longer wait on a manual ``uv lock
+#                               --upgrade`` from a maintainer.
 # CI catches breakage before merge.
 version: 2
 updates:
@@ -19,3 +25,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  # Issue #81. Dependabot reads pyproject.toml + uv.lock under the
+  # ``pip`` ecosystem. ``uv`` is the install tool; the dep manifest
+  # itself is standard PEP-621, which is what Dependabot parses.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

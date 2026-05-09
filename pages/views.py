@@ -49,6 +49,26 @@ def healthz(request):
     return response
 
 
+# Issue #72: keep search engines out of the admin / accounts / extract
+# endpoints. Anyone who guesses the URLs can still hit them — this
+# only stops them from being surfaced via Google. The staging site
+# (`test.literature.learnche.org`) gets a separate full-site
+# ``X-Robots-Tag: noindex, nofollow`` via SecurityHeadersMiddleware
+# when ``LITERATURE_NOINDEX=true`` is set in its ``.env``.
+ROBOTS_TXT = """User-agent: *
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /__extract_extra__/
+"""
+
+
+def robots_txt(request):
+    """Serve ``/robots.txt`` directly from Django so the file lives in
+    the repo and tracks the URL surface — Caddy doesn't need a custom
+    rule beyond the existing reverse proxy."""
+    return HttpResponse(ROBOTS_TXT, content_type="text/plain")
+
+
 def about_page(request):
     create_hit(request, "lit-about-page")
     return render(request, "pages/about-page.html")
