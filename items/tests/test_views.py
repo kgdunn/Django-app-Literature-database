@@ -37,6 +37,19 @@ class TestStaticPages:
             assert r.content == b"ok"
             assert r["Cache-Control"] == "no-store"
 
+    def test_footer_copyright_renders_year_range(self, client):
+        # The footer's copyright is a year *range* "2010 – <current
+        # year>", with the right-hand year auto-updating via Django's
+        # ``{% now "Y" %}`` tag so the notice never goes stale at the
+        # turn of a year.
+        from datetime import date
+
+        r = client.get("/")
+        body = r.content.decode("utf-8")
+        # En-dash separator, NOT hyphen — consistent year-range typography.
+        assert "&copy; 2010 &ndash;" in body or "© 2010 –" in body
+        assert str(date.today().year) in body
+
 
 @pytest.mark.django_db
 class TestSecurityHeaders:
