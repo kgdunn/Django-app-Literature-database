@@ -27,7 +27,7 @@ The sister project at `kgdunn/Django-dataset-download-app` (openmv.net) is the a
 | 12    | pgvector semantic search (Stage 2)                   | pending  |
 | 13    | Knowledge graph (citations, co-authorship)           | pending  |
 | 14    | Meilisearch sidecar (Stage 3)                        | pending  |
-| 15    | RELEASES.md + release workflow                       | pending  |
+| 15    | RELEASES.md + release workflow + CI-gated deploy     | done     |
 
 The site is **not yet in production** at the time of writing — Phase 9 landed the deploy *automation*, but the actual host bootstrap (Cloudflare DNS, Origin Cert, Caddy server block, SSH deploy key) is a manual one-time runbook in [`docs/deploy.md`](docs/deploy.md) and is the operator's call to execute. Once `https://literature.learnche.org/healthz` returns 200 the site is live and the openmv-style "live site cannot break" rule applies; until then the staging hostname `test.literature.learnche.org` is the rehearsal target.
 
@@ -137,7 +137,7 @@ Cloudflare (proxied, orange cloud) ──HTTPS──> Caddy on Hetzner host (TLS
   - `literature.learnche.org` uses a **Cloudflare Origin Certificate** at `/etc/caddy/origin-certs/literature.learnche.org/`. Cloudflare's edge serves a public-trusted cert to visitors and re-encrypts to origin in `Full (strict)` mode. The `learnche.org` apex points at a different server entirely; only the `literature` subdomain record sits on Hetzner.
   - `test.literature.learnche.org` uses Caddy-managed Let's Encrypt. It must stay **DNS-only** (grey cloud) in Cloudflare so the HTTP/TLS challenge can reach origin directly.
 - **DNS**: `learnche.org` is a Cloudflare-hosted zone. Add A/AAAA `literature` (proxied) and `test.literature` (DNS-only) pointing at the Hetzner IPs `178.104.167.195` / `2a01:4f8:1c19:2380::1`.
-- **Auto-deploy**: every push to `main` fires `.github/workflows/deploy.yml`, which SSHes into Hetzner via a forced-command key and triggers `bin/deploy-impl.sh`. The deploy script runs `docker compose -f docker-compose.prod.yml up -d --build` (which in turn runs `migrate --noinput` + `collectstatic --noinput` on container start, then boots gunicorn) and sanity-curls `127.0.0.1:8002/healthz`.
+- **Auto-deploy**: every push to `main` fires `.github/workflows/ci.yml`; on **successful** completion of CI, `.github/workflows/deploy.yml` chains via `workflow_run` and SSHes into Hetzner via a forced-command key, triggering `bin/deploy-impl.sh`. **A failing CI run does NOT deploy.** The deploy script runs `docker compose -f docker-compose.prod.yml up -d --build` (which in turn runs `migrate --noinput` + `collectstatic --noinput` on container start, then boots gunicorn) and sanity-curls `127.0.0.1:8002/healthz`. Manual `workflow_dispatch` (rollback / forced redeploy) fires unconditionally and bypasses the CI gate.
 - **Manual deploy** (rollback, hotfix, debugging): from `/home/deploy/literature/repo/`, run `git pull && docker compose -f docker-compose.prod.yml up -d --build` directly.
 
 ## Backups
@@ -244,7 +244,7 @@ Until Phase 3 lands the search path is the legacy Haystack/Whoosh/Xapian stack, 
 
 ## Versioning and releases
 
-After Phase 15 lands, every PR that changes runtime behaviour, dependencies, settings, CI, deploy scripts, or public docs **must** bump `version` in `pyproject.toml` and add a matching `## v<new-version>` section to `RELEASES.md` describing the change. The version field is the trigger for the release pipeline — no bump means no release.
+Every PR that changes runtime behaviour, dependencies, settings, CI, deploy scripts, or public docs **must** bump `version` in `pyproject.toml` and add a matching `## v<new-version>` section to `RELEASES.md` describing the change. The version field is the trigger for the release pipeline — no bump means no release.
 
 Bump heuristic:
 
