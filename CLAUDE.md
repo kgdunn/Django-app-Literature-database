@@ -142,7 +142,7 @@ Cloudflare (proxied, orange cloud) ──HTTPS──> Caddy on Hetzner host (TLS
 
 ## Backups
 
-Off-host backups go to AWS S3 — same bucket as openmv (`openmv-backups`) under prefix `literature/`, deliberately a different cloud provider / account from Hetzner so a compromise of one doesn't reach the other. The Hetzner-side script is `bin/backup-literature.sh`; it runs nightly under `deploy` from cron and does three things:
+Off-host backups go to AWS S3 — same bucket as openmv (`kgd-backups`) under prefix `literature/`, deliberately a different cloud provider / account from Hetzner so a compromise of one doesn't reach the other. The Hetzner-side script is `bin/backup-literature.sh`; it runs nightly under `deploy` from cron and does three things:
 
 1. **Postgres dump** of the running `db` container via `docker compose -f docker-compose.prod.yml exec -T db pg_dump --clean --if-exists`, gzipped, uploaded to `s3://$BACKUP_S3_BUCKET/$BACKUP_S3_PREFIX/db/daily/db_literature-YYYY-MM-DD.sql.gz`. Same dump copied to `db/monthly/` on the 1st of each month and `db/yearly/` on Jan 1.
 2. **`aws s3 sync`** of `data/media/` → `…/media/` and `data/public/` → `…/public/`. No `--delete` flag — an accidental local rm or detached bind mount must not propagate to the off-host copy. **`data/media/` is the PDF library; this is the irreplaceable bytes.** `data/static/` is intentionally **not** backed up because `collectstatic` regenerates it on every container start.
