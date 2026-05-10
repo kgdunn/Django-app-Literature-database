@@ -1,5 +1,31 @@
 # Releases
 
+## v1.0.2
+
+Documentation: rename the off-host backup S3 bucket from `openmv-backups`
+to `kgd-backups` in docs and the `bin/backup-literature.sh` header
+comment, reflecting the actual shared-bucket name used in production.
+The bucket itself was renamed when the live backup setup was wired up on
+the Hetzner host on 2026-05-10; this PR brings the docs in sync. The
+script reads the bucket name from `$BACKUP_S3_BUCKET` in `.env`, so no
+runtime / CI / template / dependency change.
+
+- **`docs/backup.md`** — every reference to `openmv-backups` (intro
+  paragraph, S3 layout block, IAM policy ARNs in 1b, `.env` example
+  block, verify / restore commands, real-disaster-recovery commands,
+  troubleshooting) updated to `kgd-backups`.
+- **`CLAUDE.md`** — Backups-section parenthetical now reads
+  ``(`kgd-backups`)`` instead of ``(`openmv-backups`)``.
+- **`bin/backup-literature.sh`** — header comment example for
+  `BACKUP_S3_BUCKET` updated. Runtime behaviour unchanged; the script
+  reads the bucket name from `.env`.
+- **`pyproject.toml`** / **`RELEASES.md`**: PATCH bump (docs +
+  comment, no user-visible behaviour change), per the policy in
+  `CLAUDE.md`.
+- The matching docs rename in the openmv stack
+  (`kgdunn/Django-dataset-download-app`) is shipped in a sibling PR
+  on the same branch name.
+
 ## v1.0.1
 
 Supply-chain modernization: migrate the Postgres driver from

@@ -1,6 +1,6 @@
 # Backup runbook
 
-End-to-end operational guide for the literature off-host backup. Read this when you need to provision a new bucket (or share the existing `openmv-backups` one), rotate credentials, restore from backup, or take over backup ownership from a previous maintainer.
+End-to-end operational guide for the literature off-host backup. Read this when you need to provision a new bucket (or share the existing `kgd-backups` one), rotate credentials, restore from backup, or take over backup ownership from a previous maintainer.
 
 CLAUDE.md's `## Backups` section is the high-level orientation; this file is the step-by-step runbook with exact commands.
 
@@ -12,10 +12,10 @@ The Hetzner-side script `bin/backup-literature.sh` runs nightly under `deploy` f
 2. **`aws s3 sync`** of `data/media/` and `data/public/` to the matching prefixes — without `--delete`, so an accidental local rm or detached bind-mount cannot propagate to the off-host copy. **`data/media/` is the PDF library — irreplaceable**, since the bytes are admin-uploaded and the legacy host is gone. `data/static/` is intentionally **not** backed up because `collectstatic` regenerates it on every container start.
 3. **Retention pruning** by S3 `LastModified`: `db/daily/` keeps the 15 most recent objects, `db/monthly/` keeps 12, `db/yearly/` is never pruned.
 
-S3 layout that results (sharing the existing `openmv-backups` bucket via the `literature/` prefix — separate IAM credentials so a leak in one stack can't reach the other):
+S3 layout that results (sharing the existing `kgd-backups` bucket via the `literature/` prefix — separate IAM credentials so a leak in one stack can't reach the other):
 
 ```
-s3://openmv-backups/literature/
+s3://kgd-backups/literature/
 ├── db/
 │   ├── daily/    db_literature-YYYY-MM-DD.sql.gz   (≤15)
 │   ├── monthly/  db_literature-YYYY-MM.sql.gz      (≤12)
@@ -37,7 +37,7 @@ Before starting:
 
 ## Part 1: AWS one-time setup
 
-If `openmv-backups` already exists from the openmv stack, skip 1a (the bucket is shared). You still need a **new IAM user** with a literature-scoped policy in step 1b — never reuse openmv's IAM credentials.
+If `kgd-backups` already exists from the openmv stack, skip 1a (the bucket is shared). You still need a **new IAM user** with a literature-scoped policy in step 1b — never reuse openmv's IAM credentials.
 
 ### 1a. Bucket (skip if already created for openmv)
 
@@ -45,7 +45,7 @@ S3 → Create bucket:
 
 | Field                       | Value                                              |
 | --------------------------- | -------------------------------------------------- |
-| Bucket name                 | `openmv-backups` (must be globally unique; reuse the existing one if it already exists) |
+| Bucket name                 | `kgd-backups` (must be globally unique; reuse the existing one if it already exists) |
 | Region                      | `eu-central-1` (Frankfurt — close to Hetzner Nuremberg) |
 | Block all public access     | Leave on (default)                                 |
 | Bucket versioning           | **Enable** (guards against bad sync overwriting good data) |
@@ -59,7 +59,7 @@ IAM → Users → Create user:
 - User name: `literature-backup` (separate from `openmv-backup`)
 - **Do not** check "Provide user access to the AWS Management Console" — programmatic only.
 
-After creation, on the user's **Permissions** tab, "Add permissions" → "Attach policies directly" → "Create policy" (inline). Paste this, replacing `openmv-backups` with your bucket name if different:
+After creation, on the user's **Permissions** tab, "Add permissions" → "Attach policies directly" → "Create policy" (inline). Paste this, replacing `kgd-backups` with your bucket name if different:
 
 ```json
 {
@@ -69,7 +69,7 @@ After creation, on the user's **Permissions** tab, "Add permissions" → "Attach
       "Sid": "ListBucketUnderPrefix",
       "Effect": "Allow",
       "Action": "s3:ListBucket",
-      "Resource": "arn:aws:s3:::openmv-backups",
+      "Resource": "arn:aws:s3:::kgd-backups",
       "Condition": {
         "StringLike": { "s3:prefix": ["literature", "literature/*"] }
       }
@@ -82,7 +82,7 @@ After creation, on the user's **Permissions** tab, "Add permissions" → "Attach
         "s3:PutObject",
         "s3:DeleteObject"
       ],
-      "Resource": "arn:aws:s3:::openmv-backups/literature/*"
+      "Resource": "arn:aws:s3:::kgd-backups/literature/*"
     }
   ]
 }
@@ -143,7 +143,7 @@ Append the five backup keys (paste real values from step 1c and your chosen buck
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...
 AWS_DEFAULT_REGION=eu-central-1
-BACKUP_S3_BUCKET=openmv-backups
+BACKUP_S3_BUCKET=kgd-backups
 BACKUP_S3_PREFIX=literature
 ```
 
@@ -169,7 +169,7 @@ cd /home/deploy/literature/repo
 Expected output (timestamps will differ):
 
 ```
-[backup-literature] 2026-05-08T... starting; bucket=openmv-backups prefix=literature
+[backup-literature] 2026-05-08T... starting; bucket=kgd-backups prefix=literature
 [backup-literature] 2026-05-08T... db dumped: 12M
 [backup-literature] 2026-05-08T... uploaded daily dump
 [backup-literature] 2026-05-08T... media synced
@@ -186,9 +186,9 @@ The first run uploads the **entire** `data/media/` tree — every PDF in the lib
 From the same shell (or your laptop with `aws` configured against the same access key, or the AWS console):
 
 ```bash
-aws s3 ls s3://openmv-backups/literature/db/daily/
-aws s3 ls s3://openmv-backups/literature/media/  | head
-aws s3 ls s3://openmv-backups/literature/public/
+aws s3 ls s3://kgd-backups/literature/db/daily/
+aws s3 ls s3://kgd-backups/literature/media/  | head
+aws s3 ls s3://kgd-backups/literature/public/
 ```
 
 You should see today's `db_literature-YYYY-MM-DD.sql.gz`, plus the PDF tree mirrored under `media/`.
@@ -223,7 +223,7 @@ After the first scheduled run (the next morning):
 
 ```bash
 tail -n 20 /home/deploy/literature/backups/backup.log
-aws s3 ls s3://openmv-backups/literature/db/daily/
+aws s3 ls s3://kgd-backups/literature/db/daily/
 ```
 
 You should see two `db_literature-*.sql.gz` files (today's + yesterday's). The 16th will start displacing the oldest, the 1st of next month will deposit a `db/monthly/db_literature-YYYY-MM.sql.gz`, and Jan 1 of next year will drop a `db/yearly/db_literature-YYYY.sql.gz`.
@@ -242,7 +242,7 @@ docker run --rm -d --name literature-restore-test \
 sleep 5
 
 # Pull the most recent daily and restore into it
-aws s3 cp s3://openmv-backups/literature/db/daily/db_literature-$(date -u +%F).sql.gz - \
+aws s3 cp s3://kgd-backups/literature/db/daily/db_literature-$(date -u +%F).sql.gz - \
   | gunzip \
   | docker exec -i literature-restore-test psql -U literature -d literature
 
@@ -265,8 +265,8 @@ If you ever need to restore prod from S3 (lost VPS, corrupted DB, catastrophic a
 
    ```bash
    cd /home/deploy/literature/repo
-   aws s3 sync s3://openmv-backups/literature/media/  data/media/
-   aws s3 sync s3://openmv-backups/literature/public/ data/public/
+   aws s3 sync s3://kgd-backups/literature/media/  data/media/
+   aws s3 sync s3://kgd-backups/literature/public/ data/public/
    ```
 
    `--delete` is deliberately omitted — if S3 has anything the local side lacks, copy it down; never the reverse.
@@ -279,7 +279,7 @@ If you ever need to restore prod from S3 (lost VPS, corrupted DB, catastrophic a
 5. **Restore the database** into the now-running `db` container. Pick the most recent useful snapshot — usually `db/daily/`, but if you're recovering from a longer-window incident, choose from `monthly/` or `yearly/` instead:
 
    ```bash
-   aws s3 cp s3://openmv-backups/literature/db/daily/db_literature-YYYY-MM-DD.sql.gz - \
+   aws s3 cp s3://kgd-backups/literature/db/daily/db_literature-YYYY-MM-DD.sql.gz - \
      | gunzip \
      | docker compose -f docker-compose.prod.yml exec -T db \
          psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
@@ -296,7 +296,7 @@ If you ever need to restore prod from S3 (lost VPS, corrupted DB, catastrophic a
 
 **`Unable to locate credentials`** — the script sources `.env` via `set -a; source .env; set +a`. Confirm `.env` contains `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` and that the file is readable by `deploy` (`ls -l /home/deploy/literature/repo/.env`).
 
-**`AccessDenied` on a `PutObject` / `s3 cp`** — the IAM policy in step 1b must use the **exact** bucket name and prefix. A common mistake: writing `openmv-backups/literature` in the resource ARN where you should write `openmv-backups/literature/*` (the trailing `/*` is what permits objects under the prefix, not the prefix itself). Another common mistake: accidentally pointing `BACKUP_S3_PREFIX` at `openmv` — the literature-backup IAM user is denied access to that prefix.
+**`AccessDenied` on a `PutObject` / `s3 cp`** — the IAM policy in step 1b must use the **exact** bucket name and prefix. A common mistake: writing `kgd-backups/literature` in the resource ARN where you should write `kgd-backups/literature/*` (the trailing `/*` is what permits objects under the prefix, not the prefix itself). Another common mistake: accidentally pointing `BACKUP_S3_PREFIX` at `openmv` — the literature-backup IAM user is denied access to that prefix.
 
 **`pg_dump: error: connection to server failed`** — the `db` container isn't healthy. Check `docker compose -f docker-compose.prod.yml ps` and `docker compose -f docker-compose.prod.yml logs db`. The script runs `pg_dump` *inside* the container via `docker compose exec`, so the container's own credentials are what matter, not the host's.
 
