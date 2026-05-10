@@ -41,11 +41,13 @@ from __future__ import annotations
 import json
 import logging
 from collections import Counter, defaultdict
+from io import StringIO
 from pathlib import Path
 from typing import Any
 
+from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import connection, transaction
 
 from items.models import (
     Author,
@@ -150,7 +152,29 @@ class Command(BaseCommand):
             else:
                 transaction.savepoint_commit(sid)
 
+        if not dry:
+            self._reset_sequences()
+
         self._print_summary(counts, dry=dry)
+
+    def _reset_sequences(self) -> None:
+        # Rows are inserted with explicit legacy pks, which leaves each
+        # table's auto-increment sequence at 1. Without this bump, the
+        # next insert from a real request collides on the PK and the
+        # view 500s — see RELEASES.md v1.0.3 for the live-site postmortem.
+        sql_buffer = StringIO()
+        call_command(
+            "sqlsequencereset",
+            "items",
+            "pagehit",
+            "tagging",
+            stdout=sql_buffer,
+        )
+        sql = sql_buffer.getvalue()
+        if not sql.strip():
+            return
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
 
     # -------- input loading ---------------------------------------
 

@@ -1,5 +1,15 @@
 # Releases
 
+## v1.0.3
+
+Bugfix + runbook for the 2026-05-10 live-site incident. Two unrelated failures stacked: Caddy on the shared Hetzner host had a JSON config hot-pushed to its admin API on `localhost:2019` that 403'd every request with `Host not in allowlist` (custom `x-deny-reason: host_not_allowed` header), and once that was unblocked, every DB-touching page 500'd because `pagehit_pagehit.id`'s Postgres sequence was still at 1 — a latent bomb left by Phase 10's `import_legacy_dump`, which writes rows with explicit legacy pks but never bumped the sequences afterwards. `pages.healthz` was the only view that didn't trigger the integrity error, which masked the second failure for over an hour.
+
+- **`items/management/commands/import_legacy_dump.py`** — append a `_reset_sequences` step at the end of every non-dry-run import. Captures `manage.py sqlsequencereset items pagehit tagging` into a `StringIO`, then executes the resulting `setval(...)` statements against the live connection in one cursor call. Idempotent: running it on an empty result set is a no-op. The import command stays inside its own `transaction.atomic()` for the row inserts; the sequence reset runs after the commit so a rolled-back dry run leaves sequences untouched. Closes the live-site bomb for any future imports against this command.
+- **`docs/deploy.md`** — new `## Troubleshooting` section with the two failure-mode runbooks: the Caddy admin-API override (symptom + `admin off` + restart fix) and the stale `pagehit` sequence (symptom + `sqlsequencereset … | dbshell` one-shot). Future-you reads these and recovers in one shot instead of an hour of grep.
+- **`pyproject.toml`** / **`RELEASES.md`** — PATCH bump per `CLAUDE.md`'s policy (a behavioural bugfix in the import command + a doc addition; no template, URL, dependency, or schema change).
+
+The Caddy `admin off` change is server-side only — applied on the Hetzner host as part of the incident response, not version-controlled in this repo (the Caddyfile lives in `/etc/caddy/` outside any git tree). The runbook in `docs/deploy.md` is the durable record of what was done.
+
 ## v1.0.2
 
 Documentation: rename the off-host backup S3 bucket from `openmv-backups`
