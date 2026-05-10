@@ -29,12 +29,13 @@ RUN uv sync --frozen --no-install-project --no-dev
 # ---- runtime ------------------------------------------------------------
 FROM python:3.14-slim@sha256:1697e8e8d39bf168e177ac6b5fdab6df86d81cfc24dae17dfb96cfc3ef76b4dd AS runtime
 
-# `libpq5` is required by `psycopg2-binary` at runtime (it ships its own
-# wheel but still wants the system libpq.so.5). `curl` is only here for the
-# HEALTHCHECK below; remove it to shave a few MB if a healthcheck rewrite
-# ever lands.
+# `psycopg[binary]` (psycopg3) ships a self-contained binary wheel that
+# bundles its own libpq, so we no longer need the system `libpq5` package
+# that the legacy `psycopg2-binary` runtime wanted. `curl` is only here
+# for the HEALTHCHECK below; remove it to shave a few MB if a healthcheck
+# rewrite ever lands.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq5 curl \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 app
 

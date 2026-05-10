@@ -1,5 +1,24 @@
 # Releases
 
+## v1.0.1
+
+Supply-chain modernization: migrate the Postgres driver from
+`psycopg2-binary` (legacy, feature-frozen as of 2024) to `psycopg[binary]`
+(psycopg3, actively maintained, native-async, type-aware). Issue #85;
+mirrors openmv's audit finding #13. Also a pre-req for Phase 12 pgvector
+which prefers psycopg3.
+
+- `pyproject.toml` — `psycopg2-binary>=2.9.12` →
+  `psycopg[binary]>=3.1,<4`. Re-locked via `uv lock`.
+- `Dockerfile` runtime stage — `libpq5` removed from the apt install
+  list. `psycopg[binary]` ships a self-contained binary wheel that
+  bundles its own libpq, so the system package is no longer needed.
+  Trims a couple of MB from the runtime image.
+
+Django 5.2 supports both psycopg2 and psycopg3 transparently; no
+`DATABASES` config change needed. Django wraps driver exception
+classes in `django.db.utils.*`, so application code is unaffected.
+
 ## v1.0.0
 
 First tagged release of the revived `literature.learnche.org`. Captures the multi-PR 2026 modernization of the original 2010-era Django 1.11 / Python 2 codebase that was defunct mid-2010s. The site is now Django 5.2 LTS / Python 3.11 / Postgres / Docker on Hetzner, behind Caddy + Cloudflare, with a privacy-respecting view counter, a Postgres-FTS search backend, and S3 nightly backups.
