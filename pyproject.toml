@@ -13,7 +13,7 @@ dependencies = [
     # Per-account admin login throttling — issue #74. ``axes`` ships
     # its own migrations that ``manage.py migrate`` will pick up;
     # settings live in ``literature/settings/base.py`` (``AXES_*``).
-    "django-axes>=8.0",
+    "django-axes>=8.3.1",
 ]
 
 [dependency-groups]
