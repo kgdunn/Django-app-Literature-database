@@ -41,12 +41,12 @@ from __future__ import annotations
 import json
 import logging
 from collections import Counter, defaultdict
-from io import StringIO
 from pathlib import Path
 from typing import Any
 
-from django.core.management import call_command
+from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
+from django.core.management.color import no_style
 from django.db import connection, transaction
 
 from items.models import (
@@ -162,19 +162,20 @@ class Command(BaseCommand):
         # table's auto-increment sequence at 1. Without this bump, the
         # next insert from a real request collides on the PK and the
         # view 500s — see RELEASES.md v1.0.3 for the live-site postmortem.
-        sql_buffer = StringIO()
-        call_command(
-            "sqlsequencereset",
-            "items",
-            "pagehit",
-            "tagging",
-            stdout=sql_buffer,
-        )
-        sql = sql_buffer.getvalue()
-        if not sql.strip():
+        # We call the underlying ops API rather than `sqlsequencereset`
+        # because the management command wraps its output in BEGIN/COMMIT,
+        # which would commit any enclosing transaction (including
+        # pytest-django's per-test transaction) mid-flight.
+        style = no_style()
+        statements: list[str] = []
+        for app_label in ("items", "pagehit", "tagging"):
+            models = apps.get_app_config(app_label).get_models()
+            statements.extend(connection.ops.sequence_reset_sql(style, models))
+        if not statements:
             return
         with connection.cursor() as cursor:
-            cursor.execute(sql)
+            for stmt in statements:
+                cursor.execute(stmt)
 
     # -------- input loading ---------------------------------------
 
