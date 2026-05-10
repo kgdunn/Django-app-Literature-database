@@ -7,7 +7,7 @@
 #                               issue #70)
 #   docker-compose.yml         (postgres:16-alpine)
 #   docker-compose.prod.yml    (postgres:16-alpine)
-#   pyproject.toml + uv.lock   (Django, psycopg2-binary, gunicorn,
+#   pyproject.toml + uv.lock   (Django, psycopg[binary], gunicorn,
 #                               bleach, pdfplumber, django-axes, +
 #                               dev group). Issue #81 added the `pip`
 #                               ecosystem so transitive-CVE bumps no
