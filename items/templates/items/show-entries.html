@@ -5,7 +5,7 @@
 
 {% block content %}
 
-<p class="detail-topbar"><a href="{% url 'lit-main-page' %}">&larr; Back to home</a></p>
+<p class="lit-page-back"><a class="lit-page-back__link" href="{% url 'lit-main-page' %}">&larr; Back to home</a></p>
 
 <h3>{{ page_title }}{% if extra_info %} {{ extra_info }}{% endif %}</h3>
 
