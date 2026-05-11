@@ -44,8 +44,10 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
+from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.core.management.color import no_style
+from django.db import connection, transaction
 
 from items.models import (
     Author,
@@ -150,7 +152,30 @@ class Command(BaseCommand):
             else:
                 transaction.savepoint_commit(sid)
 
+        if not dry:
+            self._reset_sequences()
+
         self._print_summary(counts, dry=dry)
+
+    def _reset_sequences(self) -> None:
+        # Rows are inserted with explicit legacy pks, which leaves each
+        # table's auto-increment sequence at 1. Without this bump, the
+        # next insert from a real request collides on the PK and the
+        # view 500s — see RELEASES.md v1.0.3 for the live-site postmortem.
+        # We call the underlying ops API rather than `sqlsequencereset`
+        # because the management command wraps its output in BEGIN/COMMIT,
+        # which would commit any enclosing transaction (including
+        # pytest-django's per-test transaction) mid-flight.
+        style = no_style()
+        statements: list[str] = []
+        for app_label in ("items", "pagehit", "tagging"):
+            models = apps.get_app_config(app_label).get_models()
+            statements.extend(connection.ops.sequence_reset_sql(style, models))
+        if not statements:
+            return
+        with connection.cursor() as cursor:
+            for stmt in statements:
+                cursor.execute(stmt)
 
     # -------- input loading ---------------------------------------
 

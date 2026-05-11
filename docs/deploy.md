@@ -396,6 +396,58 @@ This is the same playbook run against the openmv stack on 2026-05-09, when its p
 
 The `data/media/`, `data/static/`, and `data/public/` host directories are **bind mounts**, not named volumes. They're addressed by host path, so they survive a project rename untouched. Only the named Postgres volume is project-scoped.
 
+## Troubleshooting
+
+Two failure modes from the 2026-05-10 incident, kept here so the symptoms map to the fix in one read.
+
+### Every page returns `403 Host not in allowlist`, but the Caddyfile looks innocent
+
+Symptoms: `curl -sI https://literature.learnche.org/` returns `HTTP/2 403` with body `Host not in allowlist` and a custom `x-deny-reason: host_not_allowed` header. **All sites Caddy fronts** (literature, openmv, factori.al) return the same response. Grepping `/etc/caddy/Caddyfile` for `allow` / `deny` / `host_not` finds nothing. `caddy adapt` of the on-disk file also has no match.
+
+Cause: a JSON config was hot-pushed to Caddy's admin API on `localhost:2019` (typically by an external tool like a metrics/telemetry sidecar). That config replaces the on-disk Caddyfile in the running daemon until the next restart. `systemctl reload caddy` re-reads the file and works for a moment, but if the pusher runs on a loop the deny config comes back inside ~60 seconds.
+
+Fix:
+
+```bash
+# 1. Lock the admin API off so no further pushes can land.
+sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak.$(date -u +%Y%m%d-%H%M%S)
+sudo sed -i '1i {\n    admin off\n}\n' /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile
+
+# 2. RESTART (not reload — reload uses the API we just disabled).
+sudo systemctl restart caddy
+
+# 3. Verify all four hostnames are 200 (not just /healthz; that route is special-cased
+#    in some deny configs, so it can stay green while the rest of the site burns).
+curl -sI https://literature.learnche.org/      | head -3
+curl -sI https://literature.learnche.org/about | head -3
+```
+
+After this, future Caddyfile edits need `sudo systemctl restart caddy` (not `reload`), since reload itself goes through the admin API. Drop the `{ admin off }` block once the rogue pusher has been identified and stopped.
+
+### Every DB-touching page returns 500 (but `/healthz` returns 200)
+
+Symptoms: `curl https://literature.learnche.org/healthz` returns `200 ok`, but `/`, `/about`, `/item/<id>/<slug>`, `/item/tag/<slug>/` all return 500 with the placeholder error page. Container logs show repeated `pages.views - ERROR - 500 from <ip> for request "<path>"`. Reproducing the request inside the container surfaces:
+
+```
+django.db.utils.IntegrityError: duplicate key value violates unique constraint "pagehit_pagehit_pkey"
+DETAIL:  Key (id)=(<n>) already exists.
+```
+
+Cause: `pages.healthz` is the only view that doesn't call `pagehit.views.create_hit`, so it stays green even when `PageHit.save()` is failing. The Postgres auto-increment sequence for `pagehit_pagehit.id` is stale — typically the fallout of a legacy import that wrote rows with explicit pks without bumping the sequence.
+
+Fix (one shot, idempotent):
+
+```bash
+cd /home/deploy/literature/repo
+sudo docker compose -f docker-compose.prod.yml exec -T web \
+    python manage.py sqlsequencereset pagehit items tagging \
+  | sudo docker compose -f docker-compose.prod.yml exec -T db \
+    sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+The `web` container has the psycopg driver but no `psql` binary, so the SQL is generated there and piped into the `db` container's `psql`. `import_legacy_dump` was patched in v1.0.3 to call this automatically at the end of every non-dry-run import — this manual command is only needed against pre-v1.0.3 imports.
+
 ## What's not in this runbook
 
 - Off-host backups to S3 — **Phase 11**. `bin/backup-literature.sh` + a cron entry.
