@@ -228,12 +228,12 @@ class TestItemDetail:
         assert "<dt>Abstract</dt>" not in body
 
     def test_top_pager_renders_before_title(self, client, journalpub_factory, author):
-        """v1.2.0: prev/next item navigation hoisted to the detail-page top
-        bar. The pager is rendered as pill-shaped chips alongside the
-        ``Back to home`` link, *above* the title — visitors no longer have
-        to scroll past the abstract + tags to step between items. Pins both
-        the markup hook and the position (pager appears before <h3>title).
-        """
+        """v1.2.1: detail-page top bar is a three-button row —
+        [← Previous] [Back to home] [Next →] — rendered above the
+        title so visitors don't have to scroll to step between items.
+        All three share the same chip styling so it's unambiguous
+        which is which (the v1.2.0 mixed-styling cut had users
+        clicking the wrong link)."""
         # Three consecutive items so the middle one has both prev + next
         # via Item.previous_item / Item.next_item (which look up pk±1).
         journalpub_factory(authors=[author], title="Item-before-target")
@@ -244,35 +244,42 @@ class TestItemDetail:
         assert r.status_code == 200
         body = r.content.decode("utf-8")
 
-        # Pager markup is present, separately classed from the back link.
-        assert 'class="detail-topbar__pager"' in body
-        assert "detail-topbar__pager-link" in body
+        # All three buttons render with distinct modifier classes.
+        assert "detail-topbar__btn--prev" in body
+        assert "detail-topbar__btn--home" in body
+        assert "detail-topbar__btn--next" in body
         assert "&larr; Previous" in body
+        assert "Back to home" in body
         assert "Next &rarr;" in body
 
-        # Position: pager appears *before* the item title, not after.
-        pager_pos = body.find("detail-topbar__pager")
+        # Position: the topbar appears *before* the item title.
+        topbar_pos = body.find('class="detail-topbar"')
         title_pos = body.find(f"<h3>{target.title}</h3>")
-        assert pager_pos != -1, "Pager markup missing"
+        assert topbar_pos != -1, "detail-topbar markup missing"
         assert title_pos != -1, "Title <h3> missing"
-        assert pager_pos < title_pos, (
-            f"Pager (at {pager_pos}) should render before the title "
-            f"(at {title_pos}); v1.2.0 hoisted it to the top bar."
-        )
+        assert topbar_pos < title_pos, f"Topbar (at {topbar_pos}) should render before the title (at {title_pos})."
 
-        # Old bottom-of-page nav is gone — no more `.lit-detail-nav`.
+        # Old bottom-of-page nav (pre-v1.2.0) and the v1.2.0 transitional
+        # selectors are both gone.
         assert "lit-detail-nav" not in body
+        assert "detail-topbar__pager" not in body
 
     def test_top_pager_suppressed_for_solo_item(self, client, journalpub_factory, author):
-        """When an item has no previous / next neighbour, the pager block
-        is suppressed entirely (no empty container, no orphaned ``aria-label``).
-        ``Back to home`` still renders on its own."""
+        """v1.2.1: when an item has no previous / next neighbour the
+        prev/next chips are suppressed, but a hidden ``__spacer`` fills
+        each missing grid cell so the centre ``Back to home`` button
+        stays geometrically centred."""
         target = journalpub_factory(authors=[author], title="Solo paper")
         r = client.get(f"/item/{target.pk}/{target.slug}")
         assert r.status_code == 200
         body = r.content.decode("utf-8")
-        assert "detail-topbar__pager" not in body
-        assert "detail-topbar__back" in body
+        # Home is always present.
+        assert "detail-topbar__btn--home" in body
+        # Prev/next chips are NOT rendered for a solo item.
+        assert "detail-topbar__btn--prev" not in body
+        assert "detail-topbar__btn--next" not in body
+        # Two spacers fill the prev + next grid cells so home stays centred.
+        assert body.count("detail-topbar__spacer") == 2
 
 
 @pytest.mark.django_db

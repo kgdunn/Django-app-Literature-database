@@ -200,43 +200,65 @@ p  { margin: 0 0 var(--sp-3) 0; }
 .theme-toggle[data-mode="dark"]  .theme-toggle__icon { --icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z'/></svg>"); }
 .theme-toggle[data-mode="auto"]  .theme-toggle__icon { --icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 3v18M3 12a9 9 0 0 1 9-9'/></svg>"); }
 
-/* Detail-page top bar: "Back to home" on the left, prev/next pager
-   on the right. Two visually-distinct affordances on a single row:
-   the back link is a plain mono link (matches the rest of the chrome),
-   while the pager renders as pill-shaped chips so a visitor doesn't
-   mistake them for the back-to-home link. */
+/* Detail-page top bar. v1.2.1 layout: three matching chip-buttons in
+   one row — [← Previous]  [Back to home]  [Next →] — so it's
+   unambiguous which is which. Earlier attempts (v1.2.0) put a plain
+   "Back to home" link on the left and pill chips for prev/next on
+   the right; visitors confused the three affordances and the row
+   wrapped on narrow viewports.
+   CSS grid with three columns (1fr / auto / 1fr) keeps "Back to home"
+   centered even when prev or next is missing (a `__spacer` empty
+   element fills the cell so the grid track count stays constant).
+   On mobile this still fits in one row because all three labels are
+   short and the chip padding scales with the existing tokens. */
 .detail-topbar {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-3);
-    margin: 0 0 var(--sp-4) 0;
-}
-.detail-topbar__back {
-    font-family: var(--font-mono);
-    font-size: var(--fs-sm);
-}
-.detail-topbar__pager {
-    display: flex;
     gap: var(--sp-2);
-    flex-wrap: wrap;
+    margin: 0 0 var(--sp-5) 0;
 }
-.detail-topbar__pager-link {
-    display: inline-flex; align-items: center;
-    padding: 4px var(--sp-3);
+.detail-topbar__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px var(--sp-3);
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
     color: var(--color-accent-soft-fg);
     background: var(--color-accent-soft);
-    border-radius: 999px;
-    line-height: 1.7;
-    transition: background var(--transition), color var(--transition);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    line-height: 1.4;
+    min-height: 36px;
+    white-space: nowrap;
+    transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
-.detail-topbar__pager-link:hover {
+.detail-topbar__btn:hover {
     background: var(--color-accent);
     color: var(--color-accent-fg);
+    border-color: var(--color-accent);
     text-decoration: none;
+}
+.detail-topbar__btn--prev { justify-self: start; }
+.detail-topbar__btn--next { justify-self: end; }
+.detail-topbar__btn--home {
+    justify-self: center;
+    /* Slightly weightier "home" affordance so the centre button reads
+       as the anchor of the group. */
+    font-weight: 600;
+    padding: 8px var(--sp-4);
+}
+/* When prev or next is missing, the spacer occupies its grid cell so
+   home stays centred without shifting. aria-hidden + zero visual
+   weight keep it out of the accessibility tree. */
+.detail-topbar__spacer { display: block; }
+@media (max-width: 420px) {
+    /* Very narrow viewports: shrink padding so all three chips fit on
+       one row without wrapping. Labels themselves stay readable. */
+    .detail-topbar { gap: 6px; }
+    .detail-topbar__btn { padding: 6px 10px; font-size: var(--fs-xs); }
+    .detail-topbar__btn--home { padding: 6px var(--sp-3); }
 }
 
 /* Tag chips */
@@ -451,42 +473,55 @@ p  { margin: 0 0 var(--sp-3) 0; }
 }
 
 /* Hero variant of the search bar — the homepage uses this so the
-   primary visitor action (search) is the visual focal point above
-   the explanatory subtitle and the portal grid. v1.2.0.
-   Differences from the base ``.lit-search``:
-   * larger input (more padding, body-size font) so the field reads as
-     the main feature of the page, not a footer afterthought;
-   * matching-height submit button with a stronger hover state;
-   * minimum-height pinning + accent-soft focus ring so the affordance
-     is unambiguous on cold-paint;
-   * subtle box-shadow lifts it off the page background. */
+   primary visitor action (search) is the obvious visual anchor.
+   v1.2.1 roughly doubles the v1.2.0 size after the first cut still
+   read as "regular input box". The input is now bigger than every
+   heading on the site so there is no ambiguity about what to do
+   next. */
 .lit-search--hero {
     align-items: stretch;
     margin: var(--sp-5) 0 var(--sp-3) 0;
     gap: var(--sp-3);
 }
 .lit-search--hero input[type="search"] {
-    padding: var(--sp-4) var(--sp-5);
-    font-size: 1.125rem;
-    line-height: 1.4;
+    padding: var(--sp-5) var(--sp-6);
+    font-size: 2rem;
+    line-height: 1.25;
     border-width: 2px;
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    min-height: 56px;
+    box-shadow: var(--shadow);
+    min-height: 96px;
 }
 .lit-search--hero input:focus {
     box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 .lit-search--hero .lit-search__submit {
-    padding: var(--sp-3) var(--sp-5);
-    font-size: 1rem;
+    padding: var(--sp-4) var(--sp-6);
+    font-size: 1.25rem;
     border-radius: var(--radius-lg);
-    min-width: 120px;
-    min-height: 56px;
-    box-shadow: var(--shadow-sm);
+    min-width: 140px;
+    min-height: 96px;
+    box-shadow: var(--shadow);
+}
+@media (max-width: 640px) {
+    /* Phone: keep the input prominent but back the font down a notch
+       so a long placeholder doesn't truncate before the visitor has a
+       chance to read it. Still substantially bigger than the rest of
+       the page. */
+    .lit-search--hero input[type="search"] {
+        font-size: 1.5rem;
+        padding: var(--sp-4) var(--sp-5);
+        min-height: 72px;
+    }
+    .lit-search--hero .lit-search__submit {
+        font-size: 1.125rem;
+        padding: var(--sp-3) var(--sp-5);
+        min-height: 72px;
+        min-width: 100px;
+    }
 }
 @media (max-width: 480px) {
-    /* Stack on small screens so neither the input nor the button
+    /* Stack the input + button on very narrow screens so neither
        gets squeezed below a usable tap target. */
     .lit-search--hero { flex-direction: column; }
     .lit-search--hero .lit-search__submit { width: 100%; }
