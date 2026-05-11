@@ -199,9 +199,7 @@ class TestImportLegacyDump:
         assert ag.author.last_name == "Einstein"
         assert ag.item_id == 47
         # And the M2M-via-through resolves the reverse:
-        assert "Einstein" in [
-            a.last_name for a in JournalPub.objects.get(pk=47).authors.all()
-        ]
+        assert "Einstein" in [a.last_name for a in JournalPub.objects.get(pk=47).authors.all()]
 
     def test_idempotent_rerun(self, legacy_dump):
         """Running the import twice is a no-op (same row counts, same

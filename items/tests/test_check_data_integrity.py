@@ -36,24 +36,18 @@ class TestCheckDataIntegrity:
         assert "[author-order-zero]" not in out
         assert "[no-authors]" not in out
 
-    def test_missing_pdf_warning(
-        self, journalpub_factory, author, db, settings, tmp_path
-    ):
+    def test_missing_pdf_warning(self, journalpub_factory, author, db, settings, tmp_path):
         """An item whose ``pdf_file`` points at a non-existent path on disk
         is flagged under ``[pdf-missing]``."""
         settings.MEDIA_ROOT = str(tmp_path)
-        item = journalpub_factory(
-            authors=[author], title="Ghost paper", pdf_file="literature/pdf/g/ghost.pdf"
-        )
+        item = journalpub_factory(authors=[author], title="Ghost paper", pdf_file="literature/pdf/g/ghost.pdf")
         out = run_check()
         assert "[pdf-missing]" in out
         assert f"item {item.id}" in out
         assert "Ghost paper" in out
         assert "literature/pdf/g/ghost.pdf" in out
 
-    def test_existing_pdf_no_warning(
-        self, journalpub_factory, author, settings, tmp_path
-    ):
+    def test_existing_pdf_no_warning(self, journalpub_factory, author, settings, tmp_path):
         """When the file genuinely exists at MEDIA_ROOT/<pdf_file>, no warning."""
         settings.MEDIA_ROOT = str(tmp_path)
         target_dir = tmp_path / "literature" / "pdf" / "h"
@@ -77,9 +71,7 @@ class TestCheckDataIntegrity:
         assert f"item {item.id}" in out
         assert "Bad ordering" in out
 
-    def test_single_author_with_order_zero_not_flagged(
-        self, journalpub_factory, author
-    ):
+    def test_single_author_with_order_zero_not_flagged(self, journalpub_factory, author):
         """Single-author items legitimately have order=0; no warning."""
         journalpub_factory(authors=[author])  # default order=0 for single
         out = run_check()

@@ -1,5 +1,18 @@
 # Releases
 
+## v1.1.1
+
+Raise the Python line-length convention from 88 (black's default) to 120 across the toolchain, and reformat the codebase to match. Pure mechanical change; no behavioural, schema, URL, or template impact. Motivated by repeated friction wrapping new test signatures and call sites to fit under 88 — at 120 most one-liners stay readable on modern displays and black stops fighting human-natural call composition.
+
+- **`pyproject.toml`** — new `[tool.black]` and `[tool.isort]` sections, each pinning `line-length = 120` / `line_length = 120`. Black auto-picks this up; isort needs both `--profile black` (other style defaults) **and** an explicit length override (the `black` profile would otherwise clamp it back to 88).
+- **`.flake8`** — `max-line-length` raised from 100 to 120 so the lint stage matches the formatters.
+- **`.pre-commit-config.yaml`** — isort hook gains `--line-length 120` after `--profile black` (CLI overrides config-file precedence); blacken-docs hook gains `--line-length 120`; black hook unchanged (it reads `[tool.black]` from `pyproject.toml`). Each change has a short rationale comment so a future maintainer doesn't "tidy" them away.
+- **`CLAUDE.md`** — Tooling section's flake8 bullet rewritten to call out the unified line-length policy across black + isort + blacken-docs + flake8, with the gotcha about the isort-profile-black clamp made explicit.
+- **Codebase reformat** — `black --line-length 120` and `isort --profile black --line-length 120` run across the repo (excluding `(items|tagging|pagehit)/migrations/` as the pre-commit `exclude:` already does). 19 source files reflowed; net diff -294 / +98 lines, almost entirely existing multi-line signatures and call sites collapsing to single lines under the new limit. Black's "magic trailing comma" rule kept any block that already had a trailing comma multi-line, so the per-arg-per-line shape stays everywhere it existed.
+- **`pyproject.toml`** / **`RELEASES.md`**: PATCH bump (infra-only tooling tweak + cosmetic reformat; no user-visible behaviour change), per the policy in `CLAUDE.md`.
+
+The companion change in the openmv stack (`kgdunn/Django-dataset-download-app`) is intentionally **not** part of this PR — the operator opted to keep the scope to literature for now. If we want to mirror the convention there later, it's a one-shot follow-up of the same shape.
+
 ## v1.1.0
 
 Show article abstracts on the detail page by default. Previously, every

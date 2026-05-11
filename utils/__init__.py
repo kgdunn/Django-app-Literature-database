@@ -51,9 +51,7 @@ def paginated_queryset(request, queryset):
         return paginator.page(paginator.num_pages)
 
 
-def unique_slugify(
-    instance, value, slug_field_name="slug", queryset=None, slug_separator="-"
-):
+def unique_slugify(instance, value, slug_field_name="slug", queryset=None, slug_separator="-"):
     """
     Calculates and stores a unique slug of ``value`` for an instance.
 

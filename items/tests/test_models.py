@@ -14,9 +14,7 @@ class TestAuthorFullName:
         assert str(a) == "Einstein, Albert"
 
     def test_full_name_with_middle_initials(self):
-        a = Author.objects.create(
-            first_name="John", middle_initials="R.", last_name="Smith"
-        )
+        a = Author.objects.create(first_name="John", middle_initials="R.", last_name="Smith")
         assert a.full_name == "John R. Smith"
         assert str(a) == "Smith, John R."
 
@@ -181,12 +179,8 @@ class TestPdfFileValidator:
         from items.models import Item
 
         field = Item._meta.get_field("pdf_file")
-        pdf_validators = [
-            v for v in field.validators if isinstance(v, FileExtensionValidator)
-        ]
-        assert (
-            len(pdf_validators) == 1
-        ), "Item.pdf_file should carry exactly one FileExtensionValidator"
+        pdf_validators = [v for v in field.validators if isinstance(v, FileExtensionValidator)]
+        assert len(pdf_validators) == 1, "Item.pdf_file should carry exactly one FileExtensionValidator"
         assert pdf_validators[0].allowed_extensions == ["pdf"]
 
     def test_validator_rejects_docx(self):
@@ -272,22 +266,16 @@ class TestJournalUniqueName:
     def test_distinct_names_can_coexist(self, db):
         from items.models import Journal
 
-        Journal.objects.create(
-            name="Analytica Chimica Acta", website="https://a.example"
-        )
+        Journal.objects.create(name="Analytica Chimica Acta", website="https://a.example")
         Journal.objects.create(name="Chemometrics Journal", website="https://b.example")
         assert Journal.objects.count() == 2
 
     def test_case_insensitive_duplicate_rejected(self, db):
         from items.models import Journal
 
-        Journal.objects.create(
-            name="Analytica Chimica Acta", website="https://a.example"
-        )
+        Journal.objects.create(name="Analytica Chimica Acta", website="https://a.example")
         with pytest.raises(IntegrityError):
-            Journal.objects.create(
-                name="analytica chimica acta", website="https://b.example"
-            )
+            Journal.objects.create(name="analytica chimica acta", website="https://b.example")
 
 
 @pytest.mark.django_db
@@ -304,22 +292,16 @@ class TestDoiLinkNormalisation:
         item = journalpub_factory(authors=[author], doi_link="doi.org/10.1234/foo")
         assert item.doi_link == "https://doi.org/10.1234/foo"
 
-    def test_dx_doi_org_without_scheme_gets_https_prefix(
-        self, journalpub_factory, author
-    ):
+    def test_dx_doi_org_without_scheme_gets_https_prefix(self, journalpub_factory, author):
         item = journalpub_factory(authors=[author], doi_link="dx.doi.org/10.1234/foo")
         assert item.doi_link == "https://dx.doi.org/10.1234/foo"
 
     def test_full_https_url_preserved(self, journalpub_factory, author):
-        item = journalpub_factory(
-            authors=[author], doi_link="https://doi.org/10.1234/foo"
-        )
+        item = journalpub_factory(authors=[author], doi_link="https://doi.org/10.1234/foo")
         assert item.doi_link == "https://doi.org/10.1234/foo"
 
     def test_full_http_url_preserved(self, journalpub_factory, author):
-        item = journalpub_factory(
-            authors=[author], doi_link="http://doi.org/10.1234/foo"
-        )
+        item = journalpub_factory(authors=[author], doi_link="http://doi.org/10.1234/foo")
         assert item.doi_link == "http://doi.org/10.1234/foo"
 
     def test_whitespace_stripped(self, journalpub_factory, author):
@@ -351,9 +333,7 @@ class TestInCollection:
     inheritance off Item. Same shape as Book / JournalPub / Thesis /
     ConferenceProceeding."""
 
-    def test_full_citation_includes_chapter_and_book_titles(
-        self, incollection_factory, author
-    ):
+    def test_full_citation_includes_chapter_and_book_titles(self, incollection_factory, author):
         chap = incollection_factory(authors=[author], title="Chapter X")
         cit = chap.full_citation()
         # Chapter title (in quotes) and book title (italicised) both appear.
@@ -361,17 +341,13 @@ class TestInCollection:
         assert "Multivariate Statistical Methods for Process Modelling" in cit
         assert "<i>Multivariate Statistical Methods for Process Modelling</i>" in cit
 
-    def test_full_citation_renders_eds_suffix_for_editors(
-        self, incollection_factory, two_authors
-    ):
+    def test_full_citation_renders_eds_suffix_for_editors(self, incollection_factory, two_authors):
         chap = incollection_factory(authors=None, editors=two_authors)
         cit = chap.full_citation()
         assert "(eds.)" in cit
         assert "in " in cit  # "in <editors> (eds.), <book title>"
 
-    def test_full_citation_singular_ed_for_one_editor(
-        self, incollection_factory, author
-    ):
+    def test_full_citation_singular_ed_for_one_editor(self, incollection_factory, author):
         chap = incollection_factory(authors=None, editors=[author])
         cit = chap.full_citation()
         assert "(ed.)" in cit
@@ -423,9 +399,7 @@ class TestItemSlugAndCitation:
         item = journalpub_factory(title="On the Fourier transform")
         assert item.slug == "on-the-fourier-transform"
 
-    def test_full_citation_includes_title_year_journal(
-        self, journalpub_factory, author
-    ):
+    def test_full_citation_includes_title_year_journal(self, journalpub_factory, author):
         item = journalpub_factory(
             authors=[author],
             title="A study",
@@ -445,7 +419,5 @@ class TestItemSlugAndCitation:
         no_extra = journalpub_factory(title="Without extra")
         assert no_extra.has_extra is False
 
-        with_extra = journalpub_factory(
-            title="With extra", other_search_text="full PDF text here"
-        )
+        with_extra = journalpub_factory(title="With extra", other_search_text="full PDF text here")
         assert with_extra.has_extra is True

@@ -26,9 +26,7 @@ class TestAdminLoginLockout:
 
     def test_six_failed_attempts_then_blocked_with_correct_password(self, client):
         User = get_user_model()
-        User.objects.create_user(
-            username="admin", password="correct-horse-battery-staple", is_staff=True
-        )
+        User.objects.create_user(username="admin", password="correct-horse-battery-staple", is_staff=True)
 
         # 5 wrong-password attempts — each one is a normal login failure
         # (200 with the form re-rendered showing an error).
@@ -51,9 +49,7 @@ class TestAdminLoginLockout:
         """Sanity check: the lockout doesn't fire too early — fewer than
         AXES_FAILURE_LIMIT failures still let a valid login through."""
         User = get_user_model()
-        User.objects.create_user(
-            username="admin", password="correct-horse-battery-staple", is_staff=True
-        )
+        User.objects.create_user(username="admin", password="correct-horse-battery-staple", is_staff=True)
 
         # 3 wrong-password attempts.
         for _ in range(3):

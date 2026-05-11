@@ -55,9 +55,7 @@ _db_keys = ["POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD", "SQL_HOST", "SQ
 _db_settings = {}
 for _key in _db_keys:
     _value = env(_key)
-    assert (
-        _value is not None
-    ), f"{_key} must be set via environment variable or .env file"
+    assert _value is not None, f"{_key} must be set via environment variable or .env file"
     _db_settings[_key] = _value
 
 DATABASES = {
