@@ -1,11 +1,6 @@
 import logging
 
-from django.contrib.postgres.search import (
-    SearchQuery,
-    SearchRank,
-    SearchVector,
-    TrigramSimilarity,
-)
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector, TrigramSimilarity
 from django.db.models import Count, Max, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -26,9 +21,7 @@ def front_page(request):
     that year. ORDER BY year DESC so the list is human-readable.
     """
     create_hit(request, "lit-main-page")
-    years = (
-        Item.objects.values("year").annotate(count=Count("id")).order_by("-year")[:15]
-    )
+    years = Item.objects.values("year").annotate(count=Count("id")).order_by("-year")[:15]
     return render(
         request,
         "pages/front-page.html",
@@ -144,12 +137,8 @@ def search(request):
         + SearchVector("other_search_text", weight="C", config="english")
         + SearchVector("journalpub__journal__name", weight="B", config="english")
         + SearchVector("book__isbn", weight="C", config="english")
-        + SearchVector(
-            "conferenceproceeding__conference_name", weight="B", config="english"
-        )
-        + SearchVector(
-            "conferenceproceeding__organization", weight="C", config="english"
-        )
+        + SearchVector("conferenceproceeding__conference_name", weight="B", config="english")
+        + SearchVector("conferenceproceeding__organization", weight="C", config="english")
         + SearchVector("conferenceproceeding__location", weight="C", config="english")
         + SearchVector("incollection__book_title", weight="B", config="english")
     )

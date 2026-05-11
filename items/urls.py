@@ -24,9 +24,7 @@ urlpatterns = [
     # NOTE: Phase 5 removed the public PDF download URL (`download.pdf`)
     # because all PDFs are copyright-restricted. PDFs are admin-only
     # storage, consumed by `__extract_extra__` for FTS text extraction.
-    re_path(
-        r"^(?P<item_id>\d+)+(/)?(?P<slug>[-\w]+)?(/)?", view_item, name="lit-view-item"
-    ),
+    re_path(r"^(?P<item_id>\d+)+(/)?(?P<slug>[-\w]+)?(/)?", view_item, name="lit-view-item"),
     # Extract PDF text to add to the Item object (admin-only).
     re_path(
         r"__extract_extra__/(?P<item_id>\d+)",

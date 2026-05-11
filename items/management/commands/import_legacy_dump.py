@@ -116,22 +116,18 @@ class Command(BaseCommand):
         parser.add_argument(
             "--file",
             required=True,
-            help="Path to the dumpdata JSON file (extracted from the legacy "
-            "backup tarball).",
+            help="Path to the dumpdata JSON file (extracted from the legacy " "backup tarball).",
         )
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Parse the dump and report what would change, without "
-            "writing to the database.",
+            help="Parse the dump and report what would change, without " "writing to the database.",
         )
 
     def handle(self, *args, **options):
         records = self._load_dump(Path(options["file"]))
         by_model = self._index_by_model(records)
-        item_parents: dict[int, dict[str, Any]] = {
-            r["pk"]: r["fields"] for r in by_model.get("items.item", [])
-        }
+        item_parents: dict[int, dict[str, Any]] = {r["pk"]: r["fields"] for r in by_model.get("items.item", [])}
 
         dry = options["dry_run"]
         counts: Counter[str] = Counter()
@@ -188,15 +184,10 @@ class Command(BaseCommand):
         except json.JSONDecodeError as e:
             raise CommandError(f"Could not parse {path} as JSON: {e}") from e
         if not isinstance(records, list):
-            raise CommandError(
-                f"Expected a JSON array (Django dumpdata format); got "
-                f"{type(records).__name__}."
-            )
+            raise CommandError(f"Expected a JSON array (Django dumpdata format); got " f"{type(records).__name__}.")
         return records
 
-    def _index_by_model(
-        self, records: list[dict[str, Any]]
-    ) -> dict[str, list[dict[str, Any]]]:
+    def _index_by_model(self, records: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
         by_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for r in records:
             model = r.get("model")
@@ -258,11 +249,7 @@ class Command(BaseCommand):
                 )
 
     def _warn_orphan_subclass(self, subclass_label: str, pk: int) -> None:
-        self.stdout.write(
-            self.style.WARNING(
-                f"  [skip] {subclass_label} pk={pk}: no matching items.item record"
-            )
-        )
+        self.stdout.write(self.style.WARNING(f"  [skip] {subclass_label} pk={pk}: no matching items.item record"))
 
     def _apply_item_tags(
         self,
@@ -298,9 +285,7 @@ class Command(BaseCommand):
         for label in _SUBCLASSES_WITH_AUTHOR_M2M:
             m2m_names = _M2M_FIELDS.get(label, ())
             for r in by_model.get(label, []):
-                self._apply_one_subclass_record_m2ms(
-                    label, r, m2m_names, dry=dry, counts=counts
-                )
+                self._apply_one_subclass_record_m2ms(label, r, m2m_names, dry=dry, counts=counts)
 
     def _apply_one_subclass_record_m2ms(
         self,
@@ -366,9 +351,7 @@ class Command(BaseCommand):
 
     # -------- per-record helpers ----------------------------------
 
-    def _merge_item_fields(
-        self, parent_fields: dict[str, Any], subclass_fields: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _merge_item_fields(self, parent_fields: dict[str, Any], subclass_fields: dict[str, Any]) -> dict[str, Any]:
         """Merge parent ``items.item`` fields with subclass fields. The
         subclass record's ``item_ptr`` is dropped (Django sets that
         automatically when we save the subclass with ``pk=<legacy id>``).
@@ -392,9 +375,7 @@ class Command(BaseCommand):
             merged["pdf_file"] = merged["pdf_file"].removeprefix("media/")
         return merged
 
-    def _strip_dropped(
-        self, model_label: str, fields: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _strip_dropped(self, model_label: str, fields: dict[str, Any]) -> dict[str, Any]:
         dropped = _DROPPED_FIELDS.get(model_label, set())
         return {k: v for k, v in fields.items() if k not in dropped}
 

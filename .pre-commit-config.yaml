@@ -39,17 +39,21 @@ repos:
     rev: 5.13.2
     hooks:
       - id: isort
-        args: ["--profile", "black"]
+        # `--profile black` clamps line_length to black's default (88).
+        # Pass --line-length explicitly so isort matches our 120-char convention.
+        args: ["--profile", "black", "--line-length", "120"]
 
   - repo: https://github.com/psf/black
     rev: 24.10.0
     hooks:
       - id: black
+        # Reads [tool.black] line-length=120 from pyproject.toml.
 
   - repo: https://github.com/asottile/blacken-docs
     rev: 1.19.1
     hooks:
       - id: blacken-docs
+        args: ["--line-length", "120"]
 
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.1

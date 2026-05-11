@@ -8,16 +8,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.defaultfilters import slugify
 
-from items.models import (
-    Author,
-    Book,
-    ConferenceProceeding,
-    InCollection,
-    Item,
-    Journal,
-    JournalPub,
-    Thesis,
-)
+from items.models import Author, Book, ConferenceProceeding, InCollection, Item, Journal, JournalPub, Thesis
 from pagehit.views import create_hit
 from pages.views import page_404_error
 from tagging.models import Tag
@@ -45,12 +36,7 @@ def _year_count_series(items_qs):
     ``(year, count)`` tuples ordered by year ascending — empty list if
     no items.
     """
-    return list(
-        items_qs.values("year")
-        .annotate(count=Count("id"))
-        .order_by("year")
-        .values_list("year", "count")
-    )
+    return list(items_qs.values("year").annotate(count=Count("id")).order_by("year").values_list("year", "count"))
 
 
 def _get_related_items(item, limit=5):
@@ -100,9 +86,7 @@ def _adjacent_years_with_items(current_year):
     on ``/item/pub-by-year/<year>/``. Returns ``(prev_year, next_year)``
     where either side may be ``None`` if no such year exists.
     """
-    other_years = list(
-        Item.objects.values_list("year", flat=True).distinct().order_by("year")
-    )
+    other_years = list(Item.objects.values_list("year", flat=True).distinct().order_by("year"))
     prev_year = max((y for y in other_years if y < current_year), default=None)
     next_year = min((y for y in other_years if y > current_year), default=None)
     return prev_year, next_year
@@ -132,9 +116,7 @@ def get_items_or_404(view_function):
 
         # Is the URL not the canonical URL for the item? Redirect the user.
         if slug is None or the_item.slug != slug:
-            return redirect(
-                "/".join(["/item", str(item_id), the_item.slug]), permanent=True
-            )
+            return redirect("/".join(["/item", str(item_id), the_item.slug]), permanent=True)
 
         if the_item.item_type == "conferenceproc":
             the_item = ConferenceProceeding.objects.get(id=item_id)
@@ -219,9 +201,7 @@ def show_items(request, what_view="", extra_info=""):
     elif what_view == "author":
         author = Author.objects.filter(slug=extra_info)
         if len(author) == 0:
-            return page_404_error(
-                request, 'There are no publications by "%s"' % extra_info
-            )
+            return page_404_error(request, 'There are no publications by "%s"' % extra_info)
 
         _track_hit(request, "lit-author-page", hit_slug)
         author_items = Item.objects.all().filter(authors__slug=extra_info)
@@ -233,9 +213,7 @@ def show_items(request, what_view="", extra_info=""):
     elif what_view == "journal":
         journal = Journal.objects.filter(slug=extra_info)
         if len(journal) == 0:
-            return page_404_error(
-                request, 'There are no publications in "%s"' % extra_info
-            )
+            return page_404_error(request, 'There are no publications in "%s"' % extra_info)
 
         _track_hit(request, "lit-journal-page", hit_slug)
         journal_items = JournalPub.objects.all().filter(journal=journal[0])

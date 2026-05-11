@@ -2,16 +2,7 @@
 
 import pytest
 
-from items.models import (
-    Author,
-    AuthorGroup,
-    Book,
-    InCollection,
-    Journal,
-    JournalPub,
-    Publisher,
-    School,
-)
+from items.models import Author, AuthorGroup, Book, InCollection, Journal, JournalPub, Publisher, School
 from tagging.models import Tag
 
 

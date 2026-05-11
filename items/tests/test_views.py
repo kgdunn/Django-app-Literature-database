@@ -154,9 +154,7 @@ class TestItemDetail:
         # Book title is italicised in the citation.
         assert "Multivariate Statistical Methods for Process Modelling" in body
 
-    def test_related_items_panel_shows_overlapping_titles(
-        self, client, journalpub_factory, author
-    ):
+    def test_related_items_panel_shows_overlapping_titles(self, client, journalpub_factory, author):
         """Issue #36: the detail page surfaces a small list of items
         most similar (by FTS title+abstract overlap) to the current
         one. A paper with overlapping subject vocabulary should appear;
@@ -190,13 +188,9 @@ class TestItemDetail:
         # in any item-detail page via the <title>, the <h3> heading,
         # and full_citation, none of which are the related list.
 
-    def test_related_items_panel_omitted_when_no_overlap(
-        self, client, journalpub_factory, author
-    ):
+    def test_related_items_panel_omitted_when_no_overlap(self, client, journalpub_factory, author):
         """No overlap with any other item → no panel rendered."""
-        target = journalpub_factory(
-            authors=[author], title="Solo paper on a unique topic"
-        )
+        target = journalpub_factory(authors=[author], title="Solo paper on a unique topic")
         # Single item in the DB → nothing else to relate to.
         r = client.get(f"/item/{target.pk}/{target.slug}")
         assert r.status_code == 200
@@ -219,9 +213,7 @@ class TestItemDetail:
         assert "<dt>Abstract</dt>" in body
         assert "Latent-variable methods for batch monitoring." in body
 
-    def test_abstract_section_omitted_when_empty(
-        self, client, journalpub_factory, author
-    ):
+    def test_abstract_section_omitted_when_empty(self, client, journalpub_factory, author):
         """v1.1.0: ``Item.abstract`` is ``blank=True``; if empty, the
         template skips the <dt>Abstract</dt> / <dd> block entirely (no
         empty header, no empty <dd>)."""
@@ -328,9 +320,7 @@ class TestSearch:
         from items.models import Author, AuthorGroup, Journal, JournalPub
 
         author = Author.objects.create(first_name="Svante", last_name="Wold")
-        analytica = Journal.objects.create(
-            name="Analytica Chimica Acta", website="https://example.com/aca"
-        )
+        analytica = Journal.objects.create(name="Analytica Chimica Acta", website="https://example.com/aca")
         # Title and abstract intentionally don't contain "Analytica".
         pub = JournalPub.objects.create(
             title="Calibration in chemometrics",
@@ -347,9 +337,7 @@ class TestSearch:
 
     def test_isbn_in_search_vector(self, client, book_factory, author):
         """Issue #33: search by ISBN returns the matching Book."""
-        book_factory(
-            authors=[author], title="An obscure-titled book", isbn="9781234567890"
-        )
+        book_factory(authors=[author], title="An obscure-titled book", isbn="9781234567890")
         r = client.get("/search?q=9781234567890")
         assert r.status_code == 200
         assert b"An obscure-titled book" in r.content
@@ -388,9 +376,7 @@ class TestSearch:
         assert r.status_code == 200
         assert b"Some unique-titled paper" in r.content
 
-    def test_multi_author_item_not_duplicated_in_results(
-        self, client, journalpub_factory, three_authors
-    ):
+    def test_multi_author_item_not_duplicated_in_results(self, client, journalpub_factory, three_authors):
         """Regression: a multi-author item used to render 2–3× in the
         search results because the ``TrigramSimilarity`` annotation
         joins through ``AuthorGroup → Author`` and produces one row per
@@ -415,9 +401,7 @@ class TestSearch:
         occurrences = body.count(target_link)
         assert occurrences == 1, f"Item appeared {occurrences}× in results (expected 1)"
 
-    def test_exact_title_ranks_above_distractors(
-        self, client, journalpub_factory, author
-    ):
+    def test_exact_title_ranks_above_distractors(self, client, journalpub_factory, author):
         """Issue #15 follow-up: on the live site, an exact-title query
         returns the matching item but it ranked ~12th because the default
         SearchRank (Postgres ``ts_rank``) is frequency-based. A paper
@@ -444,8 +428,7 @@ class TestSearch:
         # in its title. Without cover-density ranking, ts_rank's
         # frequency boost pushes these above the target.
         distractor_body = (
-            "monitoring monitoring monitoring process process diagnosis "
-            "diagnosis multi block multi block. " * 30
+            "monitoring monitoring monitoring process process diagnosis " "diagnosis multi block multi block. " * 30
         )
         for i in range(11):
             journalpub_factory(
@@ -476,8 +459,7 @@ class TestSearch:
         first_distractor_pos = r.content.find(b"Unrelated paper")
         assert target_pos != -1, "Target not present in results at all"
         assert first_distractor_pos == -1 or target_pos < first_distractor_pos, (
-            f"Target ranked below distractors: target at {target_pos}, "
-            f"first distractor at {first_distractor_pos}"
+            f"Target ranked below distractors: target at {target_pos}, " f"first distractor at {first_distractor_pos}"
         )
         assert target.title.encode() in r.content
 
@@ -490,9 +472,7 @@ class TestNoPdfDownloadEndpoint:
         with pytest.raises(NoReverseMatch):
             reverse("lit-download-pdf", args=[1])
 
-    def test_legacy_download_pdf_path_redirects_to_canonical(
-        self, client, journalpub_factory, author
-    ):
+    def test_legacy_download_pdf_path_redirects_to_canonical(self, client, journalpub_factory, author):
         """Stale links like `/item/1/download.pdf` now match the catch-all
         `lit-view-item` regex with slug='download' and 301-redirect to the
         canonical detail URL — no PDF served at any point.
@@ -520,9 +500,7 @@ class TestItemList:
         assert b"Y2024" in r.content
         assert b"Y2023" not in r.content
 
-    def test_pub_by_year_renders_prev_next_links(
-        self, client, journalpub_factory, author
-    ):
+    def test_pub_by_year_renders_prev_next_links(self, client, journalpub_factory, author):
         # Issue #17: closest neighbouring years that have items get
         # prev/next links above the entries list.
         journalpub_factory(authors=[author], year=2008)
@@ -571,9 +549,7 @@ class TestItemList:
         assert "echarts.min.js" in body
         assert 'integrity="sha384-' in body
 
-    def test_tag_page_omits_sparkline_when_single_year(
-        self, client, journalpub_factory, author, tag
-    ):
+    def test_tag_page_omits_sparkline_when_single_year(self, client, journalpub_factory, author, tag):
         # Only one year of data → wrapper suppressed via the template's
         # ``{% if sparkline_data|length > 1 %}`` guard. The whole
         # ECharts script tag is suppressed too — non-sparkline pages
@@ -594,9 +570,7 @@ class TestItemList:
         assert b"Has Fourier tag" in r.content
         assert b"No tag" not in r.content
 
-    def test_tag_results_renders_description_block(
-        self, client, journalpub_factory, author, db
-    ):
+    def test_tag_results_renders_description_block(self, client, journalpub_factory, author, db):
         """Issue #12: a tag's description (if set) renders as a small
         block at the top of the per-tag results page."""
         from tagging.models import Tag
@@ -614,9 +588,7 @@ class TestItemList:
         # which lives in base.html's inline <style> on every page.
         assert b'<div class="lit-tag-description">' in r.content
 
-    def test_tag_results_omits_description_block_when_blank(
-        self, client, journalpub_factory, author, tag
-    ):
+    def test_tag_results_omits_description_block_when_blank(self, client, journalpub_factory, author, tag):
         """No description set → no rendered block; just the entries list."""
         journalpub_factory(authors=[author], tags=[tag])
         r = client.get(f"/item/tag/{tag.slug}/")
@@ -629,9 +601,7 @@ class TestTagCloud:
     """Issue #34 + #38 + #12: tag-cloud rendering on the homepage and the
     /item/show/all-tags/ page."""
 
-    def test_cloud_anchor_carries_description_as_title(
-        self, client, journalpub_factory, author, db
-    ):
+    def test_cloud_anchor_carries_description_as_title(self, client, journalpub_factory, author, db):
         """Hover-tooltip via the standard ``title=`` attr (#12).
         Falls back to the tag's name when no description is set so
         the hover is never empty."""
@@ -647,9 +617,7 @@ class TestTagCloud:
         assert r.status_code == 200
         assert b'title="Light-matter interaction techniques."' in r.content
 
-    def test_cloud_anchor_renders_count_superscript(
-        self, client, journalpub_factory, author, db
-    ):
+    def test_cloud_anchor_renders_count_superscript(self, client, journalpub_factory, author, db):
         """Per-tag entry count rendered as a small superscript next to
         the name (#38). Three items tagged → ``<sup ...>3</sup>``."""
         from tagging.models import Tag
@@ -705,9 +673,7 @@ class TestPageHitTracking:
         assert r.status_code == 200
         assert PageHit.objects.filter(item="lit-show-all-tags").count() == 1
 
-    def test_tag_page_records_hit_with_slug(
-        self, client, journalpub_factory, author, tag
-    ):
+    def test_tag_page_records_hit_with_slug(self, client, journalpub_factory, author, tag):
         from pagehit.models import PageHit
 
         journalpub_factory(authors=[author], tags=[tag])
@@ -717,9 +683,7 @@ class TestPageHitTracking:
         assert rows.count() == 1
         assert rows.first().extra_info == tag.slug
 
-    def test_author_page_records_hit_with_slug(
-        self, client, journalpub_factory, author
-    ):
+    def test_author_page_records_hit_with_slug(self, client, journalpub_factory, author):
         from pagehit.models import PageHit
 
         journalpub_factory(authors=[author])
@@ -739,9 +703,7 @@ class TestPageHitTracking:
         assert rows.count() == 1
         assert rows.first().extra_info == "2024"
 
-    def test_journal_page_records_hit_with_slug(
-        self, client, journalpub_factory, author
-    ):
+    def test_journal_page_records_hit_with_slug(self, client, journalpub_factory, author):
         from pagehit.models import PageHit
 
         # ``journal`` fixture is auto-injected via journalpub_factory.
@@ -752,9 +714,7 @@ class TestPageHitTracking:
         assert rows.count() == 1
         assert rows.first().extra_info == pub.journal.slug
 
-    def test_paginated_request_does_not_double_count(
-        self, client, journalpub_factory, author, tag
-    ):
+    def test_paginated_request_does_not_double_count(self, client, journalpub_factory, author, tag):
         """Mirror of pages.search's existing skip — clicking page 2 of a
         landing page is the same visit, not a new one."""
         from pagehit.models import PageHit

@@ -27,9 +27,7 @@ def validate_doi_or_url(value):
     # Common DOI shorthands the admin might paste; normalised at save.
     if value.startswith(("doi.org/", "dx.doi.org/", "10.")):
         return
-    raise ValidationError(
-        "Enter a full URL (https://...) or a DOI starting with '10.'."
-    )
+    raise ValidationError("Enter a full URL (https://...) or a DOI starting with '10.'.")
 
 
 # Custom manager for the items
@@ -72,9 +70,7 @@ class Author(models.Model):
 
     def get_absolute_url(self):
         """Create a URL to display all publications by this author"""
-        return reverse(
-            "lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug}
-        )
+        return reverse("lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug})
 
     def save(self, *args, **kwargs):
         """
@@ -138,9 +134,7 @@ class Journal(models.Model):
         """
         Create a URL to display all publications from this journal
         """
-        return reverse(
-            "lit-show-items", kwargs={"what_view": "journal", "extra_info": self.slug}
-        )
+        return reverse("lit-show-items", kwargs={"what_view": "journal", "extra_info": self.slug})
 
     @property
     def as_url(self):
@@ -316,11 +310,7 @@ class Item(models.Model):
         auth_list = self.authors.all().order_by("authorgroup__order")
         authors = []
         for auth in auth_list:
-            author = (
-                unicodedata.normalize("NFKD", auth.last_name)
-                .encode("ascii", "ignore")
-                .decode("ascii")
-            )
+            author = unicodedata.normalize("NFKD", auth.last_name).encode("ascii", "ignore").decode("ascii")
             author = re.sub(r"[^\w\s-]", "", author).strip()
             authors.append(author)
 
@@ -368,9 +358,7 @@ class Item(models.Model):
         2: John R. Smith and P. Q. Weston
         3: R. W. Joyce, P. J. Smith and T. Y. Smythe
         """
-        return self._format_authors_html(
-            self.authors.all().order_by("authorgroup__order")
-        )
+        return self._format_authors_html(self.authors.all().order_by("authorgroup__order"))
 
     @staticmethod
     def _format_authors_html(authors):
@@ -533,9 +521,7 @@ class ConferenceProceeding(Item):
     page_end = models.CharField(max_length=10, blank=True, null=True)
     organization = models.CharField(blank=True, null=True, max_length=200)
     location = models.CharField(blank=True, null=True, max_length=200)
-    publisher = models.ForeignKey(
-        Publisher, on_delete=models.CASCADE, blank=True, null=True
-    )
+    publisher = models.ForeignKey(Publisher, on_delete=models.CASCADE, blank=True, null=True)
 
     @property
     def full_editor_listing(self):
@@ -616,9 +602,7 @@ class InCollection(Item):
         help_text="Title of the book containing this chapter.",
     )
     editors = models.ManyToManyField(Author, blank=True)
-    publisher = models.ForeignKey(
-        Publisher, on_delete=models.CASCADE, blank=True, null=True
-    )
+    publisher = models.ForeignKey(Publisher, on_delete=models.CASCADE, blank=True, null=True)
     edition = models.CharField(max_length=100, blank=True, null=True)
     isbn = models.CharField(max_length=20, blank=True, null=True, verbose_name="ISBN")
     page_start = models.CharField(max_length=10, blank=True, null=True)

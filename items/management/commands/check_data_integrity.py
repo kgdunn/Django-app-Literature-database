@@ -44,9 +44,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, verbose=False, **options):
         started = datetime.now(timezone.utc)
-        items = Item.objects.all().only(
-            "id", "title", "pdf_file"
-        )  # author_order pulled separately
+        items = Item.objects.all().only("id", "title", "pdf_file")  # author_order pulled separately
         total = items.count()
 
         media_root = settings.MEDIA_ROOT
@@ -54,10 +52,7 @@ class Command(BaseCommand):
         warnings_order = []
         warnings_no_authors = []
 
-        self.stdout.write(
-            "[check_data_integrity] %s starting; items=%d"
-            % (started.isoformat(), total)
-        )
+        self.stdout.write("[check_data_integrity] %s starting; items=%d" % (started.isoformat(), total))
 
         for item in items.iterator():
             if verbose:
@@ -85,17 +80,13 @@ class Command(BaseCommand):
             self.stdout.write("")
             self.stdout.write("[pdf-missing]")
             for pk, title, path in warnings_pdf:
-                self.stdout.write(
-                    "  item %d %r: pdf_file=%s — file not on disk" % (pk, title, path)
-                )
+                self.stdout.write("  item %d %r: pdf_file=%s — file not on disk" % (pk, title, path))
 
         if warnings_order:
             self.stdout.write("")
             self.stdout.write("[author-order-zero]")
             for pk, title, n in warnings_order:
-                self.stdout.write(
-                    "  item %d %r: all %d authors have order=0" % (pk, title, n)
-                )
+                self.stdout.write("  item %d %r: all %d authors have order=0" % (pk, title, n))
 
         if warnings_no_authors:
             self.stdout.write("")

@@ -55,9 +55,7 @@ def create_hit(request, item, extra_info=None):
     if isinstance(item, int):
         page_hit = PageHit(item="item", item_pk=item, extra_info=extra_info)
     elif isinstance(item, str):
-        page_hit = PageHit(
-            item=item, item_pk=static_items.get(item, 0), extra_info=extra_info
-        )
+        page_hit = PageHit(item=item, item_pk=static_items.get(item, 0), extra_info=extra_info)
     else:
         return  # unknown item type; refuse silently rather than 500
 
@@ -74,11 +72,7 @@ def get_search_hits():
     hits_by_search = defaultdict(int)
 
     for hit in page_hits:
-        term = (
-            unicodedata.normalize("NFKD", hit.extra_info or "")
-            .encode("ascii", "ignore")
-            .decode("ascii")
-        )
+        term = unicodedata.normalize("NFKD", hit.extra_info or "").encode("ascii", "ignore").decode("ascii")
         term = term.strip().lower()
         if term not in PROFANITIES_LIST:
             hits_by_search[term] += 1
@@ -109,11 +103,7 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
 
     # extra_info=None to avoid counting download hits
     if item_pk is None:
-        page_hits = (
-            PageHit.objects.filter(item="item")
-            .filter(datetime__gte=start_date)
-            .filter(datetime__lte=end_date)
-        )
+        page_hits = PageHit.objects.filter(item="item").filter(datetime__gte=start_date).filter(datetime__lte=end_date)
     else:
         page_hits = (
             PageHit.objects.filter(item=item)

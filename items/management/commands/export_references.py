@@ -21,24 +21,12 @@ import json
 
 from django.core.management.base import BaseCommand
 
-from items.models import (
-    AuthorGroup,
-    Book,
-    ConferenceProceeding,
-    InCollection,
-    Item,
-    JournalPub,
-    Thesis,
-)
+from items.models import AuthorGroup, Book, ConferenceProceeding, InCollection, Item, JournalPub, Thesis
 
 
 def _authors(item):
     """Ordered list of author full-name strings for an Item."""
-    rows = (
-        AuthorGroup.objects.filter(item=item)
-        .order_by("order", "id")
-        .select_related("author")
-    )
+    rows = AuthorGroup.objects.filter(item=item).order_by("order", "id").select_related("author")
     return [a.author.full_name for a in rows]
 
 
@@ -71,11 +59,7 @@ def _venue_book(item):
 
 
 def _venue_conference(item):
-    sub = (
-        ConferenceProceeding.objects.filter(pk=item.pk)
-        .select_related("publisher")
-        .first()
-    )
+    sub = ConferenceProceeding.objects.filter(pk=item.pk).select_related("publisher").first()
     if not sub:
         return ""
     parts = [p for p in [sub.conference_name, sub.organization, sub.location] if p]
@@ -148,8 +132,7 @@ class Command(BaseCommand):
             "--base-url",
             default="https://literature.learnche.org",
             help=(
-                "Site base URL to prefix item links with. Override only if "
-                "running against a non-prod deployment."
+                "Site base URL to prefix item links with. Override only if " "running against a non-prod deployment."
             ),
         )
 
