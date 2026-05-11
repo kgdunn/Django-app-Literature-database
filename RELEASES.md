@@ -1,5 +1,66 @@
 # Releases
 
+## v1.1.0
+
+Show article abstracts on the detail page by default. Previously, every
+detail page suppressed the abstract behind ``Item.show_abstract``, which
+defaulted to ``False`` and was never flipped to ``True`` for the
+imported legacy corpus. Abstracts existed in the DB (FTS already
+indexed them — they were searchable but invisible on the actual item
+page) and never reached the reader. The 2010-era design intended
+``show_abstract`` as an admin opt-in gate, but the revived site has no
+review workflow that would flip it, so it had become a permanent "off"
+switch for every abstract on the site. Drop the field entirely; gate
+on ``Item.abstract`` content in the template instead.
+
+- **`items/templates/items/item.html`** — the abstract block now gates
+  on ``{% if item.abstract %}`` instead of ``{% if item.show_abstract %}``.
+  Rendering pipeline (bleach allowlist + MathJax for ``\(...\)``)
+  unchanged.
+- **`items/models.py`** — ``Item.show_abstract`` field declaration
+  removed. If a specific abstract ever needs hiding, clear the
+  ``abstract`` field instead.
+- **`items/migrations/0010_remove_item_show_abstract.py`** — new
+  migration drops the column. Standard
+  ``ALTER TABLE items_item DROP COLUMN show_abstract``; reversible via
+  the operation's auto-generated inverse.
+- **`items/admin.py`** — no changes needed; ``show_abstract`` was
+  never on ``ItemAdmin.list_display`` or ``fields``.
+- **`items/tests/conftest.py`** — ``journalpub_factory`` no longer
+  passes ``show_abstract=True`` (the kwarg would now raise
+  ``TypeError: got an unexpected keyword argument`` since the field
+  is gone).
+- **`items/tests/test_views.py`** — two ad-hoc ``objects.create``
+  calls (in ``test_journal_name_in_search_vector`` and
+  ``test_conference_name_in_search_vector``) drop the
+  ``show_abstract`` kwarg. Two new ``TestItemDetail`` tests pin the
+  new behaviour:
+  ``test_abstract_renders_when_non_empty`` (abstract content surfaces
+  under a ``<dt>Abstract</dt>`` block) and
+  ``test_abstract_section_omitted_when_empty`` (empty abstract
+  produces no Abstract header, no empty ``<dd>``).
+- **`items/tests/test_import_legacy_dump.py`** — fixture and test
+  comments updated: ``"show_abstract": True`` in legacy JSON now joins
+  the silently-dropped-field set, alongside the Phase-5
+  ``private_pdf`` / ``can_show_pdf`` and Phase-4 ``ua_string`` /
+  ``ip_address`` fields. The existing
+  ``test_dropped_fields_are_silently_ignored`` covers the path.
+- **`CLAUDE.md`** — Project shape / Models entry no longer lists
+  ``show_abstract`` among ``Item`` fields; Templates / Gotchas
+  updated to describe the new ``{% if item.abstract %}`` gate; a
+  pointer in Gotcha 5 tells the future maintainer to clear the
+  ``abstract`` field rather than reintroduce a ``show_abstract``-style
+  boolean.
+- **`pyproject.toml`** / **`RELEASES.md`** — MINOR bump per the
+  policy in ``CLAUDE.md`` (additive visible behaviour change on a
+  public page: abstract content that was suppressed now appears for
+  every item that has it; no URL change, no template-structure break).
+
+**Visitor impact**: every article-detail page now surfaces the
+abstract inline below the citation block, wrapped in the same bleach
+allowlist + MathJax rendering pipeline used elsewhere. Items without
+an abstract (``blank=True``) render as before — no extra heading.
+
 ## v1.0.3
 
 Bugfix + runbook for the 2026-05-10 live-site incident. Two unrelated failures stacked: Caddy on the shared Hetzner host had a JSON config hot-pushed to its admin API on `localhost:2019` that 403'd every request with `Host not in allowlist` (custom `x-deny-reason: host_not_allowed` header), and once that was unblocked, every DB-touching page 500'd because `pagehit_pagehit.id`'s Postgres sequence was still at 1 — a latent bomb left by Phase 10's `import_legacy_dump`, which writes rows with explicit legacy pks but never bumped the sequences afterwards. `pages.healthz` was the only view that didn't trigger the integrity error, which masked the second failure for over an hour.
