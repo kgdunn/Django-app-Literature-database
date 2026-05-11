@@ -204,9 +204,7 @@ class TestItemDetail:
         # so check for the rendered <section> heading instead.
         assert "<h4>Related items</h4>" not in r.content.decode("utf-8")
 
-    def test_abstract_renders_when_non_empty(
-        self, client, journalpub_factory, author
-    ):
+    def test_abstract_renders_when_non_empty(self, client, journalpub_factory, author):
         """v1.1.0: the legacy ``Item.show_abstract`` gate was dropped.
         The template now renders the abstract whenever the field has
         content, wrapped in the bleach allowlist + MathJax pipeline."""
@@ -228,7 +226,9 @@ class TestItemDetail:
         template skips the <dt>Abstract</dt> / <dd> block entirely (no
         empty header, no empty <dd>)."""
         pub = journalpub_factory(
-            authors=[author], title="Paper with no abstract", abstract=""
+            authors=[author],
+            title="Paper with no abstract",
+            abstract="",
         )
         r = client.get(f"/item/{pub.pk}/{pub.slug}")
         assert r.status_code == 200
