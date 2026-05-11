@@ -1,5 +1,14 @@
 # Releases
 
+## v1.2.4
+
+Centre the single "Back to home" chip on list / search / tag / all-tags / about pages so it sits in the same horizontal position as the centre ``__home`` button in the detail-page topbar's three-button row. v1.2.2 had landed it left-aligned, which read as a miss between the two surfaces: detail pages had a centred home button, list pages had a left-aligned one.
+
+- **``literature/static/literature/site.css``** — ``.lit-page-back { text-align: center; }``. One declaration; the chip is ``display: inline-flex`` so it respects the wrapper's ``text-align``.
+- **``pyproject.toml``** / **``RELEASES.md``**: PATCH bump.
+
+**Cache note for the operator**: Cloudflare proxies ``literature.learnche.org`` and caches ``/static/*`` for a few hours by default, so CSS changes shipped here can appear "not landed" on a phone for up to ~4 h after the deploy completes. If a fresh visual check on a mobile device shows the previous version, force-refresh (Chrome mobile: long-press the reload button → *Empty cache and hard reload*; iOS Safari: Settings → Safari → Clear History) or wait for the Cloudflare edge cache to expire. A more permanent fix is to switch ``STATICFILES_STORAGE`` to ``ManifestStaticFilesStorage`` so the asset URL changes per content hash and bypasses cache deterministically — tracked as a separate issue, not part of this PR.
+
 ## v1.2.3
 
 Re-balance the homepage hero search bar for mobile after operator caught it eating ~25% of viewport height on a phone (v1.2.2 had the input at 72 px tall **and** stacked above a 72 px button — ~156 px of vertical real estate before the visitor saw any other content).
