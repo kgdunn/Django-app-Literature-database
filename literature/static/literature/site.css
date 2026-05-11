@@ -245,11 +245,14 @@ p  { margin: 0 0 var(--sp-3) 0; }
 /* Standalone "Back to home" chip on list / search / tag / about pages.
    Visually identical to the detail-page topbar's centre ``__home`` button
    so the back affordance reads the same across the whole site. The
-   wrapper is a margin-controlled <p>; the chip sits naturally at the
-   left of its line (matches how breadcrumbs / page-level back links
-   are typically positioned). v1.2.2. */
+   wrapper is a margin-controlled <p>; v1.2.4 centres the chip
+   horizontally so it mirrors the detail-page topbar's centre
+   ``__home`` button — operator feedback after v1.2.2 left-aligned
+   it and the inconsistency between detail and list pages read as a
+   miss. */
 .lit-page-back {
     margin: 0 0 var(--sp-5) 0;
+    text-align: center;
 }
 .lit-page-back__link {
     font-weight: 600;
