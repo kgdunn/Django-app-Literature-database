@@ -227,6 +227,53 @@ class TestItemDetail:
         body = r.content.decode("utf-8")
         assert "<dt>Abstract</dt>" not in body
 
+    def test_top_pager_renders_before_title(self, client, journalpub_factory, author):
+        """v1.2.0: prev/next item navigation hoisted to the detail-page top
+        bar. The pager is rendered as pill-shaped chips alongside the
+        ``Back to home`` link, *above* the title — visitors no longer have
+        to scroll past the abstract + tags to step between items. Pins both
+        the markup hook and the position (pager appears before <h3>title).
+        """
+        # Three consecutive items so the middle one has both prev + next
+        # via Item.previous_item / Item.next_item (which look up pk±1).
+        journalpub_factory(authors=[author], title="Item-before-target")
+        target = journalpub_factory(authors=[author], title="Target paper")
+        journalpub_factory(authors=[author], title="Item-after-target")
+
+        r = client.get(f"/item/{target.pk}/{target.slug}")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+
+        # Pager markup is present, separately classed from the back link.
+        assert 'class="detail-topbar__pager"' in body
+        assert "detail-topbar__pager-link" in body
+        assert "&larr; Previous" in body
+        assert "Next &rarr;" in body
+
+        # Position: pager appears *before* the item title, not after.
+        pager_pos = body.find("detail-topbar__pager")
+        title_pos = body.find(f"<h3>{target.title}</h3>")
+        assert pager_pos != -1, "Pager markup missing"
+        assert title_pos != -1, "Title <h3> missing"
+        assert pager_pos < title_pos, (
+            f"Pager (at {pager_pos}) should render before the title "
+            f"(at {title_pos}); v1.2.0 hoisted it to the top bar."
+        )
+
+        # Old bottom-of-page nav is gone — no more `.lit-detail-nav`.
+        assert "lit-detail-nav" not in body
+
+    def test_top_pager_suppressed_for_solo_item(self, client, journalpub_factory, author):
+        """When an item has no previous / next neighbour, the pager block
+        is suppressed entirely (no empty container, no orphaned ``aria-label``).
+        ``Back to home`` still renders on its own."""
+        target = journalpub_factory(authors=[author], title="Solo paper")
+        r = client.get(f"/item/{target.pk}/{target.slug}")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        assert "detail-topbar__pager" not in body
+        assert "detail-topbar__back" in body
+
 
 @pytest.mark.django_db
 class TestSearch:

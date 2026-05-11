@@ -5,16 +5,14 @@
 
 {% block content %}
 
-<div class="lit-site-statement">
-    <p>A collection of references on latent-variable methods and applications. <i>Full text and abstracts</i> are searched below; author last-name typos are matched fuzzily.</p>
-</div>
-
-<form method="get" action="{% url 'search' %}" class="lit-search" role="search">
+<form method="get" action="{% url 'search' %}" class="lit-search lit-search--hero" role="search">
     <label for="lit-search-input" class="visually-hidden">Search the literature catalogue</label>
     <input type="search" id="lit-search-input" name="q" maxlength="200" autocomplete="off"
-           placeholder="Search all references" value="{{ query|default_if_none:'' }}" />
+           placeholder="Search all references — title, abstract, author, journal, tag…" value="{{ query|default_if_none:'' }}" />
     <button type="submit" class="lit-search__submit">Search</button>
 </form>
+
+<p class="lit-site-statement lit-site-statement--subtitle">A collection of references on latent-variable methods and applications. <i>Full text and abstracts</i> are searched above; author last-name typos are matched fuzzily.</p>
 
 <div class="lit-portal-grid">
 

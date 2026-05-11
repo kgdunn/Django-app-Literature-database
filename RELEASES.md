@@ -1,5 +1,27 @@
 # Releases
 
+## v1.2.0
+
+Two homepage / detail-page UX changes lifted from operator feedback after the v1.1.0 abstract roll-out:
+
+1. **Homepage search is now the hero.** The search form moved above the "A collection of references on latent-variable methods…" intro, the input grew (taller, bigger font, accent-soft focus ring, subtle shadow), and the placeholder is more inviting ("Search all references — title, abstract, author, journal, tag…"). The intro paragraph stays as a one-line subtitle below the bar.
+2. **Prev/next item navigation hoisted to the detail-page top bar.** Previously the prev/next links sat at the bottom of every detail page — past the abstract + tags + related-items panel — so stepping between items required a scroll-to-bottom every time. The pager is now in the top bar alongside ``Back to home``, rendered as accent-soft pill chips that read as a distinct affordance (no risk of mistaking them for the back link).
+
+Changes:
+
+- **``pages/templates/pages/front-page.html``** — search form moved above the site-statement; placeholder text expanded; form gains the ``lit-search--hero`` modifier class. The intro paragraph keeps its text but gains the ``lit-site-statement--subtitle`` modifier so it reads as supporting prose rather than a parallel-weight card.
+- **``items/templates/items/item.html``** — the ``detail-topbar`` block changes from a single ``<a>`` to a flex container holding ``detail-topbar__back`` on the left and a ``detail-topbar__pager`` ``<nav aria-label="Item navigation">`` on the right (pager block is suppressed entirely when the item has no neighbours, no empty container). The old bottom ``<nav class="lit-detail-nav">`` is removed.
+- **``literature/static/literature/site.css``** —
+  * New ``.lit-search--hero`` rules (larger padding, 1.125rem font, ``var(--radius-lg)`` corners, ``box-shadow``, ``min-height: 56px`` on both input and button so they line up, an explicit ``@media (max-width: 480px)`` stack so neither shrinks below a usable tap target).
+  * ``.detail-topbar`` becomes a flex container (``justify-content: space-between``); new ``.detail-topbar__back`` and ``.detail-topbar__pager`` rules. ``.detail-topbar__pager-link`` is a pill chip styled with ``--color-accent-soft`` / ``--color-accent-soft-fg`` so it's visually distinct from the plain-link back affordance.
+  * New ``.lit-site-statement--subtitle`` modifier drops the card chrome (border / background / left-accent stripe), shrinks the text, and caps the line length at 60ch so the subtitle reads as one-line prose.
+  * The unused ``.lit-detail-nav`` block (matching the now-removed bottom nav) is deleted; a short comment in its place points at ``.detail-topbar__pager`` for future maintainers.
+- **``items/tests/test_views.py``** — two new ``TestItemDetail`` tests pin the new behaviour:
+  * ``test_top_pager_renders_before_title`` — pager markup is present *and* its position in the rendered HTML is before ``<h3>{title}</h3>``; ``.lit-detail-nav`` is asserted **not** present (so a future regression that re-adds a bottom pager gets caught).
+  * ``test_top_pager_suppressed_for_solo_item`` — when an item has no prev/next neighbour, the pager block is omitted (no empty container, no orphan ``aria-label``); ``Back to home`` still renders.
+- **``pyproject.toml``** / **``RELEASES.md``**: MINOR bump per the policy in ``CLAUDE.md`` (additive / cosmetic public-page change; no URL break, no removal of public views, no template-structure break that would surprise a casual visitor).
+
+Visitor impact: the search bar is now the obvious primary action on the homepage, and stepping between adjacent items on the detail page no longer requires scrolling to the bottom.
 ## v1.1.1
 
 Raise the Python line-length convention from 88 (black's default) to 120 across the toolchain, and reformat the codebase to match. Pure mechanical change; no behavioural, schema, URL, or template impact. Motivated by repeated friction wrapping new test signatures and call sites to fit under 88 — at 120 most one-liners stay readable on modern displays and black stops fighting human-natural call composition.

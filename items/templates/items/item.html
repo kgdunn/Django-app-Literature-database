@@ -5,7 +5,19 @@
 
 {% block content %}
 
-<p class="detail-topbar"><a href="{% url 'lit-main-page' %}">&larr; Back to home</a></p>
+<div class="detail-topbar">
+    <a class="detail-topbar__back" href="{% url 'lit-main-page' %}">&larr; Back to home</a>
+    {% if item.previous_item or item.next_item %}
+    <nav class="detail-topbar__pager" aria-label="Item navigation">
+        {% if item.previous_item %}
+        <a class="detail-topbar__pager-link" href="{{ item.previous_item }}" rel="prev">&larr; Previous</a>
+        {% endif %}
+        {% if item.next_item %}
+        <a class="detail-topbar__pager-link" href="{{ item.next_item }}" rel="next">Next &rarr;</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+</div>
 
 <h3>{{ item.title }}</h3>
 
@@ -45,15 +57,6 @@
     {% endif %}
 
 </dl>
-
-<nav class="lit-detail-nav">
-    {% if item.previous_item %}
-    <span class="nav-prev"><a href="{{ item.previous_item }}">&larr; Previous</a></span>
-    {% endif %}
-    {% if item.next_item %}
-    <span class="nav-next"><a href="{{ item.next_item }}">Next &rarr;</a></span>
-    {% endif %}
-</nav>
 
 {% if related_items %}
 <section class="lit-related">
