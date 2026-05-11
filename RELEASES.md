@@ -1,5 +1,25 @@
 # Releases
 
+## v1.2.1
+
+Tune the v1.2.0 UX changes after operator feedback:
+
+1. **Hero search bar roughly doubled in size.** v1.2.0's hero search still read as "a regular input box" — the font went from `--fs-sm` (14 px) to `1.125rem` (18 px) and the height from a default-ish ~38 px to 56 px. v1.2.1 bumps the desktop font to `2rem` (32 px) and the min-height to 96 px — the input is now bigger than every heading on the site and there is no ambiguity about the primary action. A `@media (max-width: 640px)` rule backs it down to `1.5rem` / 72 px on phones so the placeholder text doesn't truncate.
+2. **Detail-page topbar redesigned as three matching chip-buttons in one row.** v1.2.0's layout (plain "Back to home" link on the left, accent-soft pill chips for prev/next on the right) confused visitors — the three affordances looked like two different kinds of thing and on narrow viewports the row wrapped into a stacked mess. v1.2.1 lays them out as **[← Previous] [Back to home] [Next →]** in a CSS-grid (1fr / auto / 1fr), all three styled identically as chips, with the centre "Back to home" carrying a slightly heavier font-weight to read as the group anchor. An aria-hidden `__spacer` fills the grid cell when prev or next is missing so the centre button stays geometrically centred even at the corpus boundaries.
+
+Changes:
+
+- **``items/templates/items/item.html``** — `.detail-topbar` becomes a `<nav>` containing three `__btn` elements (or `__spacer` fillers when the neighbour doesn't exist). The earlier `__back` / `__pager` / `__pager-link` selectors are gone.
+- **``literature/static/literature/site.css``** —
+  * `.lit-search--hero` input: `font-size: 2rem`, `min-height: 96px`, `padding: var(--sp-5) var(--sp-6)`, larger box-shadow. Submit button matched: `min-height: 96px`, `font-size: 1.25rem`. New `@media (max-width: 640px)` scales both back to `1.5rem` / 72 px so a long placeholder stays readable on phones; the existing `@media (max-width: 480px)` still stacks input + button when the viewport gets very narrow.
+  * `.detail-topbar` rewritten as a 3-column CSS grid (`grid-template-columns: 1fr auto 1fr`). New `.detail-topbar__btn` chip with `--prev` / `--home` / `--next` modifiers — all three share the same accent-soft chip styling so a visitor can't mistake one for another. `.detail-topbar__btn--home` carries `font-weight: 600` so the centre button reads as the group anchor. New `.detail-topbar__spacer` is the aria-hidden empty filler for missing neighbour cells. A `@media (max-width: 420px)` rule shrinks the chip padding so all three still fit in one row on 360 px viewports.
+- **``items/tests/test_views.py``** — the two `TestItemDetail` v1.2.0 tests rewritten to match the new selectors:
+  * ``test_top_pager_renders_before_title`` — checks all three of `__btn--prev` / `__btn--home` / `__btn--next` render with the right labels, asserts the topbar appears before the `<h3>` title, and asserts both the pre-v1.2.0 `.lit-detail-nav` and the v1.2.0 transitional `__pager` selectors are gone.
+  * ``test_top_pager_suppressed_for_solo_item`` — for a single-item DB, asserts `__btn--prev` / `__btn--next` are absent, `__btn--home` is present, and exactly **two** `__spacer` elements fill the missing grid cells (one for each side of home).
+- **``pyproject.toml``** / **``RELEASES.md``**: PATCH bump per the policy in ``CLAUDE.md`` (this PR is a follow-up tuning of v1.2.0's visible behaviour, not a new feature surface).
+
+Visitor impact (after deploy): the homepage search bar is now hard to miss, and the three navigation affordances on every detail page are laid out as a clear row of equal-weight buttons with the home anchor in the middle — even on narrow viewports.
+
 ## v1.2.0
 
 Two homepage / detail-page UX changes lifted from operator feedback after the v1.1.0 abstract roll-out:

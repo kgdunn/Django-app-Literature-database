@@ -5,19 +5,19 @@
 
 {% block content %}
 
-<div class="detail-topbar">
-    <a class="detail-topbar__back" href="{% url 'lit-main-page' %}">&larr; Back to home</a>
-    {% if item.previous_item or item.next_item %}
-    <nav class="detail-topbar__pager" aria-label="Item navigation">
-        {% if item.previous_item %}
-        <a class="detail-topbar__pager-link" href="{{ item.previous_item }}" rel="prev">&larr; Previous</a>
-        {% endif %}
-        {% if item.next_item %}
-        <a class="detail-topbar__pager-link" href="{{ item.next_item }}" rel="next">Next &rarr;</a>
-        {% endif %}
-    </nav>
+<nav class="detail-topbar" aria-label="Item navigation">
+    {% if item.previous_item %}
+    <a class="detail-topbar__btn detail-topbar__btn--prev" href="{{ item.previous_item }}" rel="prev">&larr; Previous</a>
+    {% else %}
+    <span class="detail-topbar__spacer" aria-hidden="true"></span>
     {% endif %}
-</div>
+    <a class="detail-topbar__btn detail-topbar__btn--home" href="{% url 'lit-main-page' %}">Back to home</a>
+    {% if item.next_item %}
+    <a class="detail-topbar__btn detail-topbar__btn--next" href="{{ item.next_item }}" rel="next">Next &rarr;</a>
+    {% else %}
+    <span class="detail-topbar__spacer" aria-hidden="true"></span>
+    {% endif %}
+</nav>
 
 <h3>{{ item.title }}</h3>
 
