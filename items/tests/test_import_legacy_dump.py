@@ -11,7 +11,8 @@ handle:
 - a PageHit row, including the Phase-4-dropped fields it must ignore
 - a noise record (auth.user) that the importer should drop on the floor
 - an Item with a ``media/`` prefix in pdf_file (Phase-1 gotcha)
-- the dropped Phase-5 ``private_pdf`` / ``can_show_pdf`` fields
+- the dropped Phase-5 ``private_pdf`` / ``can_show_pdf`` fields and
+  the v1.1.0-dropped ``show_abstract`` field
 """
 
 import json
@@ -73,6 +74,8 @@ def legacy_dump(tmp_path):
                 "doi_link": "https://doi.org/10.1234/foo",
                 "web_link": None,
                 "abstract": "<p>A study.</p>",
+                # v1.1.0-dropped field — silently ignored, same as the
+                # Phase-5 / Phase-4 dropped fields below:
                 "show_abstract": True,
                 "pdf_file": "media/literature/pdf/o/on-fourier-transforms.pdf",
                 "other_search_text": "extracted text",
@@ -161,9 +164,10 @@ class TestImportLegacyDump:
         assert not pub.pdf_file.name.startswith("media/")
 
     def test_dropped_fields_are_silently_ignored(self, legacy_dump):
-        # `private_pdf`, `can_show_pdf` (Phase 5) and `ua_string`,
-        # `ip_address` (Phase 4) are gone from the model — the import
-        # must not crash on them and must not try to set them.
+        # `private_pdf`, `can_show_pdf` (Phase 5), `show_abstract`
+        # (v1.1.0) and `ua_string`, `ip_address` (Phase 4) are gone
+        # from the model — the import must not crash on them and must
+        # not try to set them.
         call_command("import_legacy_dump", "--file", str(legacy_dump))
         # If we got here the import didn't FieldError. Confirm one row
         # of each surviving:

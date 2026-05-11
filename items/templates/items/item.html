@@ -28,7 +28,7 @@
     <dt>Citation</dt>
     <dd class="lit-detail-citation">{{ item.full_citation|safe }}</dd>
 
-    {% if item.show_abstract %}
+    {% if item.abstract %}
     <dt>Abstract</dt>
     <dd><div class="lit-detail-abstract">{{ item.abstract|sanitise_markup }}</div></dd>
     {% endif %}

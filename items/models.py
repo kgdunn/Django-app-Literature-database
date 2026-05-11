@@ -216,7 +216,6 @@ class Item(models.Model):
     )
     tags = models.ManyToManyField("tagging.Tag")
     abstract = models.TextField(blank=True)
-    show_abstract = models.BooleanField(default=False)
     date_created = models.DateTimeField(editable=False, auto_now=True)
 
     # PDFs are uploaded by site admins and consumed only by the

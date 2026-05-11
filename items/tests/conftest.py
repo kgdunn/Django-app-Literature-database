@@ -65,7 +65,6 @@ def journalpub_factory(db, journal):
             item_type="journalpub",
             year=2024,
             abstract="<p>Harmonic analysis under <i>Lorentz</i> boosts.</p>",
-            show_abstract=True,
             journal=journal,
         )
         defaults.update(kwargs)
