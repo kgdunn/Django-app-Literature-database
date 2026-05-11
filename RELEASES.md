@@ -1,5 +1,17 @@
 # Releases
 
+## v1.2.2
+
+Visual-consistency follow-up after v1.2.1. The chip-button "Back to home" affordance landed on the detail page, but the search / tag / list / about pages still rendered the old plain teal-link version (a hold-over from the v1.0.0 chrome). On the same site this read as two different sites — operator caught it on the tag results page.
+
+v1.2.2 brings the four remaining non-detail pages onto the same chip-button styling so the back affordance reads identically everywhere.
+
+- **``items/templates/items/show-entries.html``** (list / tag-results / author-results / journal-results / pub-by-year), **``items/templates/items/show-tag-cloud.html``** (full tag cloud), **``pages/templates/pages/search.html``** (search results), **``pages/templates/pages/about-page.html``** (about): each replaces ``<p class="detail-topbar"><a>← Back to home</a></p>`` with ``<p class="lit-page-back"><a class="lit-page-back__link">← Back to home</a></p>``.
+- **``literature/static/literature/site.css``** — ``.detail-topbar__btn`` style rule grouped with ``.lit-page-back__link`` (and same for the ``:hover`` rule) so there's a single source of chip-button truth; new ``.lit-page-back`` wrapper (margin only) and ``.lit-page-back__link`` modifier (font-weight + slightly more padding) so the standalone back chip reads as the page-anchor affordance.
+- **``pyproject.toml``** / **``RELEASES.md``**: PATCH bump (cosmetic, no template-structure or URL change — the back link still goes to ``/`` from the same position at the top of every page).
+
+The detail-page topbar (three buttons in a CSS-grid row, ``.detail-topbar`` and ``.detail-topbar__btn--prev/--home/--next``) is unchanged.
+
 ## v1.2.1
 
 Tune the v1.2.0 UX changes after operator feedback:

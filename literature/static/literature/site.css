@@ -218,7 +218,8 @@ p  { margin: 0 0 var(--sp-3) 0; }
     gap: var(--sp-2);
     margin: 0 0 var(--sp-5) 0;
 }
-.detail-topbar__btn {
+.detail-topbar__btn,
+.lit-page-back__link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -234,11 +235,25 @@ p  { margin: 0 0 var(--sp-3) 0; }
     white-space: nowrap;
     transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
-.detail-topbar__btn:hover {
+.detail-topbar__btn:hover,
+.lit-page-back__link:hover {
     background: var(--color-accent);
     color: var(--color-accent-fg);
     border-color: var(--color-accent);
     text-decoration: none;
+}
+/* Standalone "Back to home" chip on list / search / tag / about pages.
+   Visually identical to the detail-page topbar's centre ``__home`` button
+   so the back affordance reads the same across the whole site. The
+   wrapper is a margin-controlled <p>; the chip sits naturally at the
+   left of its line (matches how breadcrumbs / page-level back links
+   are typically positioned). v1.2.2. */
+.lit-page-back {
+    margin: 0 0 var(--sp-5) 0;
+}
+.lit-page-back__link {
+    font-weight: 600;
+    padding: 8px var(--sp-4);
 }
 .detail-topbar__btn--prev { justify-self: start; }
 .detail-topbar__btn--next { justify-self: end; }
