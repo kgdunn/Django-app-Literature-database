@@ -1,5 +1,29 @@
 # Releases
 
+## v1.2.3
+
+Re-balance the homepage hero search bar for mobile after operator caught it eating ~25% of viewport height on a phone (v1.2.2 had the input at 72 px tall **and** stacked above a 72 px button — ~156 px of vertical real estate before the visitor saw any other content).
+
+New responsive curve, all inside ``literature/static/literature/site.css``:
+
+| Viewport | Input font | Input height | Layout |
+|---|---|---|---|
+| Desktop ≥ 769 px | 2 rem (32 px) | 96 px | input + button side-by-side |
+| Tablet ≤ 768 px | 1.375 rem (22 px, ≈ h3) | 60 px | side-by-side |
+| Phone ≤ 480 px | 1.125 rem (18 px) | 48 px | side-by-side |
+
+Key changes vs v1.2.2:
+
+- The 640 px breakpoint moves out to 768 px and brings the size down further (60 px tall, h3-sized font).
+- The 480 px breakpoint **stops stacking** input above button — a 380-400 px phone has plenty of room for ~210 px input + 8 px gap + ~108 px button on one row, and not stacking saves ~108 px of vertical space (one full row's worth).
+- Phone sizing drops to a normal touchable input (48 px tall, 18 px font) — still clearly the primary action above the fold, but no longer dominates the page.
+
+Knock-on: placeholder text "Search all references — title, abstract, author, journal, tag…" truncates earlier on narrow phones. That's normal mobile-search UX (visitors tap the field and the placeholder vanishes); accepting the truncation is the cost of the smaller bar.
+
+Desktop is unchanged — the 96 px / 32 px hero treatment from v1.2.1 stays put.
+
+- **``pyproject.toml``** / **``RELEASES.md``**: PATCH bump (responsive-CSS tweak; no template-structure or URL change).
+
 ## v1.2.2
 
 Visual-consistency follow-up after v1.2.1. The chip-button "Back to home" affordance landed on the detail page, but the search / tag / list / about pages still rendered the old plain teal-link version (a hold-over from the v1.0.0 chrome). On the same site this read as two different sites — operator caught it on the tag results page.

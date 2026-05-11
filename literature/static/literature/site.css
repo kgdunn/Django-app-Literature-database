@@ -518,28 +518,40 @@ p  { margin: 0 0 var(--sp-3) 0; }
     min-height: 96px;
     box-shadow: var(--shadow);
 }
-@media (max-width: 640px) {
-    /* Phone: keep the input prominent but back the font down a notch
-       so a long placeholder doesn't truncate before the visitor has a
-       chance to read it. Still substantially bigger than the rest of
-       the page. */
+@media (max-width: 768px) {
+    /* Tablet / large phone: scale back so the bar doesn't dominate
+       the viewport but stays clearly the primary action. Roughly
+       h3-sized text. */
     .lit-search--hero input[type="search"] {
-        font-size: 1.5rem;
-        padding: var(--sp-4) var(--sp-5);
-        min-height: 72px;
+        font-size: 1.375rem;
+        padding: var(--sp-3) var(--sp-4);
+        min-height: 60px;
     }
     .lit-search--hero .lit-search__submit {
-        font-size: 1.125rem;
-        padding: var(--sp-3) var(--sp-5);
-        min-height: 72px;
-        min-width: 100px;
+        font-size: 1rem;
+        padding: var(--sp-3) var(--sp-4);
+        min-height: 60px;
+        min-width: 96px;
     }
 }
 @media (max-width: 480px) {
-    /* Stack the input + button on very narrow screens so neither
-       gets squeezed below a usable tap target. */
-    .lit-search--hero { flex-direction: column; }
-    .lit-search--hero .lit-search__submit { width: 100%; }
+    /* Phone: drop to a normal-sized search bar — the v1.2.2 cut was
+       eating ~25% of viewport height because input + button were
+       72px each AND stacked. v1.2.3 keeps the row layout (380-400px
+       phones easily fit ~210px input + 8px gap + ~108px button) and
+       shrinks both to a touchable-but-not-dominant 48px height. */
+    .lit-search--hero { gap: 8px; }
+    .lit-search--hero input[type="search"] {
+        font-size: 1.125rem;
+        padding: 10px 12px;
+        min-height: 48px;
+    }
+    .lit-search--hero .lit-search__submit {
+        font-size: 0.9375rem;
+        padding: 10px 14px;
+        min-height: 48px;
+        min-width: 80px;
+    }
 }
 
 /* List of items table.
