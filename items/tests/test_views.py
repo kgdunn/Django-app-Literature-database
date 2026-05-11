@@ -204,6 +204,37 @@ class TestItemDetail:
         # so check for the rendered <section> heading instead.
         assert "<h4>Related items</h4>" not in r.content.decode("utf-8")
 
+    def test_abstract_renders_when_non_empty(
+        self, client, journalpub_factory, author
+    ):
+        """v1.1.0: the legacy ``Item.show_abstract`` gate was dropped.
+        The template now renders the abstract whenever the field has
+        content, wrapped in the bleach allowlist + MathJax pipeline."""
+        pub = journalpub_factory(
+            authors=[author],
+            title="Paper with an abstract",
+            abstract="<p>Latent-variable methods for batch monitoring.</p>",
+        )
+        r = client.get(f"/item/{pub.pk}/{pub.slug}")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        assert "<dt>Abstract</dt>" in body
+        assert "Latent-variable methods for batch monitoring." in body
+
+    def test_abstract_section_omitted_when_empty(
+        self, client, journalpub_factory, author
+    ):
+        """v1.1.0: ``Item.abstract`` is ``blank=True``; if empty, the
+        template skips the <dt>Abstract</dt> / <dd> block entirely (no
+        empty header, no empty <dd>)."""
+        pub = journalpub_factory(
+            authors=[author], title="Paper with no abstract", abstract=""
+        )
+        r = client.get(f"/item/{pub.pk}/{pub.slug}")
+        assert r.status_code == 200
+        body = r.content.decode("utf-8")
+        assert "<dt>Abstract</dt>" not in body
+
 
 @pytest.mark.django_db
 class TestSearch:
@@ -306,7 +337,6 @@ class TestSearch:
             item_type="journalpub",
             year=2010,
             abstract="<p>Latent-variable methods for spectroscopic data.</p>",
-            show_abstract=True,
             journal=analytica,
         )
         AuthorGroup.objects.create(author=author, item=pub, order=0)
@@ -348,7 +378,6 @@ class TestSearch:
             item_type="conferenceproc",
             year=2014,
             abstract="<p>About process monitoring.</p>",
-            show_abstract=True,
             conference_name="MACC Annual Meeting",
             organization="McMaster",
             location="Hamilton, ON",
