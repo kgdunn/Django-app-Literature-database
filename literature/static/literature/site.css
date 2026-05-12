@@ -1,22 +1,28 @@
 :root {
-    --color-accent:        #0e7c7b;
-    --color-accent-hover:  #0a5e5d;
+    /* v1.3.0 "Steel-teal" palette — desaturated teal that reads more
+       academic / business than the original cyan. The site keeps the
+       teal lineage (Light teal #155e75) but loses the neon-mint feel
+       of the v1.2.x palette. Operator brief was "matrix-y, business
+       audience + slight academic bend"; this is the close-to-current
+       option in that direction. */
+    --color-accent:        #155e75;
+    --color-accent-hover:  #0e4c5f;
     --color-accent-fg:     #ffffff;
-    --color-accent-soft:   #daefee;
-    --color-accent-soft-fg:#0a4f4e;
+    --color-accent-soft:   #e6eff3;
+    --color-accent-soft-fg:#0e4c5f;
 
-    --color-bg:            #fafaf7;
+    --color-bg:            #f7f7f4;
     --color-surface:       #ffffff;
-    --color-surface-2:     #f3f3ec;
-    --color-border:        #e5e4dc;
-    --color-border-strong: #d3d2c4;
+    --color-surface-2:     #eeeee8;
+    --color-border:        #e0e0d8;
+    --color-border-strong: #cccbc0;
 
-    --color-text:          #0e1414;
-    --color-text-muted:    #4a5757;
-    --color-text-subtle:   #6e7a7a;
-    --color-link:          #0e7c7b;
-    --color-link-hover:    #0a5e5d;
-    --color-focus:         #14b8a6;
+    --color-text:          #1a1d22;
+    --color-text-muted:    #4a5560;
+    --color-text-subtle:   #6e7780;
+    --color-link:          #155e75;
+    --color-link-hover:    #0e4c5f;
+    --color-focus:         #0891b2;
 
     --font-sans:  "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
@@ -44,48 +50,55 @@
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-        --color-accent:        #5eead4;
-        --color-accent-hover:  #7df0dc;
-        --color-accent-fg:     #0a1414;
-        --color-accent-soft:   #0f3a3a;
-        --color-accent-soft-fg:#7df0dc;
+        /* Dark "Steel-teal": washed-cyan accent over a warm slate
+           background. The v1.2.x dark mode used a near-black dark-teal
+           (#0a1414) which combined with the neon-mint accent
+           (#5eead4) read distinctly Matrix. v1.3.0 moves the bg to
+           a warm-slate (#161b1f) and the accent to a softer teal-
+           cyan (#67b8c5) so the page still feels like a "dark
+           reading-mode" but loses the terminal-phosphor edge. */
+        --color-accent:        #67b8c5;
+        --color-accent-hover:  #8acdd7;
+        --color-accent-fg:     #161b1f;
+        --color-accent-soft:   #1d3036;
+        --color-accent-soft-fg:#8acdd7;
 
-        --color-bg:            #0a1414;
-        --color-surface:       #0f1c1c;
-        --color-surface-2:     #162828;
-        --color-border:        #1f2e2e;
-        --color-border-strong: #2c4242;
+        --color-bg:            #161b1f;
+        --color-surface:       #1e252b;
+        --color-surface-2:     #252d34;
+        --color-border:        #2d353e;
+        --color-border-strong: #3d4651;
 
-        --color-text:          #e8eeed;
-        --color-text-muted:    #9eaaaa;
-        --color-text-subtle:   #7a8888;
-        --color-link:          #5eead4;
-        --color-link-hover:    #7df0dc;
-        --color-focus:         #5eead4;
+        --color-text:          #e6eaed;
+        --color-text-muted:    #9aa4ae;
+        --color-text-subtle:   #7a8590;
+        --color-link:          #67b8c5;
+        --color-link-hover:    #8acdd7;
+        --color-focus:         #67b8c5;
 
         --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
         --shadow:    0 2px 6px rgba(0,0,0,0.5);
     }
 }
 :root[data-theme="dark"] {
-    --color-accent:        #5eead4;
-    --color-accent-hover:  #7df0dc;
-    --color-accent-fg:     #0a1414;
-    --color-accent-soft:   #0f3a3a;
-    --color-accent-soft-fg:#7df0dc;
+    --color-accent:        #67b8c5;
+    --color-accent-hover:  #8acdd7;
+    --color-accent-fg:     #161b1f;
+    --color-accent-soft:   #1d3036;
+    --color-accent-soft-fg:#8acdd7;
 
-    --color-bg:            #0a1414;
-    --color-surface:       #0f1c1c;
-    --color-surface-2:     #162828;
-    --color-border:        #1f2e2e;
-    --color-border-strong: #2c4242;
+    --color-bg:            #161b1f;
+    --color-surface:       #1e252b;
+    --color-surface-2:     #252d34;
+    --color-border:        #2d353e;
+    --color-border-strong: #3d4651;
 
-    --color-text:          #e8eeed;
-    --color-text-muted:    #9eaaaa;
-    --color-text-subtle:   #7a8888;
-    --color-link:          #5eead4;
-    --color-link-hover:    #7df0dc;
-    --color-focus:         #5eead4;
+    --color-text:          #e6eaed;
+    --color-text-muted:    #9aa4ae;
+    --color-text-subtle:   #7a8590;
+    --color-link:          #67b8c5;
+    --color-link-hover:    #8acdd7;
+    --color-focus:         #67b8c5;
 
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
     --shadow:    0 2px 6px rgba(0,0,0,0.5);
@@ -183,8 +196,9 @@ p  { margin: 0 0 var(--sp-3) 0; }
     border-radius: 999px;
     background: var(--color-surface);
     color: var(--color-text-muted);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: var(--fs-xs);
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     transition: background var(--transition), border-color var(--transition), color var(--transition);
@@ -224,7 +238,7 @@ p  { margin: 0 0 var(--sp-3) 0; }
     align-items: center;
     justify-content: center;
     padding: 8px var(--sp-3);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: var(--fs-sm);
     color: var(--color-accent-soft-fg);
     background: var(--color-accent-soft);
@@ -284,8 +298,9 @@ p  { margin: 0 0 var(--sp-3) 0; }
 .lit-tag {
     display: inline-flex; align-items: center;
     padding: 2px 10px;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: var(--fs-xs);
+    font-weight: 500;
     line-height: 1.7;
     color: var(--color-accent-soft-fg);
     background: var(--color-accent-soft);
@@ -325,7 +340,7 @@ p  { margin: 0 0 var(--sp-3) 0; }
 .lit-year-list a {
     display: inline-flex; align-items: center;
     padding: 4px var(--sp-3);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-size: var(--fs-sm);
     color: var(--color-text);
     background: var(--color-surface-2);
@@ -392,7 +407,7 @@ p  { margin: 0 0 var(--sp-3) 0; }
     font-size: var(--fs-sm);
     color: var(--color-text-subtle);
 }
-.lit-year-nav a { font-family: var(--font-mono); }
+.lit-year-nav a { font-family: var(--font-sans); }
 .lit-year-nav__sep { opacity: 0.6; }
 
 /* Article-count sparkline above the entries list on tag/author
