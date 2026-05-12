@@ -1,5 +1,33 @@
 # Releases
 
+## v1.3.0
+
+De-matrix the site theme. Operator brief: the v1.2.x palette + monospace chip buttons + near-black dark mode read as "old-school computery, like the Matrix", and the site audience is business professionals with a light academic bend — softer, more journal-like is the target.
+
+This PR is one of two parallel options. The other ("Oxford navy") drops teal entirely for a deep navy. This one ("Steel-teal") keeps the teal lineage but desaturates and adds slate so the palette still reads as the same site, just less neon.
+
+Changes (all in ``literature/static/literature/site.css``):
+
+1. **Light-mode accent**: ``#0e7c7b`` (vivid teal) → ``#155e75`` (steel teal, ~Tailwind ``cyan-800``). Hover, link, soft-bg, accent-soft-fg, focus all shift to match. Page bg shifts a hair warmer (``#fafaf7`` → ``#f7f7f4``) and text-muted/subtle pick up a slate cast so they read less "tropical".
+
+2. **Dark-mode accent**: ``#5eead4`` (mint-cyan, neon) → ``#67b8c5`` (washed teal-cyan). Dark bg shifts from the near-black dark-teal ``#0a1414`` to a warm slate ``#161b1f``. This is the single biggest "de-matrix" lever — the v1.2.x dark mode was literally Matrix-palette (cyan-on-black); v1.3.0 reads like a "premium reading-mode" (warm slate with a desaturated teal accent).
+
+3. **Mono → sans on every chip-style element**:
+   * ``.theme-toggle`` ("DARK" / "AUTO" pill in the header) — adds ``font-weight: 600`` to keep the visual weight.
+   * ``.lit-tag`` — accent-soft tag chips (search results, detail-page Tags row). ``font-weight: 500``.
+   * ``.lit-year-list a`` — Browse-by-year chips on the front page.
+   * ``.detail-topbar__btn`` + ``.lit-page-back__link`` — the Prev / Home / Next chips at the top of every detail page and the Back-to-home chip on every list / search / tag / about page.
+   * ``.lit-year-nav a`` — prev/next year on the per-year listing.
+
+   Mono is **kept** only where it carries information (numeric / tabular):
+   * ``.lit-items-table .col-year`` (tabular numerics)
+   * ``.lit-related__year`` (small numeric year annotation)
+   * ``.lit-pagination`` ("page X of Y" — keeps the digits aligned)
+
+Layout, templates, URLs all unchanged. Tag-cloud anchor font (``Arial``) unchanged — the cloud was a deliberate departure from the IBM Plex stack and reads as a distinct visual unit.
+
+- **``pyproject.toml``** / **``RELEASES.md``**: MINOR bump per the policy in ``CLAUDE.md`` (visible theme change visitor-wide; no URL or template-structure break).
+
 ## v1.2.4
 
 Centre the single "Back to home" chip on list / search / tag / all-tags / about pages so it sits in the same horizontal position as the centre ``__home`` button in the detail-page topbar's three-button row. v1.2.2 had landed it left-aligned, which read as a miss between the two surfaces: detail pages had a centred home button, list pages had a left-aligned one.
