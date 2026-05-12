@@ -1,5 +1,25 @@
 # Releases
 
+## v1.3.1
+
+Sibling-palette of v1.3.0 Steel-teal — same brief (de-matrix the theme), but drops teal entirely for a deep navy. Operator merged v1.3.0 Steel-teal first; this PR is the side-by-side comparison option that branched from main *after* Steel-teal merged, so it inherits all of v1.3.0's mono→sans chip styling and only changes the palette.
+
+Palette diff vs v1.3.0:
+
+| Token | v1.3.0 Steel-teal | v1.3.1 Oxford navy |
+|---|---|---|
+| Light accent | ``#155e75`` washed teal | ``#1f4e7a`` Oxford navy |
+| Light focus | ``#0891b2`` (cyan) | ``#2563eb`` (blue) |
+| Dark accent | ``#67b8c5`` washed teal-cyan | ``#7ea2c4`` soft navy |
+| Dark bg | ``#161b1f`` warm slate (teal undertone) | ``#161b22`` warm slate (navy undertone) |
+| Dark surface | ``#1e252b`` | ``#1e252e`` |
+
+Mono→sans chip swaps, layout, templates, URLs — all unchanged from v1.3.0.
+
+If the operator prefers this navy variant after the side-by-side, this PR replaces v1.3.0 cleanly (forward-version bump). If they prefer the teal variant, this PR just gets closed without merging — v1.3.0 stays.
+
+- **``pyproject.toml``** / **``RELEASES.md``**: PATCH bump within the 1.3.x line (same theme rework as v1.3.0, just a different colour family).
+
 ## v1.3.0
 
 De-matrix the site theme. Operator brief: the v1.2.x palette + monospace chip buttons + near-black dark mode read as "old-school computery, like the Matrix", and the site audience is business professionals with a light academic bend — softer, more journal-like is the target.

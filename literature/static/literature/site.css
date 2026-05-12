@@ -1,15 +1,14 @@
 :root {
-    /* v1.3.0 "Steel-teal" palette — desaturated teal that reads more
-       academic / business than the original cyan. The site keeps the
-       teal lineage (Light teal #155e75) but loses the neon-mint feel
-       of the v1.2.x palette. Operator brief was "matrix-y, business
-       audience + slight academic bend"; this is the close-to-current
-       option in that direction. */
-    --color-accent:        #155e75;
-    --color-accent-hover:  #0e4c5f;
+    /* v1.3.1 "Oxford navy" palette — drops teal entirely for a deep
+       navy that reads "Nature / Harvard Business Review / FT.com".
+       Iteration on top of v1.3.0 Steel-teal after operator wanted to
+       compare both. Mono->sans on chip elements (from v1.3.0) is
+       retained; only the palette tokens shift. */
+    --color-accent:        #1f4e7a;
+    --color-accent-hover:  #173a5e;
     --color-accent-fg:     #ffffff;
-    --color-accent-soft:   #e6eff3;
-    --color-accent-soft-fg:#0e4c5f;
+    --color-accent-soft:   #e7edf4;
+    --color-accent-soft-fg:#173a5e;
 
     --color-bg:            #f7f7f4;
     --color-surface:       #ffffff;
@@ -20,9 +19,9 @@
     --color-text:          #1a1d22;
     --color-text-muted:    #4a5560;
     --color-text-subtle:   #6e7780;
-    --color-link:          #155e75;
-    --color-link-hover:    #0e4c5f;
-    --color-focus:         #0891b2;
+    --color-link:          #1f4e7a;
+    --color-link-hover:    #173a5e;
+    --color-focus:         #2563eb;
 
     --font-sans:  "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
@@ -50,55 +49,53 @@
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-        /* Dark "Steel-teal": washed-cyan accent over a warm slate
-           background. The v1.2.x dark mode used a near-black dark-teal
-           (#0a1414) which combined with the neon-mint accent
-           (#5eead4) read distinctly Matrix. v1.3.0 moves the bg to
-           a warm-slate (#161b1f) and the accent to a softer teal-
-           cyan (#67b8c5) so the page still feels like a "dark
-           reading-mode" but loses the terminal-phosphor edge. */
-        --color-accent:        #67b8c5;
-        --color-accent-hover:  #8acdd7;
-        --color-accent-fg:     #161b1f;
-        --color-accent-soft:   #1d3036;
-        --color-accent-soft-fg:#8acdd7;
+        /* Dark "Oxford navy": soft navy accent over a warm slate
+           background. v1.3.1 swap from v1.3.0 Steel-teal palette
+           after operator wanted to compare both. Bg stays in the
+           warm-slate family; the accent shifts from washed teal to
+           soft navy. */
+        --color-accent:        #7ea2c4;
+        --color-accent-hover:  #99b6d2;
+        --color-accent-fg:     #161b22;
+        --color-accent-soft:   #1c2a3d;
+        --color-accent-soft-fg:#99b6d2;
 
-        --color-bg:            #161b1f;
-        --color-surface:       #1e252b;
-        --color-surface-2:     #252d34;
-        --color-border:        #2d353e;
-        --color-border-strong: #3d4651;
+        --color-bg:            #161b22;
+        --color-surface:       #1e252e;
+        --color-surface-2:     #252d38;
+        --color-border:        #2d3542;
+        --color-border-strong: #3d4658;
 
         --color-text:          #e6eaed;
         --color-text-muted:    #9aa4ae;
         --color-text-subtle:   #7a8590;
-        --color-link:          #67b8c5;
-        --color-link-hover:    #8acdd7;
-        --color-focus:         #67b8c5;
+        --color-link:          #7ea2c4;
+        --color-link-hover:    #99b6d2;
+        --color-focus:         #7ea2c4;
 
         --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
         --shadow:    0 2px 6px rgba(0,0,0,0.5);
     }
 }
 :root[data-theme="dark"] {
-    --color-accent:        #67b8c5;
-    --color-accent-hover:  #8acdd7;
-    --color-accent-fg:     #161b1f;
-    --color-accent-soft:   #1d3036;
-    --color-accent-soft-fg:#8acdd7;
+    --color-accent:        #7ea2c4;
+    --color-accent-hover:  #99b6d2;
+    --color-accent-fg:     #161b22;
+    --color-accent-soft:   #1c2a3d;
+    --color-accent-soft-fg:#99b6d2;
 
-    --color-bg:            #161b1f;
-    --color-surface:       #1e252b;
-    --color-surface-2:     #252d34;
-    --color-border:        #2d353e;
-    --color-border-strong: #3d4651;
+    --color-bg:            #161b22;
+    --color-surface:       #1e252e;
+    --color-surface-2:     #252d38;
+    --color-border:        #2d3542;
+    --color-border-strong: #3d4658;
 
     --color-text:          #e6eaed;
     --color-text-muted:    #9aa4ae;
     --color-text-subtle:   #7a8590;
-    --color-link:          #67b8c5;
-    --color-link-hover:    #8acdd7;
-    --color-focus:         #67b8c5;
+    --color-link:          #7ea2c4;
+    --color-link-hover:    #99b6d2;
+    --color-focus:         #7ea2c4;
 
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
     --shadow:    0 2px 6px rgba(0,0,0,0.5);
