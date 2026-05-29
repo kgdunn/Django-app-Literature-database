@@ -65,8 +65,11 @@ def create_hit(request, item, extra_info=None):
 def get_search_hits():
     """
     Returns a list of tuples of the form:  [(n_hits, "search term"), ....]
-    This allows one to use the builtin ``list.sort()`` function where Python
-    orders the list based on the first entry in the tuple.
+    sorted in **descending order by n_hits** (most-searched terms first).
+    Ties on ``n_hits`` are broken by descending search-term string.
+
+    Search terms are NFKD-normalised, ASCII-folded, lowercased, and stripped
+    before counting; terms in ``PROFANITIES_LIST`` are excluded.
     """
     page_hits = PageHit.objects.filter(item_pk=static_items["haystack_search"])
     hits_by_search = defaultdict(int)
@@ -84,16 +87,18 @@ def get_search_hits():
 
 def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     """
-    Returns a list of tuples of the form:  [(n_hits, pk), ....]
-    This allows one to use the builtin ``list.sort()`` function where Python
-    orders the list based on the first entry in the tuple.
+    Counts page hits in the half-open window ``[start_date, end_date]``
+    (both inclusive; defaults span all time).
 
-    The list will be returned in the order of the ``pk``, but the
-    first tuple entry is the number of hits, allowing for easy sorting
-    using Python's ``sort`` method.
+    With ``item_pk=None`` (default), aggregates hits across every item of
+    type ``"item"`` and returns a list of tuples ``[(n_hits, pk), ...]``
+    sorted in **descending order by n_hits** (most-viewed items first).
 
-    However, if ``item_pk`` is provided, then it simply returns the total
-    number of page views for that item, as an integer.
+    With ``item_pk`` set, restricts the count to that single ``(item, item_pk)``
+    pair and returns the total page-view count as an integer.
+
+    Note: the ``item`` argument is ignored when ``item_pk`` is None - the
+    aggregate query is hard-coded to ``item="item"``.
     """
     if start_date is None:
         start_date = datetime(1, 1, 1, tzinfo=timezone.utc)
@@ -101,7 +106,7 @@ def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     if end_date is None:
         end_date = datetime(9999, 12, 31, tzinfo=timezone.utc)
 
-    # extra_info=None to avoid counting download hits
+    # Aggregate hits across every "item"-typed PageHit row in the window.
     if item_pk is None:
         page_hits = PageHit.objects.filter(item="item").filter(datetime__gte=start_date).filter(datetime__lte=end_date)
     else:
