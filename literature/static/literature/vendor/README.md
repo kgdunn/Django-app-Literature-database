@@ -10,6 +10,14 @@ Self-hosting also removes the runtime dependency on a third-party CDN.
 | `tex-mml-svg.js` | MathJax | 3.2.2 | `https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-svg.js` | `1f17a7ed95ff4a4b27d16bf0fb5f80b915686ee8673e82983a2876ecf8cb9fae` |
 | `echarts.min.js` | Apache ECharts | 5.5.1 | `https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js` | `e84270bd0cd5bdf60fefc26d00c2a391cb2e81f4d26a7a9ee16185a54773a3cf` |
 
+**Last vendored:** 2026-06 (issue #79).
+
+> **Refresh cadence.** There is no Dependabot for these hand-vendored files —
+> they only update when someone updates them. Rule of thumb: roughly every
+> **6 months**, fold a refresh into whatever PR is already in flight (see
+> CLAUDE.md → Tooling → "Vendored front-end assets"). Bump the version +
+> SHA-256 columns **and the `Last vendored:` date** below whenever you do.
+
 ## Why the MathJax **SVG** bundle (and a v2 → v3 bump)
 
 MathJax **2.7.9** (the previous CDN pin) cannot be vendored as a single file:

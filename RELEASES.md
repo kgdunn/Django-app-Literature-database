@@ -12,7 +12,7 @@ Vendor MathJax + ECharts as local static assets and drop `cdn.jsdelivr.net` from
 - **CSP** (`literature/middleware.py`): `script-src 'self'` (was `'self' https://cdn.jsdelivr.net`). Google Fonts (`style-src`/`font-src`) are the only remaining off-origin allowances.
 - **SRI dropped** for these assets — redundant for same-origin files served over the page's own TLS. The now-unused `make sri` target is removed.
 - **Tests**: `test_csp_script_src_is_self_only_no_cdn` pins the tightened header; `test_no_jsdelivr_and_local_mathjax_in_rendered_html` and `test_sparkline_page_loads_local_echarts` pin that the rendered HTML references the local bundles and never `cdn.jsdelivr.net`. Existing sparkline tests updated off the old SRI assertion.
-- **Docs**: CLAUDE.md `base.html` description, `docs/SECURITY.md` (audit row 6 → Fixed), RELEASES.md.
+- **Docs**: CLAUDE.md `base.html` description + a Tooling "Vendored front-end assets" maintenance reminder (refresh the bundles ~every 6 months, folded into whatever PR is in flight — Dependabot can't bump them), `docs/SECURITY.md` (audit row 6 → Fixed), and a `Last vendored:` date in the vendor `README.md`.
 
 Note: the MathJax bundle embeds two `cdn.jsdelivr.net` URLs for the opt-in Speech Rule Engine (screen-reader Explorer). These are never fetched during normal rendering and are blocked by `connect-src 'self'` if a visitor manually enables the Explorer — graceful degradation, documented in the vendor `README.md`.
 
