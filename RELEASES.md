@@ -1,5 +1,26 @@
 # Releases
 
+## v1.5.1
+
+Docstring corrections so they match the code's actual behaviour (documentation-only; no runtime change). Renumbered from the original 1.3.2 in this PR onto the current `main` (now at 1.5.0).
+
+- **`pagehit/views.py`** - `get_pagehits` docstring previously claimed
+  the returned list was ordered by ``pk``, but the implementation sorts
+  by hit-count and reverses (descending by hits). The rewrite documents
+  both the aggregate branch and the ``item_pk``-supplied scalar branch,
+  and notes that ``item`` is ignored in the aggregate path.
+- **`pagehit/views.py`** - `get_search_hits` docstring now states that
+  results are sorted descending by ``n_hits`` and that terms are
+  ASCII-folded/profanity-filtered before counting.
+- **`pagehit/views.py`** - a misleading inline comment (``# extra_info=None
+  to avoid counting download hits``) above the aggregate ORM filter was
+  replaced; that filter does not look at ``extra_info`` at all.
+- **`tagging/views.py`** - `get_tag_uses` docstring corrected: the list
+  is sorted descending by ``n_uses``, not by ``Tag.pk``.
+- **`items/views.py`** - `show_items` docstring expanded to document the
+  ``what_view`` / ``extra_info`` parameters that drive the per-branch
+  queryset and template.
+
 ## v1.5.0
 
 Vendor MathJax + ECharts as local static assets and drop `cdn.jsdelivr.net` from the CSP (issue #79, security-audit umbrella #86). `script-src` is now a bare `'self'` — no third-party script CDN — which shrinks the XSS surface and removes a runtime dependency on jsDelivr's edge.

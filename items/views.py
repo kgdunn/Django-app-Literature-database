@@ -136,7 +136,20 @@ def get_items_or_404(view_function):
 
 def show_items(request, what_view="", extra_info=""):
     """
-    Shows a paginated list of items
+    Shows a paginated list of items.
+
+    Dispatches on ``what_view`` to pick the queryset and page layout:
+
+    - ``"tag"`` - items carrying ``Tag.slug == slugify(extra_info)``.
+    - ``"author"`` - items co-authored by ``Author`` with the matching slug.
+    - ``"journal"`` - items published in the ``Journal`` with the matching slug.
+    - ``"pub-by-year"`` - items whose ``year == int(extra_info)``.
+    - ``"show"`` + ``"all-tags"`` / ``"all-items"``, or ``"all"`` - full
+      listing branches (tag cloud / every item).
+    - ``"sort"`` - listing ordered by the field named in ``extra_info``.
+
+    ``extra_info`` carries the per-branch filter value (slug, year, sort
+    field). Anything unrecognised falls through to an empty page.
     """
     what_view = what_view.lower()
     extra_info = extra_info.lower()

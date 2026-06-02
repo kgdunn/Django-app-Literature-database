@@ -6,12 +6,11 @@ from .models import Tag
 def get_tag_uses():
     """
     Returns a list of tuples of the form:  [(n_uses, Tag.pk), ....]
-    This allows one to use the builtin ``list.sort()`` function where Python
-    orders the list based on the first entry in the tuple.
+    sorted in **descending order by n_uses** (most-used tags first).
+    Ties on ``n_uses`` are broken by descending ``Tag.pk``.
 
-    The list will be returned in the order of the ``Tag.pk``, but the
-    first tuple entry is the number of uses of that tag, allowing for easy
-    sorting using Python's ``sort`` method.
+    The tuple shape ``(n_uses, Tag.pk)`` is preserved so callers can re-sort
+    with the builtin ``list.sort()`` if a different order is needed.
     """
     uses_by_pk = defaultdict(int)
     for tag in Tag.objects.all():
