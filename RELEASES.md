@@ -1,5 +1,23 @@
 # Releases
 
+## v1.4.0
+
+Per-item "show this PDF publicly" admin override. Operator brief: the catalogue holds copyright-restricted PDFs that must never be downloadable (the Phase-5 rule), but one or two entries are openly-licensed public documents that *should* be viewable. This adds a default-off checkbox so those specific items — and only those — expose their PDF.
+
+What landed:
+
+- **`items.Item.pdf_is_public`** — a new `BooleanField(default=False)`. Off for every existing item (migration `0011_item_pdf_is_public_alter_item_pdf_file`), so the catalogue's default-deny posture is preserved: a PDF is only ever served once an admin explicitly ticks the box for a copyright-cleared document.
+- **`items.view_pdf`** (URL name `lit-public-pdf`, route `/item/<id>/pdf`) — a gated view that streams `Item.pdf_file` inline (`Content-Type: application/pdf`, `as_attachment=False`). It 404s unless the item has `pdf_is_public=True` **and** a `pdf_file`. Registered before the `lit-view-item` catch-all so the path isn't swallowed as a slug.
+- **Detail page** (`items/templates/items/item.html`) — renders a "View PDF" link only when the item is flagged public and has a PDF. The Phase-5 forbidden strings ("Download PDF", "download.pdf") are never reintroduced.
+- **Admin** (`items/admin.py`) — `pdf_is_public` added to the `Item` change-list display and a `list_filter`, so the handful of public items are easy to find and audit. The checkbox auto-appears on every Item/JournalPub/Book/Thesis/etc. edit form (no `fields` restriction).
+- **About page** — updated to note that a small number of openly-licensed documents are viewable via the per-item "View PDF" link.
+- **Production**: the Caddy `/media/literature/pdf/*` 404 **stays** — public PDFs are served only through `view_pdf` in the gunicorn worker, never the static path, so the in-DB flag remains the single gate (`docs/deploy.md` updated).
+- **Hardening (defense-in-depth)**: the on-disk PDF path is the guessable `literature/pdf/<slug[0]>/<slug>.pdf` shape (slug = public title), so downloading one public PDF could otherwise let a visitor reconstruct the media URL of a *non-public* item. `literature/urls.py` now registers a `_block_media_pdf` view that hard-404s `^media/literature/pdf/` ahead of the `DEBUG`-only `static()` media handler — mirroring the Caddy rule inside Django so dev / staging / any infra change can't leak a PDF either. The gated `view_pdf` is the only route to PDF bytes in every environment. Tests pin: id-enumeration can't leak a private PDF (and the 404 is not an existence oracle), and the raw slug-derived media path 404s even when the attacker knows the exact slug.
+- **Tests**: new `TestPublicPdfOverride` class in `items/tests/test_views.py` pins the default-deny invariant — flag-off (with or without a PDF) 404s, flag-on + PDF serves inline `%PDF` bytes, the detail-page link appears iff public. The existing `TestNoPdfDownloadEndpoint` guarantees (dead `lit-download-pdf` name, `/item/<id>/download.pdf` redirect) still hold.
+- **Docs**: CLAUDE.md gotcha #3 + Project shape + views list rewritten from "PDFs are not downloadable. Period." to "admin-only by default; the only public path is the gated `pdf_is_public` override."
+
+MINOR bump — additive feature + schema addition, default-off, no behaviour change for any existing item.
+
 ## v1.3.1
 
 Sibling-palette of v1.3.0 Steel-teal — same brief (de-matrix the theme), but drops teal entirely for a deep navy. Operator merged v1.3.0 Steel-teal first; this PR is the side-by-side comparison option that branched from main *after* Steel-teal merged, so it inherits all of v1.3.0's mono→sans chip styling and only changes the palette.

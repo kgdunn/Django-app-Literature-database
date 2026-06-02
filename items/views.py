@@ -4,7 +4,7 @@ import re
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.template.defaultfilters import slugify
 
@@ -257,6 +257,29 @@ def view_item(request, the_item, slug):
             "tag_list": the_item.tags.all(),
             "related_items": _get_related_items(the_item, limit=5),
         },
+    )
+
+
+def view_pdf(request, item_id):
+    """Serve an Item's PDF inline — but ONLY when an admin has explicitly
+    ticked ``Item.pdf_is_public`` for that item.
+
+    Default-deny: ``pdf_is_public`` defaults to False, so every item is
+    non-downloadable until an admin opts it in (used for the handful of
+    genuinely public / open-access documents in the catalogue). Items
+    without the flag — or without a PDF at all — 404 here. In production
+    Caddy independently 404s direct ``/media/literature/pdf/*`` access, so
+    this view (running in the gunicorn worker) is the single gate that can
+    open a copyright-cleared PDF to the public.
+    """
+    item = Item.objects.filter(id=item_id).first()
+    if item is None or not item.pdf_is_public or not item.pdf_file:
+        raise Http404("No public PDF is available for this item.")
+    return FileResponse(
+        item.pdf_file.open("rb"),
+        as_attachment=False,
+        filename="%s.pdf" % item.slug,
+        content_type="application/pdf",
     )
 
 

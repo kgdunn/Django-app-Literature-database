@@ -33,20 +33,25 @@ class AuthorAdmin(admin.ModelAdmin):
 class ItemAdmin(admin.ModelAdmin):
     inlines = (AuthorGroupInline,)
     # `pdf_file` stays in list_display so admins can confirm at a glance
-    # which items have a PDF attached for FTS extraction; the file itself
-    # is never exposed publicly (Phase 5 removed `download_item`).
+    # which items have a PDF attached for FTS extraction. By default the
+    # file is not exposed publicly; `pdf_is_public` (default off) is the
+    # per-item override that surfaces it via the `view_pdf` view, so it's
+    # shown in the list + offered as a filter to make the public ones easy
+    # to audit.
     list_display = (
         "id",
         "title",
         "author_list",
         "year",
         "pdf_file",
+        "pdf_is_public",
         "doi_link",
         "item_type",
         "date_created",
         "has_extra",
     )
     list_display_links = ("title",)
+    list_filter = ("pdf_is_public",)
     ordering = ["-id"]
     # `authors` is managed via the inline above; Django 2+ refuses to put a
     # M2M with a `through=` model in filter_horizontal (admin.E013).
