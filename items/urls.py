@@ -1,6 +1,6 @@
 from django.urls import re_path
 
-from items.views import __extract_extra__, show_items, view_item
+from items.views import __extract_extra__, show_items, view_item, view_pdf
 
 urlpatterns = [
     re_path(r"^show-all$", show_items, {"what_view": "all"}, name="show-items--all"),
@@ -17,13 +17,16 @@ urlpatterns = [
         show_items,
         name="lit-show-items",
     ),
+    # Gated public PDF. Phase 5 removed the *unconditional* `download.pdf`
+    # endpoint (all PDFs were copyright-restricted). This route restores a
+    # narrow, default-off path: `view_pdf` serves the bytes ONLY when an
+    # admin has ticked `Item.pdf_is_public` for that item, otherwise it
+    # 404s. Must precede the `lit-view-item` catch-all below so `/item/<id>/pdf`
+    # doesn't get swallowed as a slug.
+    re_path(r"^(?P<item_id>\d+)/pdf/?$", view_pdf, name="lit-public-pdf"),
     # View an existing item: both versions of accessing the item are valid
     # Maximum information:   http://..../23/draw-an-ellipse/
     # Minimal working link:  http://..../23/    <-- shows latest revision
-    #
-    # NOTE: Phase 5 removed the public PDF download URL (`download.pdf`)
-    # because all PDFs are copyright-restricted. PDFs are admin-only
-    # storage, consumed by `__extract_extra__` for FTS text extraction.
     re_path(r"^(?P<item_id>\d+)+(/)?(?P<slug>[-\w]+)?(/)?", view_item, name="lit-view-item"),
     # Extract PDF text to add to the Item object (admin-only).
     re_path(

@@ -40,6 +40,11 @@
     <dt>Citation</dt>
     <dd class="lit-detail-citation">{{ item.full_citation|safe }}</dd>
 
+    {% if item.pdf_is_public and item.pdf_file %}
+    <dt>PDF</dt>
+    <dd><a href="{% url 'lit-public-pdf' item.pk %}" target="_blank" rel="noopener">View PDF</a></dd>
+    {% endif %}
+
     {% if item.abstract %}
     <dt>Abstract</dt>
     <dd><div class="lit-detail-abstract">{{ item.abstract|sanitise_markup }}</div></dd>

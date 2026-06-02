@@ -212,13 +212,15 @@ class Item(models.Model):
     abstract = models.TextField(blank=True)
     date_created = models.DateTimeField(editable=False, auto_now=True)
 
-    # PDFs are uploaded by site admins and consumed only by the
+    # PDFs are uploaded by site admins and consumed by the
     # ``__extract_extra__`` admin endpoint, which extracts plain text via
     # pdfplumber into ``other_search_text`` for the Postgres FTS pipeline.
-    # They are NEVER served to end users (copyright restriction) — the
-    # public ``download_item`` view was removed in Phase 5. Caddy's
-    # ``/media/literature/pdf/*`` path is excluded from the static
-    # file_server in production for the same reason.
+    # By default they are NEVER served to end users (copyright restriction):
+    # the only way to expose one publicly is to flip ``pdf_is_public`` on
+    # for that specific item (see below). Caddy still 404s direct
+    # ``/media/literature/pdf/*`` access in production, so the flag — checked
+    # in the ``view_pdf`` Django view — is the single gate that can open a
+    # PDF to the public.
     #
     # Issue #82: ``FileExtensionValidator(allowed_extensions=["pdf"])``
     # rejects non-.pdf uploads at the admin form level — pure data-quality
@@ -230,8 +232,20 @@ class Item(models.Model):
         max_length=255,
         blank=True,
         null=True,
-        verbose_name="PDF file (admin-only; not exposed for download)",
+        verbose_name="PDF file (admin-only unless 'PDF is public' is ticked)",
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+    )
+
+    # Default-off override that exposes ``pdf_file`` to the public via the
+    # ``view_pdf`` view. Leave it unticked (the default) for every
+    # copyright-restricted PDF; tick it only for the handful of genuinely
+    # public / open-access documents that may be shown to visitors. With the
+    # box off, ``view_pdf`` 404s and no PDF link is rendered on the detail
+    # page — so the catalogue's default-deny posture is preserved per item.
+    pdf_is_public = models.BooleanField(
+        default=False,
+        verbose_name="PDF is public",
+        help_text="Tick to show this item's PDF to visitors. Off by default — leave off for copyright-restricted PDFs.",
     )
 
     # Contains unstructured text (auto-extracted from PDF, cut/paste, whatever)

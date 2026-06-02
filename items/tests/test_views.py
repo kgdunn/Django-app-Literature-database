@@ -520,7 +520,13 @@ class TestSearch:
 
 @pytest.mark.django_db
 class TestNoPdfDownloadEndpoint:
-    """Phase 5 hard rule: no public PDF download URL exists."""
+    """Phase 5 hard rule: no *unconditional* public PDF download URL exists.
+
+    The narrow, default-off `pdf_is_public` override (see
+    `TestPublicPdfOverride`) is the only sanctioned way to expose a PDF, and
+    it doesn't resurrect the old `lit-download-pdf` name or the
+    `/item/<id>/download.pdf` path.
+    """
 
     def test_lit_download_pdf_url_name_does_not_resolve(self):
         with pytest.raises(NoReverseMatch):
@@ -537,6 +543,83 @@ class TestNoPdfDownloadEndpoint:
         # Redirect target ends with the canonical slug, NOT '.pdf'.
         assert r["Location"].endswith(f"/item/{pub.pk}/{pub.slug}")
         assert ".pdf" not in r["Location"]
+
+
+# A tiny but structurally-valid PDF body, enough for FileResponse to stream.
+_MINIMAL_PDF = b"%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n"
+
+
+@pytest.mark.django_db
+class TestPublicPdfOverride:
+    """The default-off `Item.pdf_is_public` admin override and its gated
+    `view_pdf` endpoint (`lit-public-pdf`).
+
+    Default-deny is the invariant: a PDF is only ever served when an admin
+    has explicitly ticked the box for that item.
+    """
+
+    @staticmethod
+    def _attach_pdf(factory, author, **kwargs):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        pdf = SimpleUploadedFile("doc.pdf", _MINIMAL_PDF, content_type="application/pdf")
+        return factory(authors=[author], pdf_file=pdf, **kwargs)
+
+    def test_no_pdf_no_flag_404s(self, client, journalpub_factory, author):
+        """No PDF attached and flag off (default) → 404."""
+        pub = journalpub_factory(authors=[author])
+        assert pub.pdf_is_public is False  # default-off invariant
+        r = client.get(reverse("lit-public-pdf", args=[pub.pk]))
+        assert r.status_code == 404
+
+    def test_pdf_present_but_flag_off_404s(self, client, journalpub_factory, author, settings, tmp_path):
+        """A PDF is attached but the admin has NOT ticked public → 404.
+        This is the copyright-default case and the one that must never leak.
+        """
+        settings.MEDIA_ROOT = str(tmp_path)
+        pub = self._attach_pdf(journalpub_factory, author)  # pdf_is_public defaults False
+        r = client.get(reverse("lit-public-pdf", args=[pub.pk]))
+        assert r.status_code == 404
+
+    def test_flag_on_serves_pdf_inline(self, client, journalpub_factory, author, settings, tmp_path):
+        """Flag ticked + PDF attached → 200 with the PDF bytes, inline."""
+        settings.MEDIA_ROOT = str(tmp_path)
+        pub = self._attach_pdf(journalpub_factory, author, pdf_is_public=True)
+        r = client.get(reverse("lit-public-pdf", args=[pub.pk]))
+        assert r.status_code == 200
+        assert r["Content-Type"] == "application/pdf"
+        # as_attachment=False → shown inline in the browser, not force-downloaded.
+        assert r.get("Content-Disposition", "inline").startswith("inline")
+        assert b"".join(r.streaming_content).startswith(b"%PDF")
+
+    def test_flag_on_without_file_404s(self, client, journalpub_factory, author):
+        """Flag ticked but no PDF uploaded → still 404 (nothing to serve)."""
+        pub = journalpub_factory(authors=[author], pdf_is_public=True)
+        r = client.get(reverse("lit-public-pdf", args=[pub.pk]))
+        assert r.status_code == 404
+
+    def test_unknown_item_404s(self, client):
+        r = client.get(reverse("lit-public-pdf", args=[999999]))
+        assert r.status_code == 404
+
+    def test_detail_page_shows_pdf_link_only_when_public(self, client, journalpub_factory, author, settings, tmp_path):
+        """The 'View PDF' link appears on the detail page iff the item is
+        flagged public AND has a PDF — and never reintroduces the Phase-5
+        forbidden 'Download PDF' / 'download.pdf' strings.
+        """
+        settings.MEDIA_ROOT = str(tmp_path)
+        private = self._attach_pdf(journalpub_factory, author, title="Private paper")
+        public = self._attach_pdf(journalpub_factory, author, title="Public paper", pdf_is_public=True)
+
+        r_priv = client.get(f"/item/{private.pk}/{private.slug}")
+        assert b"View PDF" not in r_priv.content
+        assert b"Download PDF" not in r_priv.content
+        assert b"download.pdf" not in r_priv.content
+
+        r_pub = client.get(f"/item/{public.pk}/{public.slug}")
+        assert b"View PDF" in r_pub.content
+        assert reverse("lit-public-pdf", args=[public.pk]).encode() in r_pub.content
+        assert b"Download PDF" not in r_pub.content
 
 
 @pytest.mark.django_db

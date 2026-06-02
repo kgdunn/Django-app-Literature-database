@@ -43,7 +43,7 @@ The three `data/*` dirs are bind-mounted into the `web` container by `docker-com
 
 | Host path | Container path | Purpose |
 | --- | --- | --- |
-| `data/media/` | `/app/media` | PDFs uploaded by the admin (admin-only — never exposed publicly; Phase 5 rule). Backed up to S3 in Phase 11. |
+| `data/media/` | `/app/media` | PDFs uploaded by the admin (admin-only by default; an item can be individually opted in via `Item.pdf_is_public`, served through the gated `view_pdf` view — never via the Caddy static path, which stays a 404). Backed up to S3 in Phase 11. |
 | `data/static/` | `/app/static` | `collectstatic` output. Regenerated on every container start. **Not** backed up. |
 | `data/public/` | (served by Caddy) | Hand-curated public files (`robots.txt`, `favicon.ico`). |
 
@@ -182,10 +182,15 @@ literature.learnche.org {
         file_server
     }
 
-    # Phase 5 / copyright: PDFs are admin-only. Block direct access to
+    # Copyright: PDFs are admin-only by default. Block direct access to
     # /media/literature/pdf/* even though the bytes live on disk under
     # data/media. (data/media/ also stores future non-PDF assets, so we
-    # don't want a blanket /media block.)
+    # don't want a blanket /media block.) Keep this block in place even
+    # though some items are now individually marked public: those are NOT
+    # served from this static path — they go through the gated `view_pdf`
+    # Django view (`/item/<id>/pdf`) in the gunicorn worker, which checks
+    # `Item.pdf_is_public` before streaming a byte. Direct /media/.../pdf
+    # URLs must stay a hard 404 so the in-DB flag is the only gate.
     @pdfs path /media/literature/pdf/*
     respond @pdfs 404
 
