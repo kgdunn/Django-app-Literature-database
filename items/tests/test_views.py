@@ -602,6 +602,47 @@ class TestPublicPdfOverride:
         r = client.get(reverse("lit-public-pdf", args=[999999]))
         assert r.status_code == 404
 
+    def test_id_enumeration_cannot_leak_a_private_pdf(self, client, journalpub_factory, author, settings, tmp_path):
+        """Hardening: an attacker who downloads a *public* PDF and then walks
+        the id space (`/item/1/pdf`, `/item/2/pdf`, …) only ever gets bytes
+        for items the admin actually flagged public. Private neighbours 404,
+        and the 404 is indistinguishable from "no such item", so the endpoint
+        is not even an existence oracle.
+        """
+        settings.MEDIA_ROOT = str(tmp_path)
+        public = self._attach_pdf(journalpub_factory, author, title="Open access paper", pdf_is_public=True)
+        private = self._attach_pdf(journalpub_factory, author, title="Restricted paper")  # flag off
+
+        assert client.get(reverse("lit-public-pdf", args=[public.pk])).status_code == 200
+        assert client.get(reverse("lit-public-pdf", args=[private.pk])).status_code == 404
+        # Same 404 shape for a private item and a non-existent id (no oracle).
+        assert client.get(reverse("lit-public-pdf", args=[private.pk])).content == (
+            client.get(reverse("lit-public-pdf", args=[10**9])).content
+        )
+
+    def test_raw_media_pdf_path_is_not_served_by_django(self, client, journalpub_factory, author, settings, tmp_path):
+        """Hardening: the guessable on-disk path
+        `/media/literature/pdf/<slug[0]>/<slug>.pdf` must never be served
+        directly. Production blocks it in Caddy; `_block_media_pdf` mirrors
+        that inside Django (dev/staging). Even knowing a public item's exact
+        slug-derived path, the raw media URL 404s — the gated `view_pdf` is
+        the only door.
+        """
+        settings.MEDIA_ROOT = str(tmp_path)
+        pub = self._attach_pdf(journalpub_factory, author, title="Open paper", pdf_is_public=True)
+        # Reconstruct the exact path an attacker would guess from the slug.
+        guessed = "/media/literature/pdf/%s/%s.pdf" % (pub.slug[0], pub.slug)
+        assert client.get(guessed).status_code == 404
+
+    def test_block_media_pdf_view_raises_404(self):
+        """The defence-in-depth guard raises Http404 for any pdf-subtree hit."""
+        from django.http import Http404
+
+        from literature.urls import _block_media_pdf
+
+        with pytest.raises(Http404):
+            _block_media_pdf(None, path="o/anything.pdf")
+
     def test_detail_page_shows_pdf_link_only_when_public(self, client, journalpub_factory, author, settings, tmp_path):
         """The 'View PDF' link appears on the detail page iff the item is
         flagged public AND has a PDF — and never reintroduces the Phase-5
