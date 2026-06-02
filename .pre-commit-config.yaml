@@ -1,13 +1,21 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 
-# Django-generated migrations are tracked verbatim from `makemigrations`;
-# we don't want black / isort / flake8 / mypy bickering about their style
-# (e.g. line length on long auto-generated CreateModel calls, or isort
-# rearranging the `from django.db import migrations, models` block). The
-# global exclude below applies to every hook, so the previous per-hook
+# Two classes of files are excluded from every hook:
+#
+# 1. Django-generated migrations — tracked verbatim from `makemigrations`;
+#    we don't want black / isort / flake8 / mypy bickering about their style
+#    (e.g. line length on long auto-generated CreateModel calls, or isort
+#    rearranging the `from django.db import migrations, models` block).
+# 2. Vendored third-party minified JS (issue #79) — checked in byte-for-byte
+#    from upstream so they match the SHA-256s recorded in
+#    literature/static/literature/vendor/README.md. trailing-whitespace /
+#    end-of-file-fixer would mutate them (the minified bundles ship with no
+#    trailing newline), breaking that fidelity, so they're excluded wholesale.
+#
+# The global exclude applies to every hook, so the previous per-hook
 # `exclude:` on mypy is no longer needed.
-exclude: ^(items|tagging|pagehit)/migrations/
+exclude: ^(items|tagging|pagehit)/migrations/|^literature/static/literature/vendor/.*\.js$
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
