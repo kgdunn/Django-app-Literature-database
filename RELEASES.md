@@ -1,5 +1,25 @@
 # Releases
 
+## v1.5.0
+
+Vendor MathJax + ECharts as local static assets and drop `cdn.jsdelivr.net` from the CSP (issue #79, security-audit umbrella #86). `script-src` is now a bare `'self'` — no third-party script CDN — which shrinks the XSS surface and removes a runtime dependency on jsDelivr's edge.
+
+- **Vendored bundles** under `literature/static/literature/vendor/` (served from `/static`):
+  - `tex-mml-svg.js` — **MathJax 3.2.2, SVG output**. MathJax 2.7.9 (the old CDN pin) can't be self-hosted as a single file — `MathJax.js` lazy-loads its config/extensions/fonts at runtime (~63 MB npm package). The v3 SVG bundle is one ~2 MB file with every glyph embedded as an SVG path, so it fetches **zero** files at runtime (no web fonts either). Inline `\(...\)` / display `\[...\]` / `$$...$$` delimiters unchanged; rendering is visually equivalent.
+  - `echarts.min.js` — Apache ECharts 5.5.1 (the tag/author sparkline), previously CDN-loaded.
+  - `README.md` — provenance (source URLs, versions, SHA-256s) + refresh/upgrade steps.
+- **MathJax config** moved to `literature/static/literature/mathjax-config.js` (a static file, not an inline `<script>`) so the CSP stays free of `'unsafe-inline'`.
+- **CSP** (`literature/middleware.py`): `script-src 'self'` (was `'self' https://cdn.jsdelivr.net`). Google Fonts (`style-src`/`font-src`) are the only remaining off-origin allowances.
+- **SRI dropped** for these assets — redundant for same-origin files served over the page's own TLS. The now-unused `make sri` target is removed.
+- **Tests**: `test_csp_script_src_is_self_only_no_cdn` pins the tightened header; `test_no_jsdelivr_and_local_mathjax_in_rendered_html` and `test_sparkline_page_loads_local_echarts` pin that the rendered HTML references the local bundles and never `cdn.jsdelivr.net`. Existing sparkline tests updated off the old SRI assertion.
+- **Docs**: CLAUDE.md `base.html` description, `docs/SECURITY.md` (audit row 6 → Fixed), RELEASES.md.
+
+Note: the MathJax bundle embeds two `cdn.jsdelivr.net` URLs for the opt-in Speech Rule Engine (screen-reader Explorer). These are never fetched during normal rendering and are blocked by `connect-src 'self'` if a visitor manually enables the Explorer — graceful degradation, documented in the vendor `README.md`.
+
+Also closes #72 (robots.txt + staging noindex) in the audit ledger — the feature shipped earlier and is test-covered; this PR marks it done in `docs/SECURITY.md`.
+
+MINOR bump — dependency vendoring + CSP tightening + MathJax major-version bump, no URL/template-structure change and visually-equivalent math rendering.
+
 ## v1.4.0
 
 Per-item "show this PDF publicly" admin override. Operator brief: the catalogue holds copyright-restricted PDFs that must never be downloadable (the Phase-5 rule), but one or two entries are openly-licensed public documents that *should* be viewable. This adds a default-off checkbox so those specific items — and only those — expose their PDF.
