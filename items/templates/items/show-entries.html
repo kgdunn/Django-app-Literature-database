@@ -27,9 +27,9 @@
     <span class="lit-sparkline-label">Articles per year:</span>
     <div id="lit-sparkline" class="lit-sparkline"></div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"
-        integrity="sha384-rRoXxn2yHlrZYB587Ki9RO1tONhLdM6XfORg7Rw4uwH4/Fh/5nP7IUX91bkaKUgs"
-        crossorigin="anonymous"></script>
+<!-- ECharts 5.5.1, self-hosted under /static (issue #79) so the CSP keeps
+     script-src 'self'. Same-origin asset → no SRI needed. -->
+<script src="{% static 'literature/vendor/echarts.min.js' %}"></script>
 <script src="{% static 'literature/sparkline.js' %}"></script>
 {% endif %}
 

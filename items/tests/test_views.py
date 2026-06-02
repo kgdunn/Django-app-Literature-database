@@ -95,8 +95,16 @@ class TestSecurityHeaders:
         r = client.get("/")
         csp = r.get("Content-Security-Policy", "")
         assert "default-src 'self'" in csp
-        assert "https://cdn.jsdelivr.net" in csp
         assert "frame-ancestors 'none'" in csp
+
+    def test_csp_script_src_is_self_only_no_cdn(self, client):
+        # Issue #79: MathJax + ECharts are vendored under /static, so the
+        # CSP no longer allows cdn.jsdelivr.net. script-src is a bare
+        # 'self'. Pins against a regression that re-adds a CDN allowance.
+        r = client.get("/")
+        csp = r.get("Content-Security-Policy", "")
+        assert "cdn.jsdelivr.net" not in csp
+        assert "script-src 'self';" in csp
 
     def test_csp_drops_unsafe_inline(self, client):
         # Issue #80: the inline <style> + <script> blocks were extracted
@@ -111,6 +119,26 @@ class TestSecurityHeaders:
         csp = r.get("Content-Security-Policy", "")
         assert "'unsafe-inline'" not in csp
         assert "'unsafe-eval'" not in csp
+
+    def test_no_jsdelivr_and_local_mathjax_in_rendered_html(self, client):
+        # Issue #79: every page (base.html) must load MathJax from /static,
+        # never cdn.jsdelivr.net. Guards against a template regression that
+        # would silently re-introduce the CDN dependency.
+        r = client.get("/")
+        body = r.content
+        assert b"cdn.jsdelivr.net" not in body
+        assert b"/static/literature/vendor/tex-mml-svg.js" in body
+
+    def test_sparkline_page_loads_local_echarts(self, client, journalpub_factory, author):
+        # Issue #79: the tag/author sparkline must load ECharts from
+        # /static. The sparkline only renders when the filtered set spans
+        # >1 year, so seed two years for the same author.
+        journalpub_factory(authors=[author], title="Early", year=2019)
+        journalpub_factory(authors=[author], title="Later", year=2024)
+        r = client.get(f"/item/author/{author.slug}/")
+        assert r.status_code == 200
+        assert b"cdn.jsdelivr.net" not in r.content
+        assert b"/static/literature/vendor/echarts.min.js" in r.content
 
     def test_permissions_policy_present(self, client):
         r = client.get("/")
@@ -723,9 +751,9 @@ class TestItemList:
         # ECharts mount point + data carrier.
         assert '<div id="lit-sparkline"' in body
         assert 'id="lit-sparkline-data"' in body
-        # ECharts CDN script with SRI pin.
-        assert "echarts.min.js" in body
-        assert 'integrity="sha384-' in body
+        # ECharts loaded from the self-hosted /static vendor path (issue
+        # #79); no CDN, no SRI attr (same-origin asset).
+        assert "/static/literature/vendor/echarts.min.js" in body
 
     def test_tag_page_omits_sparkline_when_single_year(self, client, journalpub_factory, author, tag):
         # Only one year of data → wrapper suppressed via the template's

@@ -39,15 +39,15 @@
 </footer>
 
 <!--
-  Pinned to a specific patch version so jsDelivr cannot silently serve a
-  different build than the one we tested with. The `integrity="sha384-…"`
-  hash below is computed by `make sri` over the bytes of `MathJax.js`
-  itself; if the CDN ever serves different bytes the browser will
-  refuse to execute the script.
+  MathJax 3 (SVG output), self-hosted under /static (issue #79) so the CSP
+  keeps script-src 'self' with no third-party CDN allowance. The config
+  must load before the bundle; both are local files (no inline <script>,
+  no SRI needed for same-origin assets). See
+  literature/static/literature/vendor/README.md for provenance + the
+  v2.7.9 -> v3.2.2 rationale.
 -->
-<script type="text/javascript" crossorigin="anonymous"
-    integrity="sha384-vi9R4hb1goLJPJDHY+dOmXxcY3HGv6tJIwHxy5JunOTxJGHbsSuubPgl++SNxYYi"
-    src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="{% static 'literature/mathjax-config.js' %}"></script>
+<script src="{% static 'literature/vendor/tex-mml-svg.js' %}" async></script>
 
 <script src="{% static 'literature/theme-toggle.js' %}"></script>
 {{ANALYTICS_SNIPPET|safe}}

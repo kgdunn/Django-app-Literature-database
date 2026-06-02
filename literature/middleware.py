@@ -29,20 +29,22 @@ Google Fonts CSS comes from a remote stylesheet, no inline needed.
 ``style-src`` now is ``'self' https://fonts.googleapis.com``.
 
 CDN allowlist:
-* ``cdn.jsdelivr.net`` — host of the SRI-pinned MathJax 2.7.9 script
-  (Phase 6) used to render LaTeX in ``Item.abstract``, and the
-  SRI-pinned ECharts 5.5.1 (PR #61) used by the sparkline. Both
-  ``integrity="sha384-…"`` attributes ensure the bytes can't drift
-  without the browser refusing to execute the script.
+* (none for scripts) — issue #79 vendored MathJax + ECharts under
+  ``/static`` so ``script-src`` is now a bare ``'self'`` with no
+  ``cdn.jsdelivr.net`` allowance. MathJax is the v3 SVG bundle
+  (``tex-mml-svg.js``), self-contained with embedded glyph paths, so it
+  fetches no web fonts at runtime either. See
+  ``literature/static/literature/vendor/README.md`` for provenance.
 * ``fonts.googleapis.com`` + ``fonts.gstatic.com`` — Google Fonts
-  (IBM Plex Sans / Serif / Mono) loaded from ``base.html``.
+  (IBM Plex Sans / Serif / Mono) loaded from ``base.html``. These are the
+  only remaining off-origin allowances (``style-src`` / ``font-src``).
 """
 
 from django.conf import settings
 
 CSP = (
     "default-src 'self'; "
-    "script-src 'self' https://cdn.jsdelivr.net; "
+    "script-src 'self'; "
     "style-src 'self' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; "
     "img-src 'self' data:; "
