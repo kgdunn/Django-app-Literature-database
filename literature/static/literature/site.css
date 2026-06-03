@@ -650,6 +650,24 @@ p  { margin: 0 0 var(--sp-3) 0; }
     padding: var(--sp-4);
     margin: var(--sp-2) 0 0 0;
 }
+/* Public-PDF link (the gated `view_pdf` route). The inline SVG renders a
+   document with a red "PDF" ribbon so the link reads as an actual
+   downloadable file rather than a plain text link; the document outline
+   uses currentColor (the link navy) so it tracks the light/dark theme,
+   while the ribbon stays PDF-red in both. */
+.lit-pdf-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-weight: 500;
+    text-decoration: none;
+}
+.lit-pdf-link__icon {
+    width: 1.5em;
+    height: 1.5em;
+    flex: 0 0 auto;
+}
+.lit-pdf-link:hover .lit-pdf-link__text { text-decoration: underline; }
 /* Note: the legacy bottom ``<nav class="lit-detail-nav">`` was removed
    in v1.2.0 along with its CSS. Prev/next item navigation now lives in
    the top bar (``.detail-topbar__pager``) so visitors don't have to
