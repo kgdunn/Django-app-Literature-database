@@ -1,5 +1,14 @@
 # Releases
 
+## v1.5.2
+
+Make the public-PDF link on the item detail page read as an actual downloadable document instead of a plain text link (operator request).
+
+- **`items/templates/items/item.html`** — the `View PDF` link now leads with an inline-SVG **PDF document icon** (a page with a folded corner and a red "PDF" ribbon). The icon is inline SVG (no extra request, CSP-clean), its outline uses `currentColor` so it tracks the link colour in both light and dark themes, and the ribbon stays PDF-red. The link text and `{% url 'lit-public-pdf' %}` target are unchanged, so the v1.4.0 gating and the "no Download PDF / download.pdf" guarantees still hold.
+- **`literature/static/literature/site.css`** — `.lit-pdf-link` (inline-flex, icon + label, hover-underlines the label) and `.lit-pdf-link__icon` sizing.
+
+PATCH bump — cosmetic detail-page polish, no behaviour or URL change.
+
 ## v1.5.1
 
 Docstring corrections so they match the code's actual behaviour (documentation-only; no runtime change). Renumbered from the original 1.3.2 in this PR onto the current `main` (now at 1.5.0).
