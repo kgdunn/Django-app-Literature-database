@@ -1,5 +1,30 @@
 # Releases
 
+## v1.5.3
+
+Docstring corrections so the in-code documentation matches the runtime
+behaviour (documentation-only; no functional change).
+
+- **`items/views.py`** - `view_item` docstring no longer claims "no PDF
+  download path exists". Phase 5 removed the unconditional download, but
+  v1.4.0 reintroduced a narrow, default-off path via
+  `Item.pdf_is_public` + `view_pdf`; the docstring now describes the
+  detail page's "View PDF" link gated on `pdf_is_public` + `pdf_file`.
+- **`items/models.py`** - `Item.get_absolute_url` docstring rewritten.
+  The old text ("I can't seem to find a way to use the 'reverse' or
+  'permalink' functions to create this URL: do it manually") is a relic
+  - the code does call `reverse(...)`. The new docstring describes the
+  placeholder-pk-then-strip technique the code actually uses.
+- **`pagehit/views.py`** - `get_pagehits` docstring no longer describes
+  the window as "half-open" while also saying "both inclusive". The
+  query uses `__gte` / `__lte`, so it's a closed window on both ends.
+- **`pages/urls.py`** - the comment on the `search` route claimed a
+  "Postgres FTS in prod, icontains fallback in SQLite dev" split, but
+  both settings modules target Postgres and `pages.search` has no
+  SQLite fallback. The comment now matches the implementation.
+
+PATCH bump - documentation-only fix.
+
 ## v1.5.2
 
 Make the public-PDF link on the item detail page read as an actual downloadable document instead of a plain text link (operator request).
