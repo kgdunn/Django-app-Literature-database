@@ -426,8 +426,13 @@ class Item(models.Model):
             return None
 
     def get_absolute_url(self):
-        """I can't seem to find a way to use the "reverse" or "permalink"
-        functions to create this URL: do it manually, to match ``urls.py``
+        """Canonical URL for the item's detail page.
+
+        Resolves the ``lit-view-item`` route with a placeholder pk of 0,
+        strips it, then appends the real ``<pk>/<slug>`` so the result
+        carries both the numeric id and the slug (the slug is optional
+        in the URL pattern but rendering it here keeps the user-visible
+        URL stable).
         """
         return reverse("lit-view-item", args=[0]).rstrip("0") + "%d/%s" % (
             self.pk,
