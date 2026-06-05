@@ -255,9 +255,14 @@ def view_item(request, the_item, slug):
     """
     Show the full details of one item.
 
-    No PDF download path exists (Phase 5 removed it for copyright
-    reasons). The detail page surfaces citation, abstract, DOI /
-    external link, tags, and a "Related items" panel (issue #36).
+    Phase 5 removed the unconditional public PDF download for
+    copyright reasons; v1.4.0 reintroduced a narrow, default-off path
+    via ``Item.pdf_is_public`` + the gated ``view_pdf`` view. The
+    template renders a "View PDF" link only when both
+    ``item.pdf_is_public`` and ``item.pdf_file`` are set; for every
+    other item the detail page simply omits the link. The page also
+    surfaces citation, abstract, DOI / external link, tags, and a
+    "Related items" panel (issue #36).
     """
     logger.debug("Viewing: %s", the_item)
 
