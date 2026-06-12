@@ -318,8 +318,8 @@ class Item(models.Model):
         the last names only contain normalized unicode characters.
 
         1: Duncan
-        2: Smith-and-Weston
-        3: Joyce-Smith-Smythe
+        2: Smith and Weston
+        3: Joyce, Smith and Smythe
         """
         auth_list = self.authors.all().order_by("authorgroup__order")
         authors = []
