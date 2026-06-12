@@ -8,7 +8,7 @@ dependencies = [
     "psycopg[binary]>=3.3.4,<4",
     "python-dotenv>=1.2.2",
     "gunicorn>=26.0.0",
-    "bleach>=6.3.0",
+    "bleach>=6.4.0",
     "pdfplumber>=0.11.9",
     # Per-account admin login throttling — issue #74. ``axes`` ships
     # its own migrations that ``manage.py migrate`` will pick up;
