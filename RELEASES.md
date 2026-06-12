@@ -1,5 +1,16 @@
 # Releases
 
+## v1.5.3
+
+Docstring corrections so they match the code's actual behaviour (documentation-only; no runtime change).
+
+- **`items/models.py`** — `Item.author_slugs` examples were shown as hyphen-joined names (`Smith-and-Weston`, `Joyce-Smith-Smythe`) but the function returns ` and `-joined / `, `-then-` and `-joined strings. The examples now read `Smith and Weston` / `Joyce, Smith and Smythe`, matching the sibling `author_list_all_lastnames` docstring immediately below.
+- **`items/models.py`** — `Item.get_absolute_url` carried a stale "I can't seem to find a way to use the ``reverse`` ... functions" docstring even though the body already calls ``reverse("lit-view-item", args=[0]).rstrip("0")``. Replaced with an accurate description of the resolve-prefix-then-append-pk/slug trick.
+- **`items/templatetags/core_tags.py`** — both `most_searched` and `most_viewed` claimed to "Get the most viewed items from the Submission model"; there is no `Submission` model. They actually wrap `pagehit.views.get_search_hits` and `get_pagehits` respectively. Each docstring now describes what the filter returns and what powers it.
+- **`items/views.py`** — `show_items` docstring listed a `"sort"` branch for `what_view` that does not exist in the dispatch chain (and an "extra_info … sort field" note to match). Removed both; the remaining values match the actual branches.
+
+PATCH bump — documentation-only, no behaviour or URL change.
+
 ## v1.5.2
 
 Make the public-PDF link on the item detail page read as an actual downloadable document instead of a plain text link (operator request).
