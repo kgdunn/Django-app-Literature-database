@@ -16,7 +16,11 @@ register = template.Library()
 
 @register.filter(name="most_searched")
 def most_searched(field, num=5):
-    """Get the most viewed items from the Submission model"""
+    """Return the top ``num`` most-searched terms.
+
+    Drives the front-page "Top search terms" portal; the underlying
+    counts come from ``pagehit.views.get_search_hits``.
+    """
     top_items = get_search_hits()
     out = []
     for score, search_term in top_items[:num]:
@@ -26,7 +30,13 @@ def most_searched(field, num=5):
 
 @register.filter
 def most_viewed(field, num=5):
-    """Get the most viewed items from the Submission model"""
+    """Return the top ``num`` most-viewed ``Item`` objects.
+
+    Counts come from the ``PageHit`` table via
+    ``pagehit.views.get_pagehits``; each returned Item is decorated
+    with a ``score`` attribute holding its hit count so templates can
+    render it alongside the title.
+    """
     top_items = get_pagehits(field)
     # top_items.sort(reverse=True)
     out = []
