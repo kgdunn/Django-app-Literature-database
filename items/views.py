@@ -146,10 +146,9 @@ def show_items(request, what_view="", extra_info=""):
     - ``"pub-by-year"`` - items whose ``year == int(extra_info)``.
     - ``"show"`` + ``"all-tags"`` / ``"all-items"``, or ``"all"`` - full
       listing branches (tag cloud / every item).
-    - ``"sort"`` - listing ordered by the field named in ``extra_info``.
 
-    ``extra_info`` carries the per-branch filter value (slug, year, sort
-    field). Anything unrecognised falls through to an empty page.
+    ``extra_info`` carries the per-branch filter value (slug or year).
+    Anything unrecognised falls through to an empty page.
     """
     what_view = what_view.lower()
     extra_info = extra_info.lower()
