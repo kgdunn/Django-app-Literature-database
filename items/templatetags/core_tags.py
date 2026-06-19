@@ -16,7 +16,9 @@ register = template.Library()
 
 @register.filter(name="most_searched")
 def most_searched(field, num=5):
-    """Get the most viewed items from the Submission model"""
+    """Top ``num`` search terms (most-searched first), pulled from PageHit rows
+    whose ``item`` column is the ``haystack_search`` static key. Returns the
+    bare term strings; counts are dropped."""
     top_items = get_search_hits()
     out = []
     for score, search_term in top_items[:num]:
@@ -26,7 +28,8 @@ def most_searched(field, num=5):
 
 @register.filter
 def most_viewed(field, num=5):
-    """Get the most viewed items from the Submission model"""
+    """Top ``num`` most-viewed ``Item`` objects (highest PageHit count first),
+    each decorated with a ``.score`` attribute holding the raw hit count."""
     top_items = get_pagehits(field)
     # top_items.sort(reverse=True)
     out = []
