@@ -63,6 +63,9 @@ class Author(models.Model):
 
     @property
     def full_name_hyperlinked(self):
+        """Currently returns the plain ``full_name``; reserved for a future
+        hyperlinked variant. Templates may already reference this name, so it
+        is kept as-is until the real linking implementation lands."""
         if self.middle_initials:
             return "%s %s %s" % (self.first_name, self.middle_initials, self.last_name)
         else:
