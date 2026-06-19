@@ -37,7 +37,7 @@ PROFANITIES_LIST = (
 
 def create_hit(request, item, extra_info=None):
     """
-    Given a Django ``request`` object, create an entry in the DB for the hit.
+    Create a PageHit row recording a single page view.
 
     If the ``item`` is a string, then we assume it is a static item and use
     the dictionary above to look up its "primary key".
@@ -45,8 +45,8 @@ def create_hit(request, item, extra_info=None):
     Phase 4 trimmed PII storage: ``ua_string`` and ``ip_address`` were
     dropped from the PageHit schema, so the only data captured per hit is
     (item, item_pk, datetime, extra_info). The ``request`` argument is
-    kept on the signature so callers don't all have to change at once,
-    even though the body no longer reads it.
+    kept for back-compat callers but is immediately discarded; this
+    function does not read the request anywhere.
     """
     del request  # captured for signature stability; PII trim drops use of it
     if extra_info is None:
