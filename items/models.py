@@ -76,10 +76,9 @@ class Author(models.Model):
         return reverse("lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug})
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
-        """
+        """Trim leading/trailing whitespace from the name fields and assign a
+        collision-free slug derived from ``full_name`` via ``unique_slugify``
+        before delegating to ``Model.save``."""
         self.first_name = self.first_name.strip()
         self.last_name = self.last_name.strip()
         unique_slugify(self, self.full_name, "slug")
@@ -102,10 +101,8 @@ class School(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
-        """
+        """Trim whitespace from ``name`` and regenerate the slug via
+        ``slugify(self.name)`` before delegating to ``Model.save``."""
         self.name = self.name.strip()
         self.slug = slugify(self.name)
 
@@ -144,10 +141,11 @@ class Journal(models.Model):
         return '<a href="%s">%s</a>' % (self.get_absolute_url(), self.name)
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
-        """
+        """Trim whitespace from ``name`` and regenerate the slug from the
+        string form via ``slugify(str(self))`` before delegating to
+        ``Model.save``. Case-insensitive uniqueness on ``name`` is enforced
+        at the DB level by the ``unique_journal_name_case_insensitive``
+        constraint (see ``Meta.constraints``)."""
         self.name = self.name.strip()
         self.slug = slugify(str(self))
         super(Journal, self).save(*args, **kwargs)
@@ -161,10 +159,9 @@ class Publisher(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
-        """
+        """Trim whitespace from ``name`` and regenerate the slug from the
+        string form via ``slugify(str(self))`` before delegating to
+        ``Model.save``."""
         self.name = self.name.strip()
         self.slug = slugify(str(self))
         super(Publisher, self).save(*args, **kwargs)
