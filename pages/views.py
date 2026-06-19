@@ -73,6 +73,11 @@ def page_404_error(request, exception=None, extra_info=""):
     Django's handler signature changed in 1.9 to add `exception`; we accept
     it here so the handler is callable both directly (where we pass
     extra_info) and via the URL resolver.
+
+    ``extra_info`` is an optional human-readable message passed through to the
+    404 template's context (falls back to ``str(exception)`` when empty) so
+    direct callers can supply a richer explanation than Django's bare
+    Resolver404.
     """
     ip = get_IP_address(request)
     info = extra_info or (str(exception) if exception is not None else "")
