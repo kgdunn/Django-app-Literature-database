@@ -1,5 +1,43 @@
 # Releases
 
+## v1.5.3
+
+Docstring corrections so they match the code's actual behaviour
+(documentation-only; no runtime change).
+
+- **`items/templatetags/core_tags.py`** — `most_searched` and `most_viewed`
+  docstrings referenced a non-existent ``Submission`` model. Rewritten to
+  describe what each filter actually returns (top-N search terms from
+  PageHit for ``most_searched``; top-N ``Item`` objects with a ``.score``
+  attribute for ``most_viewed``).
+- **`items/views.py`** — `show_items` docstring listed a ``"sort"`` value
+  for ``what_view`` that no dispatch branch handles. Removed the bullet
+  (and the matching mention in the ``extra_info`` description) so the
+  docstring matches the implemented dispatch.
+- **`pages/views.py`** — `page_404_error` docstring now documents the
+  ``extra_info`` kwarg (an optional human-readable message threaded into
+  the 404 template's context, with ``str(exception)`` as the fallback)
+  alongside the existing ``exception`` description.
+- **`items/models.py`** — `Author.full_name_hyperlinked` docstring now
+  states honestly that the property is currently a passthrough returning
+  the plain ``full_name``, with a note that the real hyperlinked variant
+  is the future plan. The property name is retained because templates
+  may already reference it.
+- **`items/models.py`** — `Author.save`, `School.save`, `Journal.save`,
+  and `Publisher.save` carried identical Django-docs-URL placeholder
+  docstrings. Replaced each with a one-line description of what the
+  override actually does (strip the text fields, compute the slug via
+  ``unique_slugify`` or ``slugify``, delegate to ``Model.save``).
+  ``Journal.save`` additionally points at the case-insensitive
+  uniqueness constraint that lives in ``Meta.constraints``.
+- **`pagehit/views.py`** — `create_hit` docstring tightened to make the
+  ``request`` argument's status explicit: the body opens with
+  ``del request``, so the argument is kept for back-compat callers but
+  is immediately discarded; the function does not read the request
+  anywhere.
+
+PATCH bump — docstring-only edits, no behaviour change.
+
 ## v1.5.2
 
 Make the public-PDF link on the item detail page read as an actual downloadable document instead of a plain text link (operator request).
