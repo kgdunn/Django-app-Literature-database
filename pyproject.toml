@@ -1,6 +1,6 @@
 [project]
 name = "literature"
-version = "1.5.2"
+version = "1.6.0"
 description = "The Django site behind https://literature.learnche.org — a personal literature catalogue."
 requires-python = ">=3.11"
 dependencies = [

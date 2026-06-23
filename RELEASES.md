@@ -1,5 +1,28 @@
 # Releases
 
+## v1.6.0
+
+Repeat the item detail page's Previous / Next navigation at the **bottom**
+of the page, so a visitor who has scrolled through the citation, abstract,
+tags, and related-items panel can move to the adjacent item without
+scrolling back up to the top topbar.
+
+- **`items/templates/items/item.html`** — after the related-items section,
+  render a second `<nav class="detail-topbar detail-topbar--bottom">`
+  carrying just the Previous (left) and Next (right) chips. It reuses the
+  same `item.previous_item` / `item.next_item` model properties (pk ± 1) as
+  the top topbar, the same `__spacer` placeholder when one side is missing,
+  and is wrapped in `{% if item.previous_item or item.next_item %}` so
+  nothing renders when there's no neighbour. No "Back to home" chip — that
+  stays at the top only.
+- **`literature/static/literature/site.css`** — add a `.detail-topbar--bottom`
+  rule that flips the topbar's margin to sit below the content. All other
+  chip styling (grid, hover, mobile padding) is reused unchanged.
+
+No view, URL, or model changes — the bottom bar reads the existing
+`previous_item` / `next_item` properties. MINOR: additive, user-visible
+navigation affordance.
+
 ## v1.5.2
 
 Make the public-PDF link on the item detail page read as an actual downloadable document instead of a plain text link (operator request).

@@ -282,6 +282,10 @@ p  { margin: 0 0 var(--sp-3) 0; }
    home stays centred without shifting. aria-hidden + zero visual
    weight keep it out of the accessibility tree. */
 .detail-topbar__spacer { display: block; }
+/* Same chip row repeated at the foot of the detail page (Previous / Next
+   only — no "Back to home" chip), so navigation is reachable after
+   scrolling. Flips the margin to sit below the content instead of above. */
+.detail-topbar--bottom { margin: var(--sp-5) 0 0 0; }
 @media (max-width: 420px) {
     /* Very narrow viewports: shrink padding so all three chips fit on
        one row without wrapping. Labels themselves stay readable. */
