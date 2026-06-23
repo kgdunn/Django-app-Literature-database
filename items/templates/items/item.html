@@ -86,4 +86,19 @@
 </section>
 {% endif %}
 
+{% if item.previous_item or item.next_item %}
+<nav class="detail-topbar detail-topbar--bottom" aria-label="Item navigation">
+    {% if item.previous_item %}
+    <a class="detail-topbar__btn detail-topbar__btn--prev" href="{{ item.previous_item }}" rel="prev">&larr; Previous</a>
+    {% else %}
+    <span class="detail-topbar__spacer" aria-hidden="true"></span>
+    {% endif %}
+    {% if item.next_item %}
+    <a class="detail-topbar__btn detail-topbar__btn--next" href="{{ item.next_item }}" rel="next">Next &rarr;</a>
+    {% else %}
+    <span class="detail-topbar__spacer" aria-hidden="true"></span>
+    {% endif %}
+</nav>
+{% endif %}
+
 {% endblock %}
