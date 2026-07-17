@@ -16,7 +16,7 @@ register = template.Library()
 
 @register.filter(name="most_searched")
 def most_searched(field, num=5):
-    """Get the most viewed items from the Submission model"""
+    """Return the top ``num`` most-searched query terms (strings), most-hit first."""
     top_items = get_search_hits()
     out = []
     for score, search_term in top_items[:num]:

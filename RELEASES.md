@@ -1,5 +1,31 @@
 # Releases
 
+## v1.6.1
+
+Fix four docstring/comment mismatches uncovered while cross-checking the docs
+against actual code behaviour. Docs-only; no runtime code paths change.
+
+- **`items/models.py`** — `Item.author_slugs`: the docstring's worked
+  examples were wrong (they showed hyphen-joined output like
+  `"Smith-and-Weston"`, but the method actually returns space-and-comma
+  formatted strings like `"Einstein and Curie"` / `"Joyce, Smith and Smythe"`
+  — see `items/tests/test_models.py`). Rewrite the examples to match, and
+  drop the misleading "Used to create the PDF file name" sentence: PDF file
+  names come from `Item.upload_dest`, which uses `instance.slug`, not this
+  property.
+- **`items/templatetags/core_tags.py`** — `most_searched`: the docstring
+  said "Get the most viewed items from the Submission model", which is
+  wrong on every count (there is no Submission model; this filter returns
+  most-searched query terms, not items). Replace with an accurate
+  one-liner.
+- **`pages/urls.py`** — `search` route comment claimed an "icontains
+  fallback in SQLite dev", but both dev and prod target Postgres and the
+  view is Postgres-FTS in both. Correct the comment.
+- **`pagehit/views.py`** — `get_pagehits` docstring described the window
+  as "half-open" while also calling it "both inclusive"; the implementation
+  uses `__gte` + `__lte` (fully closed). Change "half-open" to "closed" so
+  the docstring matches the code and stops contradicting itself.
+
 ## v1.6.0
 
 Repeat the item detail page's Previous / Next navigation at the **bottom**
