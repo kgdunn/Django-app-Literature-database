@@ -87,7 +87,7 @@ def get_search_hits():
 
 def get_pagehits(item, start_date=None, end_date=None, item_pk=None):
     """
-    Counts page hits in the half-open window ``[start_date, end_date]``
+    Counts page hits in the closed interval ``[start_date, end_date]``
     (both inclusive; defaults span all time).
 
     With ``item_pk=None`` (default), aggregates hits across every item of
