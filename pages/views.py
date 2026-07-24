@@ -94,8 +94,14 @@ def page_500_error(request):
 def search(request):
     """Site-wide search.
 
-    Postgres full-text search: weighted ``SearchVector`` over title /
-    abstract / other_search_text, ranked by ``SearchRank``, OR-joined
+    Postgres full-text search: weighted ``SearchVector`` over the
+    Item base fields (``title``, ``abstract``, ``other_search_text``)
+    plus the subclass-specific fields joined in for issue #33
+    (``journalpub__journal__name``, ``book__isbn``,
+    ``conferenceproceeding__conference_name``,
+    ``conferenceproceeding__organization``,
+    ``conferenceproceeding__location``, and
+    ``incollection__book_title``), ranked by ``SearchRank``, OR-joined
     with ``__trigram_similar`` on author last names so typos still
     find the right author. Backed by the ``pg_trgm`` extension
     (installed in ``items`` migration 0004).
