@@ -98,9 +98,11 @@ def get_items_or_404(view_function):
     it to its concrete subclass (JournalPub / Book / ConferenceProceeding
     / Thesis based on ``item_type``). 404s if no Item matches.
 
-    Phase 5 removed the ``download.pdf`` branch: PDFs are no longer
-    exposed publicly (copyright restriction), so the only path through
-    this decorator is canonical-URL handling for ``view_item``.
+    Phase 5 removed the ``download.pdf`` branch. Since v1.4.0 the only
+    public PDF path is the separate, gated ``view_pdf`` view (URL name
+    ``lit-public-pdf``), which is not decorated with this helper; the
+    only path through this decorator is canonical-URL handling for
+    ``view_item``.
     """
 
     def decorator(request, item_id, slug=None):
@@ -255,9 +257,12 @@ def view_item(request, the_item, slug):
     """
     Show the full details of one item.
 
-    No PDF download path exists (Phase 5 removed it for copyright
-    reasons). The detail page surfaces citation, abstract, DOI /
-    external link, tags, and a "Related items" panel (issue #36).
+    Since v1.4.0 the detail page renders a "View PDF" link (pointing at
+    the gated ``view_pdf`` view / ``lit-public-pdf`` URL) only for items
+    where an admin has ticked ``Item.pdf_is_public``; every other item
+    stays default-deny per Phase 5's copyright policy. The page also
+    surfaces citation, abstract, DOI / external link, tags, and a
+    "Related items" panel (issue #36).
     """
     logger.debug("Viewing: %s", the_item)
 
