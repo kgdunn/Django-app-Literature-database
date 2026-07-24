@@ -26,7 +26,8 @@ def get_IP_address(request):
 
     Used only for log lines (``pages.views`` 404 / 500 / search handlers).
     Phase 4 dropped the legacy stored-PII path: PageHit rows no longer
-    capture IPs, and ``download_item`` no longer gates on them.
+    capture IPs, and Phase 5 removed the ``download_item`` view that
+    used to gate on them.
     """
     # Catchs the case when the user is on a proxy
     ip = request.META.get("HTTP_X_FORWARDED_FOR", "")
