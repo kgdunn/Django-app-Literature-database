@@ -1,5 +1,30 @@
 # Releases
 
+## v1.6.1
+
+Fix stale / inaccurate docstrings across the codebase. Docs-only — no
+behaviour changes, no tests affected.
+
+- **`items/views.py`** — `view_item` and `get_items_or_404` docstrings
+  no longer claim "no PDF download path exists"; they now describe the
+  gated ``view_pdf`` (URL name ``lit-public-pdf``) path added in
+  v1.4.0 and the per-item ``Item.pdf_is_public`` opt-in.
+- **`pages/views.py`** — `search` docstring now enumerates all nine
+  fields covered by the weighted ``SearchVector`` (base Item fields
+  plus the subclass-specific fields joined in for issue #33), not just
+  the original three.
+- **`pagehit/views.py`** — `get_pagehits` docstring corrected from the
+  self-contradictory "half-open ``[start_date, end_date]`` (both
+  inclusive)" to "closed interval ``[start_date, end_date]`` (both
+  inclusive)", matching the ``__gte`` + ``__lte`` filters.
+- **`items/templatetags/core_tags.py`** — `most_searched` and
+  `most_viewed` docstrings rewritten to describe what they actually
+  do (top search terms and top-viewed ``Item`` rows respectively);
+  the previous copies referenced a non-existent "Submission" model.
+- **`utils/__init__.py`** — `get_IP_address` docstring no longer
+  references the removed ``download_item`` view; notes that Phase 5
+  removed it.
+
 ## v1.6.0
 
 Repeat the item detail page's Previous / Next navigation at the **bottom**
