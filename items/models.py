@@ -313,13 +313,16 @@ class Item(models.Model):
     @property
     def author_slugs(self):
         """
-        Used to create the PDF file name. Doesn't matter if there are spaces
-        in the last name (i.e. it is not a strict slug), but it does ensure
-        the last names only contain normalized unicode characters.
+        NFKD-normalised, ASCII-folded English-list-join of the item's author
+        last names. The output isn't a strict slug (spaces and commas are
+        kept); the point is only that every character is ASCII, so the
+        string is safe to embed anywhere an ASCII-only identifier is
+        needed. PDF filenames use ``Item.slug`` (see ``upload_dest``),
+        not this property.
 
         1: Duncan
-        2: Smith-and-Weston
-        3: Joyce-Smith-Smythe
+        2: Smith and Weston
+        3: Joyce, Smith and Smythe
         """
         auth_list = self.authors.all().order_by("authorgroup__order")
         authors = []
