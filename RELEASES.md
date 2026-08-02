@@ -4,7 +4,9 @@
 
 Consolidated docstring/comment corrections, combining the still-applicable
 findings from the docstring-audit PR backlog (#119, #124, #126, #132, #133)
-into one change. Documentation-only; no runtime behaviour change.
+into one change. Almost entirely documentation; the one exception is the
+removal of the unused `Author.full_name_hyperlinked` property (detailed
+below). No user-visible behaviour change either way.
 
 Findings from those PRs that had already been fixed on `main` by v1.6.1
 (`Item.author_slugs` examples, the `core_tags` "Submission model" text,
@@ -18,10 +20,19 @@ are **not** repeated here — only what was still stale is carried forward.
   a placeholder pk of `0`, strip it to leave the route prefix, then append
   the real `<pk>/<slug>` (the slug segment is optional in the URL pattern,
   so a single `reverse()` cannot emit both parts).
-- **`items/models.py`** — `Author.full_name_hyperlinked` had no docstring
-  and, contrary to its name, returns the plain name identical to
-  `full_name` with no anchor tag. Documented as such, including that no
-  template or view currently references it.
+- **`items/models.py`** — **removed** the vestigial
+  `Author.full_name_hyperlinked` property. Despite the name it returned the
+  plain name, byte-for-byte identical to `full_name`, with no anchor tag.
+  It was not awaiting an implementation — the hyperlinked rendering it was
+  named for already exists as `Item._format_authors_html`
+  (`get_absolute_url()` + `full_name` wrapped in an `<a>`), which backs
+  `full_author_listing`, `full_editor_listing`, and
+  `author_list_all_lastnames` and is covered by `TestFullAuthorListing`.
+  Nothing in the repo referenced the property — no view, template, admin
+  config, or fixture — so it was a duplicate left behind when the real
+  implementation moved to `Item`. Keeping it invited a future caller to
+  reach for the misleadingly-named one and silently render an unlinked
+  byline.
 - **`items/models.py`** — `Author.save`, `School.save`, `Journal.save`, and
   `Publisher.save` all carried the same placeholder docstring consisting of
   a (now-dead) link to the Django docs. Each replaced with a one-liner
@@ -62,7 +73,11 @@ Also included (not a docstring change, flagged separately for review):
   (`pygments`, `packaging`, `filelock`, …) to the versions the existing
   constraints already resolve to.
 
-PATCH bump — documentation-only, no behaviour or URL change.
+PATCH bump. The property removal is the only non-documentation change and
+it is dead code with no referents, so there is no user-visible behaviour
+change, no URL change, and no schema change — which puts it under "no
+user-visible behaviour change" rather than the MAJOR "removal of public
+views" clause.
 
 ## v1.6.1
 

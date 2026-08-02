@@ -61,19 +61,6 @@ class Author(models.Model):
         else:
             return "%s %s" % (self.first_name, self.last_name)
 
-    @property
-    def full_name_hyperlinked(self):
-        """Despite the name, this returns the *plain* full name — identical to
-        ``full_name``, with no ``<a href=...>`` wrapper. It is currently
-        referenced by no template or view; the hyperlinked rendering it was
-        named for was never implemented. Use ``full_name`` for the plain name
-        and ``Author.get_absolute_url`` to build a link.
-        """
-        if self.middle_initials:
-            return "%s %s %s" % (self.first_name, self.middle_initials, self.last_name)
-        else:
-            return "%s %s" % (self.first_name, self.last_name)
-
     def get_absolute_url(self):
         """Create a URL to display all publications by this author"""
         return reverse("lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug})
