@@ -16,7 +16,14 @@ register = template.Library()
 
 @register.filter(name="most_searched")
 def most_searched(field, num=5):
-    """Get the most viewed items from the Submission model"""
+    """Return the top ``num`` most-searched query strings.
+
+    Reads the aggregate produced by ``pagehit.views.get_search_hits``
+    (already sorted by descending hit count with profanities filtered
+    out) and returns just the search-term strings — the hit counts are
+    dropped. ``field`` is unused; it exists so the filter can be applied
+    in a template as ``{{ ""|most_searched:5 }}``.
+    """
     top_items = get_search_hits()
     out = []
     for score, search_term in top_items[:num]:
@@ -26,7 +33,15 @@ def most_searched(field, num=5):
 
 @register.filter
 def most_viewed(field, num=5):
-    """Get the most viewed items from the Submission model"""
+    """Return the top ``num`` most-viewed ``Item`` instances.
+
+    Reads the aggregate produced by ``pagehit.views.get_pagehits``
+    (descending by hit count) and rehydrates each entry into an
+    ``Item`` with the raw hit count attached as ``item.score`` so
+    templates can render it alongside the entry. ``field`` is passed
+    straight through to ``get_pagehits`` as its ``item`` argument
+    (which is ignored in the aggregate branch).
+    """
     top_items = get_pagehits(field)
     # top_items.sort(reverse=True)
     out = []

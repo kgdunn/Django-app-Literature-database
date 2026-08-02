@@ -1,5 +1,38 @@
 # Releases
 
+## v1.6.1
+
+Docstring corrections so they match the code's actual behaviour
+(documentation-only; no runtime change).
+
+- **`pagehit/views.py`** — `get_pagehits` docstring described the date
+  range as "half-open ... both inclusive", which is self-contradictory;
+  the implementation uses `__gte` / `__lte`, i.e. a closed interval.
+  Rewritten to say "closed window ... both endpoints inclusive".
+- **`items/templatetags/core_tags.py`** — `most_searched` and
+  `most_viewed` both carried the same wrong docstring ("Get the most
+  viewed items from the Submission model"). The `Submission` model
+  doesn't exist in this repo, and `most_searched` returns query-string
+  strings (not viewed items). Both docstrings rewritten to describe what
+  each filter actually returns, and to note that the leading `field`
+  argument is unused for `most_searched` (present only so the filter is
+  callable from a template).
+- **`items/models.py`** — `Item.author_slugs` docstring claimed the
+  property was "used to create the PDF file name" and listed dashed
+  example outputs (`Smith-and-Weston`, `Joyce-Smith-Smythe`). Neither
+  matches the code: PDF filenames are built from `Item.slug` via
+  `upload_dest`, and the property joins last names with spaces / commas
+  (`Smith and Weston`, `Joyce, Smith and Smythe`). Rewritten to describe
+  the NFKD-ASCII fold behaviour and correct the example lines.
+- **`items/views.py`** — `get_items_or_404` docstring said "PDFs are no
+  longer exposed publicly (copyright restriction)"; v1.4.0 reintroduced a
+  narrow default-off public path via `Item.pdf_is_public` + `view_pdf`.
+  Rewritten to clarify that this decorator wraps only `view_item`, and
+  that `view_pdf` does its own lookup outside the decorator (so this
+  sentence is about the decorator's scope, not about global PDF access).
+  Also added `InCollection` to the list of subclasses the decorator
+  downcasts to.
+
 ## v1.6.0
 
 Repeat the item detail page's Previous / Next navigation at the **bottom**

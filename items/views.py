@@ -96,11 +96,14 @@ def get_items_or_404(view_function):
     """
     Decorator that resolves an ``Item`` from ``item_id`` and downcasts
     it to its concrete subclass (JournalPub / Book / ConferenceProceeding
-    / Thesis based on ``item_type``). 404s if no Item matches.
+    / Thesis / InCollection based on ``item_type``). 404s if no Item
+    matches; otherwise redirects (permanent) to the canonical
+    ``/item/<id>/<slug>`` URL when the slug is missing or wrong.
 
-    Phase 5 removed the ``download.pdf`` branch: PDFs are no longer
-    exposed publicly (copyright restriction), so the only path through
-    this decorator is canonical-URL handling for ``view_item``.
+    Phase 5 removed the ``download.pdf`` branch on this decorator.
+    ``view_item`` is now the only view that uses it. The gated
+    ``view_pdf`` endpoint (v1.4.0, ``Item.pdf_is_public``) does its own
+    item lookup and does not go through this decorator.
     """
 
     def decorator(request, item_id, slug=None):
