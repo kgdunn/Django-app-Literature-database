@@ -9,7 +9,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "gunicorn>=26.0.0",
     "bleach>=6.3.0",
-    "pdfplumber>=0.11.9",
+    "pdfplumber>=0.11.10",
     # Per-account admin login throttling — issue #74. ``axes`` ships
     # its own migrations that ``manage.py migrate`` will pick up;
     # settings live in ``literature/settings/base.py`` (``AXES_*``).
