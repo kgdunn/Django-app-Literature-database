@@ -7,7 +7,8 @@ urlpatterns = [
     re_path(r"^$", front_page, name="lit-main-page"),
     # About page
     re_path(r"about", about_page, name="lit-about-page"),
-    # Site-wide search (Postgres FTS in prod, icontains fallback in SQLite dev).
+    # Site-wide search: Postgres FTS in both dev and prod (both settings
+    # modules target Postgres, so there is no SQLite/icontains fallback).
     re_path(r"search", search, name="search"),
     # Liveness probe (Dockerfile HEALTHCHECK + Phase-9 deploy script).
     re_path(r"^healthz/?$", healthz, name="healthz"),

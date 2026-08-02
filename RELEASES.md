@@ -1,5 +1,69 @@
 # Releases
 
+## v1.6.2
+
+Consolidated docstring/comment corrections, combining the still-applicable
+findings from the docstring-audit PR backlog (#119, #124, #126, #132, #133)
+into one change. Documentation-only; no runtime behaviour change.
+
+Findings from those PRs that had already been fixed on `main` by v1.6.1
+(`Item.author_slugs` examples, the `core_tags` "Submission model" text,
+`get_pagehits`'s "half-open" window, and `get_items_or_404`'s PDF wording)
+are **not** repeated here — only what was still stale is carried forward.
+
+- **`items/models.py`** — `Item.get_absolute_url` still carried the "I can't
+  seem to find a way to use the `reverse` or `permalink` functions"
+  docstring even though the body does call `reverse(...)`. Replaced with a
+  description of the technique actually in use: resolve `lit-view-item` with
+  a placeholder pk of `0`, strip it to leave the route prefix, then append
+  the real `<pk>/<slug>` (the slug segment is optional in the URL pattern,
+  so a single `reverse()` cannot emit both parts).
+- **`items/models.py`** — `Author.full_name_hyperlinked` had no docstring
+  and, contrary to its name, returns the plain name identical to
+  `full_name` with no anchor tag. Documented as such, including that no
+  template or view currently references it.
+- **`items/models.py`** — `Author.save`, `School.save`, `Journal.save`, and
+  `Publisher.save` all carried the same placeholder docstring consisting of
+  a (now-dead) link to the Django docs. Each replaced with a one-liner
+  describing what the override actually does. `Journal.save` additionally
+  notes that its case-insensitive uniqueness is a DB-level
+  `UniqueConstraint` on `Lower("name")`, not something this method checks.
+- **`items/views.py`** — `show_items` listed a `"sort"` value for
+  `what_view` that no dispatch branch implements (and a matching "sort
+  field" note on `extra_info`). Both removed.
+- **`items/views.py`** — `view_item` claimed "no PDF download path exists".
+  True of Phase 5, but v1.4.0 reintroduced the default-off
+  `Item.pdf_is_public` + gated `view_pdf` path. Rewritten to describe the
+  flag-gated "View PDF" link.
+- **`pages/views.py`** — the `search` docstring described the
+  `SearchVector` as covering only title / abstract / other_search_text. The
+  issue-#33 work added six subclass-specific fields; all nine are now
+  enumerated.
+- **`pages/views.py`** — `page_404_error` now documents its `extra_info`
+  kwarg (optional human-readable message for the 404 template context,
+  falling back to `str(exception)`).
+- **`pages/urls.py`** — the `search` route comment claimed a "Postgres FTS
+  in prod, icontains fallback in SQLite dev" split. Both settings modules
+  target Postgres and the view has no fallback branch; comment corrected.
+- **`utils/__init__.py`** — `get_IP_address` referred to `download_item` in
+  the present tense; Phase 5 removed that view. Wording corrected.
+
+Also included (not a docstring change, flagged separately for review):
+
+- **`uv.lock`** — regenerated. The committed lock had drifted out of sync
+  with `pyproject.toml`: it still pinned `django==5.2.14` and
+  `pdfplumber==0.11.9` even though the manifest requires `django>=5.2.16`
+  and `pdfplumber>=0.11.10` (PRs #131 and #128 bumped the constraints but
+  the lockfile was never regenerated), and its `literature` version entry
+  still read `1.6.0` against a `1.6.1` manifest. Running any `uv` command
+  reconciles this automatically, so the refresh is picked up here rather
+  than left for the next unrelated PR to carry. Transitively this also
+  moves `pdfminer-six`, `pypdfium2`, and a handful of dev-only packages
+  (`pygments`, `packaging`, `filelock`, …) to the versions the existing
+  constraints already resolve to.
+
+PATCH bump — documentation-only, no behaviour or URL change.
+
 ## v1.6.1
 
 Docstring corrections so they match the code's actual behaviour

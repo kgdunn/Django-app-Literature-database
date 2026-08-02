@@ -73,6 +73,11 @@ def page_404_error(request, exception=None, extra_info=""):
     Django's handler signature changed in 1.9 to add `exception`; we accept
     it here so the handler is callable both directly (where we pass
     extra_info) and via the URL resolver.
+
+    ``extra_info`` is an optional human-readable message threaded into the
+    404 template's context, letting direct callers give a richer
+    explanation than Django's bare ``Resolver404``. When it is empty the
+    context falls back to ``str(exception)``.
     """
     ip = get_IP_address(request)
     info = extra_info or (str(exception) if exception is not None else "")
@@ -94,8 +99,14 @@ def page_500_error(request):
 def search(request):
     """Site-wide search.
 
-    Postgres full-text search: weighted ``SearchVector`` over title /
-    abstract / other_search_text, ranked by ``SearchRank``, OR-joined
+    Postgres full-text search: weighted ``SearchVector`` over the base
+    ``Item`` fields (``title`` A, ``abstract`` B, ``other_search_text`` C)
+    *plus* the subclass-specific fields joined in for issue #33
+    (``journalpub__journal__name``, ``book__isbn``,
+    ``conferenceproceeding__conference_name``,
+    ``conferenceproceeding__organization``,
+    ``conferenceproceeding__location``, ``incollection__book_title``),
+    ranked by ``SearchRank``, OR-joined
     with ``__trigram_similar`` on author last names so typos still
     find the right author. Backed by the ``pg_trgm`` extension
     (installed in ``items`` migration 0004).
