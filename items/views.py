@@ -149,10 +149,9 @@ def show_items(request, what_view="", extra_info=""):
     - ``"pub-by-year"`` - items whose ``year == int(extra_info)``.
     - ``"show"`` + ``"all-tags"`` / ``"all-items"``, or ``"all"`` - full
       listing branches (tag cloud / every item).
-    - ``"sort"`` - listing ordered by the field named in ``extra_info``.
 
-    ``extra_info`` carries the per-branch filter value (slug, year, sort
-    field). Anything unrecognised falls through to an empty page.
+    ``extra_info`` carries the per-branch filter value (slug or year).
+    Anything unrecognised falls through to an empty page.
     """
     what_view = what_view.lower()
     extra_info = extra_info.lower()
@@ -258,9 +257,13 @@ def view_item(request, the_item, slug):
     """
     Show the full details of one item.
 
-    No PDF download path exists (Phase 5 removed it for copyright
-    reasons). The detail page surfaces citation, abstract, DOI /
-    external link, tags, and a "Related items" panel (issue #36).
+    Phase 5 removed the unconditional public PDF download for copyright
+    reasons; v1.4.0 reintroduced a narrow, default-off path. The template
+    renders a "View PDF" link — pointing at the gated ``view_pdf`` view
+    (URL name ``lit-public-pdf``) — only when both ``item.pdf_is_public``
+    and ``item.pdf_file`` are set; every other item stays default-deny and
+    simply omits the link. The page also surfaces citation, abstract,
+    DOI / external link, tags, and a "Related items" panel (issue #36).
     """
     logger.debug("Viewing: %s", the_item)
 

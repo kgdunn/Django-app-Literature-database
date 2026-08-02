@@ -61,21 +61,14 @@ class Author(models.Model):
         else:
             return "%s %s" % (self.first_name, self.last_name)
 
-    @property
-    def full_name_hyperlinked(self):
-        if self.middle_initials:
-            return "%s %s %s" % (self.first_name, self.middle_initials, self.last_name)
-        else:
-            return "%s %s" % (self.first_name, self.last_name)
-
     def get_absolute_url(self):
         """Create a URL to display all publications by this author"""
         return reverse("lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug})
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
+        """Strip surrounding whitespace from the name fields, then derive a
+        collision-free ``slug`` from ``full_name`` via ``unique_slugify``
+        before delegating to ``Model.save``.
         """
         self.first_name = self.first_name.strip()
         self.last_name = self.last_name.strip()
@@ -99,9 +92,8 @@ class School(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
+        """Strip surrounding whitespace from ``name`` and regenerate ``slug``
+        from it before delegating to ``Model.save``.
         """
         self.name = self.name.strip()
         self.slug = slugify(self.name)
@@ -141,9 +133,13 @@ class Journal(models.Model):
         return '<a href="%s">%s</a>' % (self.get_absolute_url(), self.name)
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
+        """Strip surrounding whitespace from ``name`` and regenerate ``slug``
+        from ``str(self)`` before delegating to ``Model.save``.
+
+        Note that case-insensitive uniqueness on ``name`` is *not* enforced
+        here — it is a DB-level ``UniqueConstraint`` on ``Lower("name")``
+        (see ``Meta.constraints``), so a duplicate raises ``IntegrityError``
+        from ``super().save()`` rather than being caught in this method.
         """
         self.name = self.name.strip()
         self.slug = slugify(str(self))
@@ -158,9 +154,8 @@ class Publisher(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """
-        http://docs.djangoproject.com/en/dev/topics/db/models/
-                                          overriding-predefined-model-methods
+        """Strip surrounding whitespace from ``name`` and regenerate ``slug``
+        from ``str(self)`` before delegating to ``Model.save``.
         """
         self.name = self.name.strip()
         self.slug = slugify(str(self))
@@ -429,8 +424,14 @@ class Item(models.Model):
             return None
 
     def get_absolute_url(self):
-        """I can't seem to find a way to use the "reverse" or "permalink"
-        functions to create this URL: do it manually, to match ``urls.py``
+        """Canonical detail-page URL for this item: ``/item/<pk>/<slug>``.
+
+        The ``lit-view-item`` route takes the slug as an *optional* segment,
+        so ``reverse()`` cannot emit both parts in one call. Instead this
+        resolves the route with a placeholder pk of ``0``, strips that
+        trailing ``0`` back off to leave the route prefix, and appends the
+        real ``<pk>/<slug>`` — keeping the user-visible URL in sync with
+        ``urls.py`` without hard-coding the ``/item/`` prefix here.
         """
         return reverse("lit-view-item", args=[0]).rstrip("0") + "%d/%s" % (
             self.pk,
