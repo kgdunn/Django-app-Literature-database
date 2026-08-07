@@ -1,5 +1,16 @@
 # Releases
 
+## v1.6.3
+
+Docstring correction on `Item._normalize_doi_link` (`items/models.py`).
+The previous wording claimed the method coerces DOI shorthands to "the
+canonical `https://doi.org/<suffix>` URL", but the implementation
+preserves the `dx.` host on `dx.doi.org/` inputs and returns
+already-qualified `http://` / `https://` URLs unchanged. The docstring
+now describes what the code actually does and cross-references
+`Item.doi_link_cleaned` (which does the display-time host stripping).
+No behavioural change.
+
 ## v1.6.2
 
 Consolidated docstring/comment corrections, combining the still-applicable
