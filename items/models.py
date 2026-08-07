@@ -447,9 +447,18 @@ class Item(models.Model):
 
     @staticmethod
     def _normalize_doi_link(value):
-        """Coerce admin-pasted DOI shorthands to the canonical
-        ``https://doi.org/<suffix>`` URL. See ``validate_doi_or_url``
-        for the accepted input shapes."""
+        """Coerce admin-pasted DOI shorthands to a fully-qualified URL.
+
+        A bare ``10.<suffix>`` becomes ``https://doi.org/10.<suffix>``; a
+        ``doi.org/`` or ``dx.doi.org/`` prefix gets ``https://`` prepended
+        (the ``dx.`` host, if present, is preserved rather than rewritten
+        to the canonical ``doi.org``); and values that already start with
+        ``http://`` or ``https://`` are returned unchanged. See
+        ``validate_doi_or_url`` for the accepted input shapes. Downstream
+        code (see ``Item.doi_link_cleaned``) is responsible for stripping
+        either ``doi.org/`` or ``dx.doi.org/`` when only the DOI suffix is
+        wanted for display.
+        """
         value = value.strip()
         if not value:
             return value
