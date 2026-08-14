@@ -8,7 +8,8 @@ urlpatterns = [
     re_path(r"^admin/", admin.site.urls),
     # Major pages in the site: front page, about page, search, etc.
     re_path(r"", include("pages.urls")),
-    # Submissions: new and existing, including previous revisions.
+    # Catalogue items: detail pages, filtered listings (tag / author /
+    # journal / year), and the gated public-PDF view.
     re_path(r"item/", include("items.urls")),
 ]
 

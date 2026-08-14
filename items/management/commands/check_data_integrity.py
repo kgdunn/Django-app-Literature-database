@@ -44,7 +44,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, verbose=False, **options):
         started = datetime.now(timezone.utc)
-        items = Item.objects.all().only("id", "title", "pdf_file")  # author_order pulled separately
+        # `AuthorGroup.order` (the author-ordering field) lives on the
+        # M2M through-model, not on Item, so it's fetched per-item below
+        # via a separate `AuthorGroup.objects.filter(item=item)` query.
+        items = Item.objects.all().only("id", "title", "pdf_file")
         total = items.count()
 
         media_root = settings.MEDIA_ROOT

@@ -24,10 +24,14 @@ def get_IP_address(request):
     """
     Returns the visitor's IP address as a string given the Django ``request``.
 
-    Used only for log lines (``pages.views`` 404 / 500 / search handlers).
-    Phase 4 dropped the legacy stored-PII path: PageHit rows no longer
-    capture IPs, and Phase 5 removed the ``download_item`` view that used
-    to gate on them.
+    Used only for log lines emitted by three ``pages.views`` handlers:
+    ``page_404_error`` ("404 from %s for request ..."),
+    ``page_500_error`` ("500 from %s for request ..."), and
+    ``search`` ("SEARCH [%s]: %s"). The IP is written to the app log
+    only; it is never persisted to the database. Phase 4 dropped the
+    legacy stored-PII path: ``PageHit`` rows no longer capture IPs, and
+    Phase 5 removed the ``download_item`` view that used to gate on
+    them.
     """
     # Catchs the case when the user is on a proxy
     ip = request.META.get("HTTP_X_FORWARDED_FOR", "")

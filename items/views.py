@@ -286,10 +286,14 @@ def view_pdf(request, item_id):
     Default-deny: ``pdf_is_public`` defaults to False, so every item is
     non-downloadable until an admin opts it in (used for the handful of
     genuinely public / open-access documents in the catalogue). Items
-    without the flag — or without a PDF at all — 404 here. In production
-    Caddy independently 404s direct ``/media/literature/pdf/*`` access, so
-    this view (running in the gunicorn worker) is the single gate that can
-    open a copyright-cleared PDF to the public.
+    without the flag — or without a PDF at all — 404 here. Defense-in-depth
+    against direct ``/media/literature/pdf/*`` access is layered: in
+    production Caddy 404s that subtree at the edge, and inside Django
+    ``literature.urls._block_media_pdf`` hard-404s the same path *before*
+    the ``DEBUG``-only ``static()`` media handler — so dev / staging / any
+    future infra change also can't leak a PDF. This view (running in the
+    gunicorn worker) is the single gate that can open a copyright-cleared
+    PDF to the public.
     """
     item = Item.objects.filter(id=item_id).first()
     if item is None or not item.pdf_is_public or not item.pdf_file:
@@ -304,10 +308,26 @@ def view_pdf(request, item_id):
 
 def __extract_extra__(request, item_id=None):
     """
-    Admin-only endpoint that extracts plain text from each Item's PDF
-    via pdfplumber and stores it in Item.other_search_text so the
-    Postgres-FTS search vector (Phase 3) can index it. Replaces the
-    legacy pdfminer chain.
+    Admin-only, idempotent backfill that extracts plain text from each
+    Item's PDF via ``pdfplumber`` and stores it in ``Item.other_search_text``
+    so the Postgres-FTS search vector (Phase 3) can index it. Replaces the
+    legacy ``pdfminer`` chain.
+
+    Gated on ``request.user.is_authenticated`` — an unauthenticated caller
+    gets a plain-text "Please sign in first" body.
+
+    Idempotent by design: for each Item in scope, the extractor skips items
+    that already have ``other_search_text`` populated (so re-running is
+    cheap) and skips items with no ``pdf_file`` attached (nothing to
+    extract from). Scope is either a single item (when ``item_id`` is in the
+    URL) or every Item in the catalogue (bare ``/__extract_extra__/``).
+
+    Fails closed on the first pdfplumber exception: the currently-open PDF
+    is logged and the whole traversal short-circuits with a 200-status
+    ``FAILED in completely PDF index "<title>"`` body rather than
+    partial-index silently. Successfully-extracted items are ``save()``d
+    one at a time so a mid-run failure keeps whatever has already been
+    written.
     """
     if not request.user.is_authenticated:
         return HttpResponse("Please sign in first")
