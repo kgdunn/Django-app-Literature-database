@@ -34,5 +34,22 @@ class PageHit(models.Model):
         return "%s at %s" % (self.item, self.datetime)
 
     def most_viewed(self, field):
-        """Most viewed in terms of a certain item."""
+        """Return a queryset of ``PageHit`` rows for the given ``item``
+        category, annotated with a per-row ``score`` count and ordered
+        highest-first.
+
+        ``field`` is matched against the ``item`` column (e.g. ``"item"``
+        for item-detail hits, or one of the static-surface keys listed
+        on the class). The bound-method signature ignores ``self``:
+        the method is called from templates via
+        ``items/templatetags/core_tags.py``, which needs a filter that
+        accepts a value, and instantiating a throwaway ``PageHit`` is
+        cheaper than routing around Django's template tag system.
+
+        Note: the returned queryset annotates each row individually
+        (no ``GROUP BY``), so it is one row per stored ``PageHit``
+        rather than one row per distinct ``item_pk``. Callers that want
+        per-item aggregates should use ``pagehit.views.get_pagehits``
+        instead.
+        """
         return PageHit.objects.filter(item=field).annotate(score=models.Count("item")).order_by("-score")
