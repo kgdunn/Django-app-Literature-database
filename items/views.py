@@ -304,10 +304,26 @@ def view_pdf(request, item_id):
 
 def __extract_extra__(request, item_id=None):
     """
-    Admin-only endpoint that extracts plain text from each Item's PDF
-    via pdfplumber and stores it in Item.other_search_text so the
-    Postgres-FTS search vector (Phase 3) can index it. Replaces the
-    legacy pdfminer chain.
+    Admin-only, idempotent backfill that extracts plain text from each
+    Item's PDF via ``pdfplumber`` and stores it in ``Item.other_search_text``
+    so the Postgres-FTS search vector (Phase 3) can index it. Replaces the
+    legacy ``pdfminer`` chain.
+
+    Gated on ``request.user.is_authenticated`` — an unauthenticated caller
+    gets a plain-text "Please sign in first" body.
+
+    Idempotent by design: for each Item in scope, the extractor skips items
+    that already have ``other_search_text`` populated (so re-running is
+    cheap) and skips items with no ``pdf_file`` attached (nothing to
+    extract from). Scope is either a single item (when ``item_id`` is in the
+    URL) or every Item in the catalogue (bare ``/__extract_extra__/``).
+
+    Fails closed on the first pdfplumber exception: the currently-open PDF
+    is logged and the whole traversal short-circuits with a 200-status
+    ``FAILED in completely PDF index "<title>"`` body rather than
+    partial-index silently. Successfully-extracted items are ``save()``d
+    one at a time so a mid-run failure keeps whatever has already been
+    written.
     """
     if not request.user.is_authenticated:
         return HttpResponse("Please sign in first")
