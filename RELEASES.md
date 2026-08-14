@@ -1,5 +1,68 @@
 # Releases
 
+## v1.6.3
+
+Second pass of docstring / comment corrections after v1.6.2 (documentation
+only; no runtime behaviour change, no schema change, no URL change).
+Fixes drift across `items`, `pages`, `pagehit`, `literature`, and `utils`.
+
+- **`pagehit/models.py`** — `PageHit` class docstring used openmv-taxonomy
+  ("link, code snippet or library, tag, person's profile"). Rewritten to
+  describe the actual literature-site scope: item detail hits
+  (`item="item"`) plus the static-surface keys enumerated in
+  `pagehit/views.py:static_items` (front page, search, about, item lists,
+  tag / author / year / journal landing pages), each with a sentinel
+  negative `item_pk`.
+- **`pagehit/models.py`** — `PageHit.most_viewed` bound-method docstring
+  ("Most viewed in terms of a certain item") gave no sense of the returned
+  queryset shape or why `self` is unused. Rewritten to describe the
+  filter/annotate/order query and to note the template-tag call site that
+  motivates the bound-method signature.
+- **`pages/views.py`** — `page_404_error` referenced a "Django 1.9 signature
+  change" and implied that direct callers pass `extra_info`. In practice
+  the direct callers in `items.views` pass a message string *positionally*
+  (i.e. into the `exception` slot), and `extra_info` is never set. Rewrite
+  describes the Django 5.x handler signature and clarifies the actual
+  context wiring.
+- **`literature/urls.py`** — the `re_path(r"item/", ...)` line carried a
+  "Submissions: new and existing, including previous revisions" comment,
+  but there is no `Submissions` model in the repo. Replaced with an
+  accurate description of what `items.urls` mounts (detail pages, filtered
+  listings, the gated public-PDF view).
+- **`items/urls.py`** — the `lit-view-item` route claimed the minimal
+  `/<id>/` URL "shows latest revision". There is no revision model.
+  Corrected to describe the real behaviour: `get_items_or_404` issues a
+  permanent redirect to the canonical `/<id>/<slug>/` shape.
+- **`items/views.py`** — `__extract_extra__` docstring described only the
+  happy path. Extended to spell out the idempotent-backfill semantics
+  (skips items that already have `other_search_text`, skips items with no
+  `pdf_file`) and the fail-closed behaviour (short-circuits the whole
+  traversal on the first pdfplumber exception rather than silently
+  partial-indexing).
+- **`items/views.py`** — `view_pdf` docstring mentioned only the Caddy
+  edge-level 404 for `/media/literature/pdf/*`. Extended to also mention
+  `literature/urls.py:_block_media_pdf`, the in-Django hard-404 that
+  precedes the `DEBUG`-only `static()` handler and closes the same leak
+  in dev / staging / any environment that isn't behind Caddy.
+- **`pagehit/views.py`** — added a comment to `static_items` explaining why
+  the `haystack_search` key is preserved verbatim: renaming it would
+  fragment the persisted `PageHit.item` series (search-term counts stop
+  working across the rename boundary). Cross-refs CLAUDE.md gotcha #13
+  which preserves the URL `name="haystack_search"` for the same reason.
+- **`items/management/commands/check_data_integrity.py`** — the
+  `# author_order pulled separately` inline comment referred to a field
+  name that doesn't exist. Corrected to reference `AuthorGroup.order`
+  (author ordering lives on the M2M through-model, fetched per-item).
+- **`utils/__init__.py`** — `get_IP_address` said "Used only for log lines
+  (`pages.views` 404 / 500 / search handlers)". Tightened to name the
+  three exact call sites (`page_404_error`, `page_500_error`, `search`)
+  and explicitly state that the IP is written to app logs only, never
+  persisted.
+
+PATCH bump per `CLAUDE.md`'s versioning policy (documentation-only PR;
+public-facing docstrings / comments count as public docs, so the version
+still moves).
+
 ## v1.6.2
 
 Consolidated docstring/comment corrections, combining the still-applicable
