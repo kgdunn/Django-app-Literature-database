@@ -24,9 +24,11 @@ urlpatterns = [
     # 404s. Must precede the `lit-view-item` catch-all below so `/item/<id>/pdf`
     # doesn't get swallowed as a slug.
     re_path(r"^(?P<item_id>\d+)/pdf/?$", view_pdf, name="lit-public-pdf"),
-    # View an existing item: both versions of accessing the item are valid
-    # Maximum information:   http://..../23/draw-an-ellipse/
-    # Minimal working link:  http://..../23/    <-- shows latest revision
+    # View an existing item: both URL shapes resolve to the same item.
+    # Canonical shape:   http://..../23/draw-an-ellipse/
+    # Minimal shape:     http://..../23/    <-- get_items_or_404 issues a
+    #                                           permanent redirect to the
+    #                                           canonical /<id>/<slug>/ form.
     re_path(r"^(?P<item_id>\d+)+(/)?(?P<slug>[-\w]+)?(/)?", view_item, name="lit-view-item"),
     # Extract PDF text to add to the Item object (admin-only).
     re_path(
