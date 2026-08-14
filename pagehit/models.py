@@ -2,10 +2,23 @@ from django.db import models
 
 
 class PageHit(models.Model):
-    """Records each hit (page view) of an item: whether the item is a link,
-    code snippet or library, tag, person's profile, etc.
+    """Append-only view-counter for the literature site.
 
-    The only requirement is that the item must have an integer primary key.
+    One row per rendered page. Two shapes of hit share the same table:
+
+    - **Item detail hits** — ``item="item"`` with ``item_pk`` set to the
+      real ``Item.pk`` (written by ``items.views.view_item`` via
+      ``pagehit.views.create_hit``).
+    - **Static-surface hits** — one of the fixed keys enumerated in
+      ``pagehit.views.static_items``: ``lit-main-page`` (front page),
+      ``haystack_search`` (search — key preserved from the pre-Phase-3
+      Haystack era), ``lit-about-page`` (about), ``lit-show-all-items``
+      (full item listing), ``lit-show-all-tags`` (tag cloud),
+      ``lit-tag-page`` / ``lit-author-page`` / ``lit-year-page`` /
+      ``lit-journal-page`` (per-tag / per-author / per-year / per-journal
+      landing pages). Each carries a sentinel negative ``item_pk`` so
+      the admin's ``date_hierarchy`` / ``list_filter`` group cleanly by
+      surface.
 
     Phase 4 trimmed the historical ``ua_string`` (User-Agent) and
     ``ip_address`` columns; the table is now privacy-respecting and
