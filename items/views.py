@@ -286,10 +286,14 @@ def view_pdf(request, item_id):
     Default-deny: ``pdf_is_public`` defaults to False, so every item is
     non-downloadable until an admin opts it in (used for the handful of
     genuinely public / open-access documents in the catalogue). Items
-    without the flag — or without a PDF at all — 404 here. In production
-    Caddy independently 404s direct ``/media/literature/pdf/*`` access, so
-    this view (running in the gunicorn worker) is the single gate that can
-    open a copyright-cleared PDF to the public.
+    without the flag — or without a PDF at all — 404 here. Defense-in-depth
+    against direct ``/media/literature/pdf/*`` access is layered: in
+    production Caddy 404s that subtree at the edge, and inside Django
+    ``literature.urls._block_media_pdf`` hard-404s the same path *before*
+    the ``DEBUG``-only ``static()`` media handler — so dev / staging / any
+    future infra change also can't leak a PDF. This view (running in the
+    gunicorn worker) is the single gate that can open a copyright-cleared
+    PDF to the public.
     """
     item = Item.objects.filter(id=item_id).first()
     if item is None or not item.pdf_is_public or not item.pdf_file:
