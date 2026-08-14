@@ -68,16 +68,18 @@ def about_page(request):
 
 
 def page_404_error(request, exception=None, extra_info=""):
-    """Override Django's 404 handler, because we want to log this also.
+    """Override Django's 404 handler so the miss is also logged.
 
-    Django's handler signature changed in 1.9 to add `exception`; we accept
-    it here so the handler is callable both directly (where we pass
-    extra_info) and via the URL resolver.
+    Matches Django 5.x's standard ``handler404(request, exception)`` signature.
+    The optional ``exception`` may be either the ``Resolver404`` instance the
+    URL resolver hands in, or a human-readable string that direct callers in
+    ``items.views`` pass positionally when they synthesize a 404 (e.g. an
+    unknown author or journal slug). Either way ``str(exception)`` is threaded
+    into the ``404.html`` template context as ``extra_info``.
 
-    ``extra_info`` is an optional human-readable message threaded into the
-    404 template's context, letting direct callers give a richer
-    explanation than Django's bare ``Resolver404``. When it is empty the
-    context falls back to ``str(exception)``.
+    The trailing ``extra_info`` kwarg exists purely to fill that slot in the
+    context when neither an exception nor a string is available; no caller in
+    the repo currently sets it.
     """
     ip = get_IP_address(request)
     info = extra_info or (str(exception) if exception is not None else "")
