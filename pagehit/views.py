@@ -12,6 +12,15 @@ static_items = {
     # per static surface so the admin's date_hierarchy / list_filter still
     # group cleanly. Filtering by `item=` is the canonical way to slice
     # static-page traffic; `item_pk` is just an extra coordinate.
+    #
+    # The `haystack_search` key is deliberately preserved — despite the
+    # Phase-3 replacement of Haystack by Postgres FTS in `pages.search`,
+    # this string is what has been written into `PageHit.item` for every
+    # search hit since 2010, so renaming it would either fragment the
+    # historical series (search-term counts stop working across the
+    # rename boundary) or require a data migration. The pre-Phase-3 URL
+    # `name="haystack_search"` on the search route is preserved for the
+    # same reason (see CLAUDE.md gotcha #13).
     "lit-main-page": -1,
     "haystack_search": -2,
     "lit-about-page": -3,
