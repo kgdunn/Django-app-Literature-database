@@ -1,5 +1,29 @@
 # Releases
 
+## v1.6.3
+
+Two surgical docstring corrections in `items/models.py`; no behaviour
+change, no template or API surface touched.
+
+- **`InCollection.full_citation`** (line 640) — the docstring's `Format:`
+  example was missing two commas that the code actually emits. The
+  method's body renders the parts via `", ".join(parts)` which puts a
+  comma between the chapter-title segment and the `in <editors> (eds.),
+  "<book title>"` segment, and after the editors' `(eds.)` before the
+  book title (verified against
+  `items/tests/test_models.py::test_full_citation_renders_eds_suffix_for_editors`
+  at line 348). Updated the format line to match: `Author: "Chapter
+  title", in Editors (eds.), "Book Title", edition, publisher, pp. X–Y,
+  year.`
+- **`Author.save`** (line 68) — the docstring said "Strip surrounding
+  whitespace from the name fields" (plural), which implies all three
+  name fields get stripped. The body only strips `first_name` and
+  `last_name` — `middle_initials` is left untouched. Rewrote the
+  docstring to name the two fields explicitly and call out that
+  `middle_initials` is deliberately excluded, so a future reader isn't
+  surprised by whitespace slipping through from that column. Behaviour
+  is unchanged.
+
 ## v1.6.2
 
 Consolidated docstring/comment corrections, combining the still-applicable
