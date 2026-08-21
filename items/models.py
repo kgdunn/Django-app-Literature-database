@@ -66,9 +66,10 @@ class Author(models.Model):
         return reverse("lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug})
 
     def save(self, *args, **kwargs):
-        """Strip surrounding whitespace from the name fields, then derive a
-        collision-free ``slug`` from ``full_name`` via ``unique_slugify``
-        before delegating to ``Model.save``.
+        """Strip surrounding whitespace from ``first_name`` and ``last_name``
+        (but not ``middle_initials``), then derive a collision-free ``slug``
+        from ``full_name`` via ``unique_slugify`` before delegating to
+        ``Model.save``.
         """
         self.first_name = self.first_name.strip()
         self.last_name = self.last_name.strip()
@@ -640,7 +641,7 @@ class InCollection(Item):
     def full_citation(self):
         """Returns details about the book chapter in HTML form.
 
-        Format: ``Author: "Chapter title" in Editors (eds.) "Book Title",
+        Format: ``Author: "Chapter title", in Editors (eds.), "Book Title",
         edition, publisher, pp. X–Y, year.``
         """
         authors = self.full_author_listing
