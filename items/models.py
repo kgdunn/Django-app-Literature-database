@@ -14,10 +14,14 @@ from utils import unique_slugify
 def validate_doi_or_url(value):
     """Accept either a full URL or a bare DOI suffix (e.g. ``10.1234/foo``).
 
-    Bare suffixes get prefixed with ``https://doi.org/`` by
-    ``Item.save()``. This loosened validator (vs. plain URLField) lets
-    admins paste DOIs directly off a publisher's page without manually
-    typing the doi.org prefix every time.
+    The accepted shorthands are then normalised by ``Item.save()`` via
+    ``_normalize_doi_link``: a ``10.<suffix>`` becomes
+    ``https://doi.org/<suffix>``; a ``doi.org/...`` or ``dx.doi.org/...``
+    shorthand is prefixed with ``https://`` (the ``dx.doi.org`` host is
+    preserved rather than rewritten to ``doi.org``). This loosened
+    validator (vs. plain URLField) lets admins paste DOIs directly off a
+    publisher's page without manually typing the doi.org prefix every
+    time.
     """
     if not value:
         return
@@ -309,11 +313,14 @@ class Item(models.Model):
     def author_slugs(self):
         """
         NFKD-normalised, ASCII-folded English-list-join of the item's author
-        last names. The output isn't a strict slug (spaces and commas are
-        kept); the point is only that every character is ASCII, so the
-        string is safe to embed anywhere an ASCII-only identifier is
-        needed. PDF filenames use ``Item.slug`` (see ``upload_dest``),
-        not this property.
+        last names. The output isn't a strict slug (spaces are kept, and
+        the ``, `` separators re-introduced by the join between the first
+        n-1 authors survive). Commas *within* an individual author's
+        ``last_name`` are stripped out by ``re.sub(r"[^\\w\\s-]", "",
+        author)``; only the ``, ``-based join separators remain. The point
+        is only that every character is ASCII, so the string is safe to
+        embed anywhere an ASCII-only identifier is needed. PDF filenames
+        use ``Item.slug`` (see ``upload_dest``), not this property.
 
         1: Duncan
         2: Smith and Weston
@@ -447,9 +454,15 @@ class Item(models.Model):
 
     @staticmethod
     def _normalize_doi_link(value):
-        """Coerce admin-pasted DOI shorthands to the canonical
-        ``https://doi.org/<suffix>`` URL. See ``validate_doi_or_url``
-        for the accepted input shapes."""
+        """Coerce admin-pasted DOI shorthands to an ``https://`` URL.
+
+        A bare ``10.<suffix>`` becomes ``https://doi.org/<suffix>``; a
+        ``doi.org/...`` or ``dx.doi.org/...`` shorthand is just prefixed
+        with ``https://`` (so ``dx.doi.org/...`` stays on that host — this
+        is not rewritten to the canonical ``doi.org/`` form). An input that
+        already begins with ``http://`` or ``https://`` is returned
+        unchanged. See ``validate_doi_or_url`` for the accepted input
+        shapes."""
         value = value.strip()
         if not value:
             return value
