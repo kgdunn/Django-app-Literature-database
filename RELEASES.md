@@ -1,5 +1,41 @@
 # Releases
 
+## v1.6.3
+
+Second docstring-accuracy pass. A repo-wide survey of computational and
+user-facing functions turned up six more docstrings/comments whose claims
+no longer matched the code they sit on. All fixes are documentation only;
+no behaviour changes.
+
+- **`items/models.py`** — `_normalize_doi_link`'s docstring claimed
+  shorthands are coerced to *"the canonical `https://doi.org/<suffix>`
+  URL"*, but only the ``10.<suffix>`` branch does that. A ``dx.doi.org/``
+  input is prefixed with ``https://`` and left on the ``dx.doi.org`` host.
+  Docstring rewritten to describe every branch.
+- **`items/models.py`** — `validate_doi_or_url`'s docstring said bare
+  shorthands are prefixed with ``https://doi.org/`` by ``Item.save()``;
+  that is true only for the ``10.<suffix>`` branch (the ``doi.org/`` and
+  ``dx.doi.org/`` shorthands are just prefixed with ``https://``).
+  Updated to match ``_normalize_doi_link``.
+- **`items/models.py`** — `Item.author_slugs`'s docstring said "spaces and
+  commas are kept". Commas *within* an individual author's ``last_name``
+  are stripped by the ``re.sub(r"[^\w\s-]", "", author)`` call; only the
+  ``, `` separators re-inserted by the join between the first n-1 authors
+  survive. Docstring clarified.
+- **`items/views.py`** — `__extract_extra__`'s docstring said it "extracts
+  plain text from each Item's PDF", but the loop silently skips any Item
+  that already has non-empty ``other_search_text`` (fill-in-blanks) and
+  aborts the whole batch on the first pdfplumber failure (fail-fast).
+  Both facts now called out.
+- **`pagehit/views.py`** — `create_hit`'s docstring only documented the
+  string branch, but the primary caller path (from ``items.views.view_item``)
+  passes an ``int``. The three branches (``int``, ``str``, other) — and
+  the fallback ``static_items.get(item, 0)`` for unknown static keys —
+  are now spelled out.
+- **`items/templatetags/core_tags.py`** — the tag-cloud comment claimed
+  the font-size range shrank to ``~100–148%``. With the current constants
+  the actual maximum is ``int(log(5) * 100) - 9 = 151%``.
+
 ## v1.6.2
 
 Consolidated docstring/comment corrections, combining the still-applicable

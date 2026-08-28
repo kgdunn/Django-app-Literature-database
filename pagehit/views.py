@@ -39,8 +39,17 @@ def create_hit(request, item, extra_info=None):
     """
     Given a Django ``request`` object, create an entry in the DB for the hit.
 
-    If the ``item`` is a string, then we assume it is a static item and use
-    the dictionary above to look up its "primary key".
+    Three ``item`` shapes are recognised:
+
+    * ``int``: the primary key of a real ``items.Item`` row (the path used
+      by ``items.views.view_item``). Persisted as ``item="item"`` with
+      ``item_pk`` set to the given int.
+    * ``str``: a static-surface key (e.g. ``"lit-main-page"``). Persisted
+      as ``item=<the string>`` with ``item_pk`` set to the sentinel from
+      ``static_items``; unknown keys silently fall back to ``item_pk=0``
+      via ``static_items.get(item, 0)``.
+    * anything else: refused silently — the function returns without
+      saving, rather than raising or logging.
 
     Phase 4 trimmed PII storage: ``ua_string`` and ``ip_address`` were
     dropped from the PageHit schema, so the only data captured per hit is

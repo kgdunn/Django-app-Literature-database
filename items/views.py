@@ -304,10 +304,23 @@ def view_pdf(request, item_id):
 
 def __extract_extra__(request, item_id=None):
     """
-    Admin-only endpoint that extracts plain text from each Item's PDF
-    via pdfplumber and stores it in Item.other_search_text so the
+    Admin-only endpoint that extracts plain text from an Item's PDF
+    via pdfplumber and stores it in ``Item.other_search_text`` so the
     Postgres-FTS search vector (Phase 3) can index it. Replaces the
     legacy pdfminer chain.
+
+    Two things to know about the batch shape:
+
+    * It is a fill-in-blanks pass, not a re-extraction: Items that
+      already have a non-empty ``other_search_text`` are skipped, so a
+      second call after a successful run is a no-op.
+    * The batch is best-effort but fail-fast: the first Item whose PDF
+      pdfplumber can't parse aborts the whole loop and returns a 200
+      with a "FAILED..." body. Remaining Items are not visited.
+
+    With ``item_id`` the endpoint is scoped to that single Item; without,
+    every ``Item`` in the catalogue is a candidate (subject to the two
+    rules above).
     """
     if not request.user.is_authenticated:
         return HttpResponse("Please sign in first")

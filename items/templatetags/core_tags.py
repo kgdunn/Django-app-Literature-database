@@ -74,8 +74,8 @@ def cloud(model_or_obj, num=5):
 
     # Logarithmic scaling. Issue #34 asked for a smaller cloud overall;
     # tightening max_font from 6 → 5 narrows the rendered font-size
-    # range from ~100–170% to ~100–148%, so the most-used tags don't
-    # dwarf the rest.
+    # range from ~100–170% to ~100–151% (int(log(5) * 100) - 9 = 151),
+    # so the most-used tags don't dwarf the rest.
     min_font, max_font = 3, 5
     slope = (max_font - min_font) / (max_uses - min_uses + 0.0)
     intercept = min_font - slope * min_uses
