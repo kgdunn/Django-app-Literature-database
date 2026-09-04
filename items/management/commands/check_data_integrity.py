@@ -4,8 +4,10 @@ Walks the catalogue and flags items whose fields are out of sync with
 the filesystem or that show signs of a botched legacy import:
 
   - ``pdf_file`` references a path that doesn't exist on disk.
-  - All ``AuthorGroup`` rows for an item have ``order=0`` (the legacy
-    default — means the author ordering was lost during import).
+  - An item has two or more ``AuthorGroup`` rows and every one of them
+    carries ``order=0`` (the legacy default — means the author ordering
+    was lost during import). The single-author case is skipped: a lone
+    ``AuthorGroup`` legitimately sits at ``order=0``.
   - The item has zero authors at all (rare; left as a soft warning).
 
 Designed to run as a daily / weekly cron under ``deploy``:

@@ -304,10 +304,16 @@ def view_pdf(request, item_id):
 
 def __extract_extra__(request, item_id=None):
     """
-    Admin-only endpoint that extracts plain text from each Item's PDF
-    via pdfplumber and stores it in Item.other_search_text so the
+    Admin-only endpoint that extracts plain text from an Item's PDF via
+    pdfplumber and stores it in ``Item.other_search_text`` so the
     Postgres-FTS search vector (Phase 3) can index it. Replaces the
     legacy pdfminer chain.
+
+    When ``item_id`` is supplied (the usual URL-wired mode), only that
+    single item is processed; called with ``item_id=None`` the view
+    walks every ``Item`` in the DB. Items that already have
+    ``other_search_text`` populated, or that have no ``pdf_file``
+    attached, are skipped.
     """
     if not request.user.is_authenticated:
         return HttpResponse("Please sign in first")
