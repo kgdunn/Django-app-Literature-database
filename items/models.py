@@ -66,9 +66,10 @@ class Author(models.Model):
         return reverse("lit-show-items", kwargs={"what_view": "author", "extra_info": self.slug})
 
     def save(self, *args, **kwargs):
-        """Strip surrounding whitespace from the name fields, then derive a
-        collision-free ``slug`` from ``full_name`` via ``unique_slugify``
-        before delegating to ``Model.save``.
+        """Strip surrounding whitespace from ``first_name`` and ``last_name``
+        (``middle_initials`` is left untouched), then derive a collision-free
+        ``slug`` from ``full_name`` via ``unique_slugify`` before delegating
+        to ``Model.save``.
         """
         self.first_name = self.first_name.strip()
         self.last_name = self.last_name.strip()
@@ -364,9 +365,11 @@ class Item(models.Model):
     @property
     def full_author_listing(self):
         """
-        Provides the hyperlinked author names in full
+        Provides the hyperlinked author names in full (each author's
+        ``Author.full_name`` — first name, optional middle initials, last
+        name — wrapped in an ``<a>`` pointing at ``get_absolute_url``).
 
-        1: Duncan
+        1: John R. Duncan
         2: John R. Smith and P. Q. Weston
         3: R. W. Joyce, P. J. Smith and T. Y. Smythe
         """
@@ -447,9 +450,16 @@ class Item(models.Model):
 
     @staticmethod
     def _normalize_doi_link(value):
-        """Coerce admin-pasted DOI shorthands to the canonical
-        ``https://doi.org/<suffix>`` URL. See ``validate_doi_or_url``
-        for the accepted input shapes."""
+        """Coerce admin-pasted DOI shorthands to an ``https://`` URL.
+
+        A bare DOI suffix (``10.xxx``) is rewritten to
+        ``https://doi.org/10.xxx``; a scheme-less ``doi.org/…`` or
+        ``dx.doi.org/…`` gets an ``https://`` prefix (so
+        ``dx.doi.org/10.xxx`` becomes ``https://dx.doi.org/10.xxx``,
+        NOT ``https://doi.org/10.xxx`` — the host isn't rewritten).
+        Any value that already starts with ``http://`` or ``https://``
+        is returned unchanged. See ``validate_doi_or_url`` for the
+        accepted input shapes."""
         value = value.strip()
         if not value:
             return value
@@ -640,8 +650,12 @@ class InCollection(Item):
     def full_citation(self):
         """Returns details about the book chapter in HTML form.
 
-        Format: ``Author: "Chapter title" in Editors (eds.) "Book Title",
+        Format (parts are comma-joined):
+        ``Author: "Chapter title", in Editors (eds.), "Book Title",
         edition, publisher, pp. X–Y, year.``
+        The ``in Editors (eds.),`` prefix drops to a bare ``in`` when the
+        chapter has no editors set, and the singular ``(ed.)`` is used when
+        there is exactly one editor.
         """
         authors = self.full_author_listing
         editors_html = self.full_editor_listing

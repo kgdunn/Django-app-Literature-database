@@ -106,10 +106,10 @@ def search(request):
     ``conferenceproceeding__conference_name``,
     ``conferenceproceeding__organization``,
     ``conferenceproceeding__location``, ``incollection__book_title``),
-    ranked by ``SearchRank``, OR-joined
-    with ``__trigram_similar`` on author last names so typos still
-    find the right author. Backed by the ``pg_trgm`` extension
-    (installed in ``items`` migration 0004).
+    ranked by ``SearchRank``, OR-joined with a ``TrigramSimilarity``
+    score (thresholded at ``AUTHOR_TRIGRAM_THRESHOLD``) on author last
+    names so typos still find the right author. Backed by the
+    ``pg_trgm`` extension (installed in ``items`` migration 0004).
 
     Both dev and prod settings point at Postgres (Phase 3 onwards), so
     this view does not branch on ``connection.vendor`` — Postgres is
