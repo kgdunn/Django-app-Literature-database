@@ -1,5 +1,54 @@
 # Releases
 
+## v1.6.3
+
+Docstring corrections so they match the code's actual behaviour
+(documentation-only; no runtime change).
+
+- **`pages/views.py`** — `search` claimed the trigram-similarity leg was
+  "OR-joined with ``__trigram_similar`` on author last names". The
+  ``__trigram_similar`` queryset lookup is not what the view uses; it
+  computes a ``TrigramSimilarity`` value and OR-joins the FTS rank with
+  a ``__gt`` threshold check against ``AUTHOR_TRIGRAM_THRESHOLD``.
+  Rewritten to describe that pipeline.
+- **`items/models.py`** — `Author.save` said it strips "the name fields"
+  (plural), but only `first_name` and `last_name` go through `.strip()`;
+  `middle_initials` is left untouched. Rewritten to name both fields
+  that are stripped and to flag the omission explicitly.
+- **`items/models.py`** — `full_author_listing`'s single-author example
+  read "1: Duncan" (a last name), inconsistent with the "hyperlinked
+  author names in full" text; the property renders `Author.full_name`
+  (first name, optional middle initials, last name) wrapped in an
+  `<a>`. Example replaced with "1: John R. Duncan" and the docstring
+  spells out what `_format_authors_html` emits.
+- **`items/models.py`** — `Item._normalize_doi_link` claimed it coerced
+  input to "the canonical `https://doi.org/<suffix>` URL". In fact it
+  only prepends `https://` to `dx.doi.org/`/`doi.org/` shorthands
+  (leaving the host unchanged, so `dx.doi.org/10.xxx` becomes
+  `https://dx.doi.org/10.xxx`), and returns any value that already
+  starts with `http://`/`https://` unchanged. Rewritten to describe
+  the three real branches (bare `10.` suffix, scheme-less
+  `[dx.]doi.org/`, and full URL passthrough).
+- **`items/models.py`** — `InCollection.full_citation`'s format example
+  omitted the commas the code actually produces (`", ".join(parts)`
+  puts a comma between the chapter title, the `in Editors (eds.)`
+  clause, and the book title). Format string updated to match the real
+  output and to note the singular/plural editor suffix and the
+  no-editors fallthrough.
+- **`items/management/commands/check_data_integrity.py`** — the module
+  docstring described the second warning as "All `AuthorGroup` rows
+  for an item have `order=0`", but the code skips the `count == 1`
+  case (a lone author legitimately sits at `order=0`). Rewritten to
+  say "two or more `AuthorGroup` rows all with `order=0`" and to
+  explain the skipped case.
+- **`items/views.py`** — `__extract_extra__`'s docstring described
+  extraction "from each Item's PDF", missing that when the URL kwarg
+  `item_id` is supplied the view processes only that single item, and
+  that items already carrying `other_search_text` (or with no
+  `pdf_file`) are skipped either way. Both behaviours now spelled out.
+
+PATCH bump — documentation-only.
+
 ## v1.6.2
 
 Consolidated docstring/comment corrections, combining the still-applicable
