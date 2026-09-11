@@ -39,8 +39,22 @@ def create_hit(request, item, extra_info=None):
     """
     Given a Django ``request`` object, create an entry in the DB for the hit.
 
-    If the ``item`` is a string, then we assume it is a static item and use
-    the dictionary above to look up its "primary key".
+    Two dispatch branches on ``item``:
+
+    - **int**: written as ``(item="item", item_pk=<int>)`` so the
+      per-``Item`` counters aggregate cleanly in ``get_pagehits``.
+    - **str**: written as ``(item=<str>, item_pk=<sentinel or 0>)``.
+      ``static_items.get(item, 0)`` looks the string up in the
+      module-level ``static_items`` map: mapped keys get their sentinel
+      negative ``item_pk`` (see the table above), unmapped keys still
+      **write**, but with ``item_pk=0``. That fallback quietly pollutes
+      the audit log with a shared zero coordinate and no
+      ``item_pk`` gap to distinguish surfaces, so callers passing
+      free-form strings should register the surface in
+      ``static_items`` first.
+
+    Anything else is refused silently (no row written) rather than
+    raising a 500.
 
     Phase 4 trimmed PII storage: ``ua_string`` and ``ip_address`` were
     dropped from the PageHit schema, so the only data captured per hit is
