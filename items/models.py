@@ -14,10 +14,17 @@ from utils import unique_slugify
 def validate_doi_or_url(value):
     """Accept either a full URL or a bare DOI suffix (e.g. ``10.1234/foo``).
 
-    Bare suffixes get prefixed with ``https://doi.org/`` by
-    ``Item.save()``. This loosened validator (vs. plain URLField) lets
-    admins paste DOIs directly off a publisher's page without manually
-    typing the doi.org prefix every time.
+    Save-time normalisation via ``Item._normalize_doi_link`` differs by
+    branch: only a bare ``10.<suffix>`` DOI is rewritten to
+    ``https://doi.org/10.<suffix>``. A scheme-less ``doi.org/…`` or
+    ``dx.doi.org/…`` shorthand only gets ``https://`` prepended, so the
+    host is preserved (``dx.doi.org/10.xxx`` stays ``dx.doi.org/…`` -
+    it is not rewritten to ``doi.org/…``). A value that already carries
+    ``http://`` / ``https://`` is passed through unchanged.
+
+    This loosened validator (vs. plain URLField) lets admins paste DOIs
+    directly off a publisher's page without manually typing the doi.org
+    prefix every time.
     """
     if not value:
         return
