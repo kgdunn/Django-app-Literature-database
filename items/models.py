@@ -526,7 +526,15 @@ class Book(Item):
     def full_editor_listing(self):
         """Hyperlinked editor names, English-list-joined. Same shape as
         ``full_author_listing`` so the byline stays uniform between authored
-        and edited volumes."""
+        and edited volumes.
+
+        Order: alphabetical by ``last_name``. ``self.editors.all()`` has
+        no explicit ordering, so it inherits ``Author.Meta.ordering =
+        ["last_name"]``. Unlike ``full_author_listing``, which reads
+        authors via the ``AuthorGroup`` join table and sorts on
+        ``authorgroup__order`` to preserve author sequence, editors have
+        no per-book order column and simply render alphabetically.
+        """
         return self._format_authors_html(self.editors.all())
 
     def full_citation(self):
@@ -568,7 +576,14 @@ class ConferenceProceeding(Item):
 
     @property
     def full_editor_listing(self):
-        """Hyperlinked editor names — same shape as ``full_author_listing``."""
+        """Hyperlinked editor names - same shape as ``full_author_listing``.
+
+        Order: alphabetical by ``last_name`` (inherited from
+        ``Author.Meta.ordering``), not by any per-proceeding sequence.
+        See ``Book.full_editor_listing`` for the same caveat vs.
+        ``full_author_listing``, which uses the ``AuthorGroup.order``
+        join column to preserve author sequence.
+        """
         return self._format_authors_html(self.editors.all())
 
     def full_citation(self):
@@ -665,9 +680,16 @@ class InCollection(Item):
 
     @property
     def full_editor_listing(self):
-        """Hyperlinked editor names — same shape as ``full_author_listing``.
+        """Hyperlinked editor names - same shape as ``full_author_listing``.
         Reuses ``Item._format_authors_html`` so the byline rendering is
-        identical to Book / ConferenceProceeding."""
+        identical to Book / ConferenceProceeding.
+
+        Order: alphabetical by ``last_name`` (inherited from
+        ``Author.Meta.ordering``), not by any per-chapter sequence.
+        Unlike ``full_author_listing``, which sorts on
+        ``authorgroup__order`` to preserve author sequence, editors
+        have no per-chapter order column and render alphabetically.
+        """
         return self._format_authors_html(self.editors.all())
 
     def full_citation(self):
