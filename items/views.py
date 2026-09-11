@@ -2,7 +2,6 @@ import logging
 import re
 
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
@@ -110,10 +109,7 @@ def get_items_or_404(view_function):
     """
 
     def decorator(request, item_id, slug=None):
-        try:
-            the_item = Item.objects.all().filter(id=item_id)
-        except ObjectDoesNotExist:
-            return page_404_error(request, "You request a non-existant item")
+        the_item = Item.objects.all().filter(id=item_id)
 
         if len(the_item) == 0:
             return page_404_error(request, "This item does not exist yet")
