@@ -313,6 +313,13 @@ def __extract_extra__(request, item_id=None):
     walks every ``Item`` in the DB. Items that already have
     ``other_search_text`` populated, or that have no ``pdf_file``
     attached, are skipped.
+
+    A single ``pdfplumber`` failure aborts the whole batch: the view
+    catches the exception, returns an HTTP response naming the item
+    that failed, and every remaining item is left untouched. Re-running
+    the endpoint picks up from there because successful extractions are
+    already persisted and would-be-reprocessed items are skipped by the
+    ``other_search_text`` guard above.
     """
     if not request.user.is_authenticated:
         return HttpResponse("Please sign in first")
