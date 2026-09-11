@@ -459,14 +459,22 @@ class Item(models.Model):
     def _normalize_doi_link(value):
         """Coerce admin-pasted DOI shorthands to an ``https://`` URL.
 
-        A bare DOI suffix (``10.xxx``) is rewritten to
-        ``https://doi.org/10.xxx``; a scheme-less ``doi.org/…`` or
-        ``dx.doi.org/…`` gets an ``https://`` prefix (so
-        ``dx.doi.org/10.xxx`` becomes ``https://dx.doi.org/10.xxx``,
-        NOT ``https://doi.org/10.xxx`` — the host isn't rewritten).
-        Any value that already starts with ``http://`` or ``https://``
-        is returned unchanged. See ``validate_doi_or_url`` for the
-        accepted input shapes."""
+        Leading and trailing whitespace is stripped from ``value``
+        before any scheme detection (``value = value.strip()``), so an
+        admin who pastes ``"  10.1234/foo\\n"`` off a publisher page still
+        gets the same normalisation as ``"10.1234/foo"``.
+
+        Branches (checked in order after the strip):
+
+        - Already carries ``http://`` / ``https://`` -> returned as-is.
+        - Scheme-less ``doi.org/…`` or ``dx.doi.org/…`` -> ``https://``
+          prepended; the host is preserved
+          (``dx.doi.org/10.xxx`` becomes ``https://dx.doi.org/10.xxx``,
+          NOT ``https://doi.org/10.xxx``).
+        - Bare DOI suffix ``10.xxx`` -> rewritten to
+          ``https://doi.org/10.xxx``.
+
+        See ``validate_doi_or_url`` for the accepted input shapes."""
         value = value.strip()
         if not value:
             return value
