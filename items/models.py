@@ -573,11 +573,19 @@ class ConferenceProceeding(Item):
 
     def full_citation(self):
         """
-        Returns details about the conference in HTML form
+        Returns details about the conference in HTML form.
+
+        ``self.publisher`` is a ``Publisher`` model instance, not a
+        string, so it is coerced with ``str(...)`` before joining -
+        mirroring how ``Book.full_citation`` and
+        ``InCollection.full_citation`` already handle the same field.
+        Without the coercion any proceeding with a publisher set raised
+        ``TypeError: sequence item N: expected str instance, Publisher
+        found`` at render time.
         """
         first = '%s: "<i>%s</i>", ' % (self.author_list, self.title)
         rest = (
-            item
+            str(item)
             for item in [
                 self.conference_name,
                 self.organization,
