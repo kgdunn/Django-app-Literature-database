@@ -19,10 +19,13 @@ logger = logging.getLogger(__name__)
 
 def _track_hit(request, item_key, slug=""):
     """Record a PageHit for a tag / author / year / journal landing page,
-    or for one of the static "all" listings. Skipped on paginated requests
-    (``?page=…``) so a user clicking through the result list doesn't
-    inflate the visit count for that landing page — same convention used
-    by ``pages.search``."""
+    or for one of the static "all" listings. Skipped whenever a ``page``
+    query parameter is present on the request, regardless of value: the
+    check is ``if "page" in request.GET``, so ``?page=1`` (the first,
+    un-paginated page) also suppresses the hit. That is intentional so a
+    user clicking through the result list doesn't inflate the visit
+    count for the landing page - the same convention as ``pages.search``.
+    """
     if "page" in request.GET:
         return
     create_hit(request, item_key, extra_info=slug)
