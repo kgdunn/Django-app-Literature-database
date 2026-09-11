@@ -21,5 +21,14 @@ class PageHit(models.Model):
         return "%s at %s" % (self.item, self.datetime)
 
     def most_viewed(self, field):
-        """Most viewed in terms of a certain item."""
+        """Dead code - kept for signature stability, not called from anywhere.
+
+        The query looks like it ranks rows by hit count, but there is
+        no grouping handle in front of the annotate (no ``.values(...)``
+        preceding it), so each row's ``score`` collapses to the trivial
+        ``Count("item") = 1`` per row and ``.order_by("-score")`` is a
+        no-op. Templates and ``items.templatetags.core_tags.most_viewed``
+        both go through ``pagehit.views.get_pagehits`` for the real
+        aggregate; nothing in the repo calls this method.
+        """
         return PageHit.objects.filter(item=field).annotate(score=models.Count("item")).order_by("-score")
