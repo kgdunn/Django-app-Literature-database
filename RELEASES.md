@@ -6,56 +6,56 @@ Docstring corrections and one surgical bug fix, so the documentation
 and code match. Almost entirely documentation; the two exceptions are
 called out below.
 
-- **`items/models.py`** — `validate_doi_or_url` implied every accepted
+- **`items/models.py`** - `validate_doi_or_url` implied every accepted
   shape gets the ``https://doi.org/`` prefix at save. In fact only a
   bare ``10.<suffix>`` DOI is rewritten to ``https://doi.org/10.xxx``;
   a scheme-less ``doi.org/…`` or ``dx.doi.org/…`` shorthand only gets
   ``https://`` prepended (the host is not rewritten). Docstring
   rewritten to describe all three branches.
-- **`items/templatetags/core_tags.py`** — `cloud` said it "returns all
+- **`items/templatetags/core_tags.py`** - `cloud` said it "returns all
   the tags". The underlying `get_tag_uses` aggregate only includes tags
   that have at least one associated item, so tags with zero uses never
   appear. Docstring updated to say so.
-- **`tagging/models.py`** — `Tag.save` docstring implied the slug is
+- **`tagging/models.py`** - `Tag.save` docstring implied the slug is
   only derived on the first save. In fact `self.slug = new_slug` runs
   on every save (the slug is regenerated from `name` each time); the
   collision check via `Tag.objects.filter(slug=new_slug).exists()` is
   what is gated on `self.pk is None`. Docstring rewritten to name that
   split.
-- **`items/views.py`** — `_track_hit`'s docstring said the hit is
+- **`items/views.py`** - `_track_hit`'s docstring said the hit is
   skipped "on paginated requests". The check is
-  ``if "page" in request.GET`` — presence of the ``page`` key at all
+  ``if "page" in request.GET`` - presence of the ``page`` key at all
   suppresses the hit, so ``?page=1`` (the first, un-paginated page)
   also skips it. Docstring rewritten to say so.
-- **`items/views.py`** — `get_items_or_404` had a dead
+- **`items/views.py`** - `get_items_or_404` had a dead
   ``except ObjectDoesNotExist:`` branch: the guarded call is
   ``Item.objects.all().filter(id=item_id)``, which returns a lazy
   QuerySet and never raises ``DoesNotExist``. The empty-QuerySet case
   is already handled by the ``len(the_item) == 0`` check on the next
   line. Dead branch removed (surgical); ``ObjectDoesNotExist`` import
   dropped alongside since nothing else in the module uses it.
-- **`pages/views.py`** — `robots_txt`'s docstring said "Caddy doesn't
+- **`pages/views.py`** - `robots_txt`'s docstring said "Caddy doesn't
   need a custom rule beyond the existing reverse proxy". In production
   Caddy actually serves `/robots.txt` directly from `data/public/`;
   this Django view is the dev/staging fallback so `/robots.txt`
   resolves without Caddy in front. Docstring rewritten to say so.
-- **`items/views.py`** — `__extract_extra__` did not mention that a
+- **`items/views.py`** - `__extract_extra__` did not mention that a
   single ``pdfplumber`` failure aborts the whole batch: on the first
   exception the view returns an HTTP response naming that item and
   every remaining item is skipped. Docstring updated to spell that
   out.
-- **`items/models.py`** — `Item._normalize_doi_link` starts with
+- **`items/models.py`** - `Item._normalize_doi_link` starts with
   ``value = value.strip()``, so surrounding whitespace on an
   admin-pasted DOI is silently trimmed before the scheme-detection
   branches. Docstring updated to mention the strip explicitly.
-- **`items/management/commands/import_legacy_dump.py`** — the module
+- **`items/management/commands/import_legacy_dump.py`** - the module
   docstring said "The legacy `Item.pdf_file` paths started with
   `media/...`". The real 2018-09-11 backup already stores
   ``literature/pdf/<slug[0]>/<slug>.pdf`` with no ``media/`` prefix
   (see `CLAUDE.md` gotcha #2), so the `removeprefix("media/")` is a
   defensive no-op kept for older dumps that did carry the prefix.
   Docstring rewritten to say so.
-- **`items/models.py`** — **CODE FIX** — `ConferenceProceeding.full_citation`
+- **`items/models.py`** - **CODE FIX** - `ConferenceProceeding.full_citation`
   built its middle section with
   ``", ".join([..., self.publisher])``, but ``self.publisher`` is a
   ``Publisher`` model instance (not a ``str``), so any conference
@@ -64,21 +64,21 @@ called out below.
   with ``str(self.publisher)`` in the generator, mirroring how
   `Book.full_citation` and `InCollection.full_citation` already handle
   the same field.
-- **`pagehit/models.py`** — `PageHit.most_viewed` is dead code: the
+- **`pagehit/models.py`** - `PageHit.most_viewed` is dead code: the
   ``.annotate(score=Count("item")).order_by("-score")`` has no
   ``GROUP BY`` handle (no ``.values(...)`` before the annotate), so
-  each row's ``score`` collapses to 1 and the ordering is a no-op —
+  each row's ``score`` collapses to 1 and the ordering is a no-op -
   the aggregate lookup in `pagehit/views.py:get_pagehits` is what the
   templates and `core_tags.most_viewed` actually call. Docstring
   updated to flag the method as unused / no-op.
-- **`items/models.py`** — `Book.full_editor_listing`,
+- **`items/models.py`** - `Book.full_editor_listing`,
   `ConferenceProceeding.full_editor_listing` and
   `InCollection.full_editor_listing` render editors via
   ``self.editors.all()``, which inherits ``Author.Meta.ordering =
   ["last_name"]`` (alphabetical). Docstrings updated to note that
   editors sort alphabetically, unlike authors which are sequenced
   through the ``AuthorGroup.order`` join column.
-- **`pagehit/views.py`** — `create_hit`'s docstring said "If the
+- **`pagehit/views.py`** - `create_hit`'s docstring said "If the
   ``item`` is a string, then we assume it is a static item and use
   the dictionary above to look up its 'primary key'." In practice
   ``static_items.get(item, 0)`` swallows any unrecognised string:
@@ -86,7 +86,7 @@ called out below.
   pollutes the audit log with a shared zero coordinate. Docstring
   rewritten to describe both the mapped and the fallback branch.
 
-PATCH bump — mostly documentation; one surgical bug fix in
+PATCH bump - mostly documentation; one surgical bug fix in
 `ConferenceProceeding.full_citation` and one dead-branch removal in
 `get_items_or_404`.
 
