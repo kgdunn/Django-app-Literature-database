@@ -53,7 +53,13 @@ def most_viewed(field, num=5):
 
 @register.filter
 def cloud(model_or_obj, num=5):
-    """Get a tag cloud. If num==0 it will return all the tags.
+    """Get a tag cloud. If ``num == 0`` it will return every tag that
+    has at least one associated item.
+
+    The source is ``tagging.views.get_tag_uses``, which aggregates
+    ``Tag`` <-> ``Item`` uses; tags with zero associated items do not
+    appear in that aggregate and therefore never make it into the
+    cloud, regardless of ``num``.
 
     Returns a list of namedtuples ``(slug, tag, score, count)``:
         - ``score`` is the rendered font-size percentage for the cloud

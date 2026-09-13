@@ -25,8 +25,19 @@ class Tag(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """Set the slug from the name on first save; raise loudly on a
-        slug collision.
+        """Regenerate the slug from ``name`` on every save; raise loudly
+        on a slug collision, but only when the row is new.
+
+        Two pieces of behaviour, split intentionally:
+
+        - The slug is always derived from the current ``name`` (via
+          ``slugify(self.name)`` -> ``self.slug``) and reassigned before
+          delegating to ``Model.save``. So renaming a tag after creation
+          moves its slug too.
+        - The collision check (``Tag.objects.filter(slug=new_slug).exists()``)
+          is gated on ``self.pk is None`` so it only fires for new rows.
+          On the update path the DB-level ``unique=True`` constraint on
+          ``slug`` is the safety net.
 
         Issue #83: the legacy implementation silently no-op'd when the
         slug already existed, which produced two surprising outcomes:

@@ -56,9 +56,15 @@ Disallow: /__extract_extra__/
 
 
 def robots_txt(request):
-    """Serve ``/robots.txt`` directly from Django so the file lives in
-    the repo and tracks the URL surface — Caddy doesn't need a custom
-    rule beyond the existing reverse proxy."""
+    """Serve ``/robots.txt`` from Django as a dev/staging fallback.
+
+    In production Caddy serves ``/robots.txt`` directly from
+    ``data/public/`` (see the Caddy server block in ``docs/deploy.md``),
+    so this view is only reached in local dev, in staging behind Caddy
+    Let's Encrypt, and if anyone ever runs the app without Caddy in
+    front. Keeping the file wired through Django here means the URL
+    surface stays covered even without the Caddy static rule.
+    """
     return HttpResponse(ROBOTS_TXT, content_type="text/plain")
 
 

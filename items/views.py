@@ -2,7 +2,6 @@ import logging
 import re
 
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
@@ -19,10 +18,13 @@ logger = logging.getLogger(__name__)
 
 def _track_hit(request, item_key, slug=""):
     """Record a PageHit for a tag / author / year / journal landing page,
-    or for one of the static "all" listings. Skipped on paginated requests
-    (``?page=…``) so a user clicking through the result list doesn't
-    inflate the visit count for that landing page — same convention used
-    by ``pages.search``."""
+    or for one of the static "all" listings. Skipped whenever a ``page``
+    query parameter is present on the request, regardless of value: the
+    check is ``if "page" in request.GET``, so ``?page=1`` (the first,
+    un-paginated page) also suppresses the hit. That is intentional so a
+    user clicking through the result list doesn't inflate the visit
+    count for the landing page - the same convention as ``pages.search``.
+    """
     if "page" in request.GET:
         return
     create_hit(request, item_key, extra_info=slug)
@@ -107,10 +109,7 @@ def get_items_or_404(view_function):
     """
 
     def decorator(request, item_id, slug=None):
-        try:
-            the_item = Item.objects.all().filter(id=item_id)
-        except ObjectDoesNotExist:
-            return page_404_error(request, "You request a non-existant item")
+        the_item = Item.objects.all().filter(id=item_id)
 
         if len(the_item) == 0:
             return page_404_error(request, "This item does not exist yet")
@@ -314,6 +313,13 @@ def __extract_extra__(request, item_id=None):
     walks every ``Item`` in the DB. Items that already have
     ``other_search_text`` populated, or that have no ``pdf_file``
     attached, are skipped.
+
+    A single ``pdfplumber`` failure aborts the whole batch: the view
+    catches the exception, returns an HTTP response naming the item
+    that failed, and every remaining item is left untouched. Re-running
+    the endpoint picks up from there because successful extractions are
+    already persisted and would-be-reprocessed items are skipped by the
+    ``other_search_text`` guard above.
     """
     if not request.user.is_authenticated:
         return HttpResponse("Please sign in first")

@@ -9,9 +9,14 @@ working after import).
 
 Behavioural notes the import handles for you:
 
-* The legacy `Item.pdf_file` paths started with ``media/...``; the new
-  ``upload_to`` writes ``literature/pdf/...`` (no ``media/`` prefix).
-  The command strips the prefix.
+* ``Item.pdf_file`` prefix handling is defensive. The real 2018-09-11
+  ``literature.connectmv.com`` backup already stores paths as
+  ``literature/pdf/<slug[0]>/<slug>.pdf`` (no ``media/`` prefix - see
+  ``CLAUDE.md`` gotcha #2), so the unconditional
+  ``removeprefix("media/")`` in ``_merge_item_fields`` is a no-op on
+  that dump. It is kept because older dumps did carry the ``media/``
+  prefix, and running the strip unconditionally is cheaper than
+  branching on the value's shape.
 * Phase 5 dropped ``Item.private_pdf`` and ``Item.can_show_pdf``;
   Phase 4 dropped ``PageHit.ua_string`` and ``PageHit.ip_address``.
   These fields are silently ignored if present in the dump.
@@ -368,9 +373,12 @@ class Command(BaseCommand):
         merged.pop("supervisors", None)
         # Strip Phase-4/5 dropped fields if present in the dump.
         merged = self._strip_dropped("items.item", merged)
-        # Strip the legacy `media/` prefix from pdf_file paths
-        # (Phase-5 / Phase-1 gotcha: new upload_to writes
-        # `literature/pdf/<slug[0]>/<slug>.pdf`, no `media/` prefix).
+        # Defensive `media/` prefix strip on pdf_file paths. The real
+        # 2018-09-11 dump already stores `literature/pdf/<slug[0]>/<slug>.pdf`
+        # with no `media/` prefix (see CLAUDE.md gotcha #2), so this is a
+        # no-op on that dump; older dumps did carry the prefix, and
+        # running the strip unconditionally is cheaper than branching on
+        # shape. New `upload_to` writes `literature/pdf/...` either way.
         if merged.get("pdf_file"):
             merged["pdf_file"] = merged["pdf_file"].removeprefix("media/")
         return merged

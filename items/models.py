@@ -14,10 +14,17 @@ from utils import unique_slugify
 def validate_doi_or_url(value):
     """Accept either a full URL or a bare DOI suffix (e.g. ``10.1234/foo``).
 
-    Bare suffixes get prefixed with ``https://doi.org/`` by
-    ``Item.save()``. This loosened validator (vs. plain URLField) lets
-    admins paste DOIs directly off a publisher's page without manually
-    typing the doi.org prefix every time.
+    Save-time normalisation via ``Item._normalize_doi_link`` differs by
+    branch: only a bare ``10.<suffix>`` DOI is rewritten to
+    ``https://doi.org/10.<suffix>``. A scheme-less ``doi.org/…`` or
+    ``dx.doi.org/…`` shorthand only gets ``https://`` prepended, so the
+    host is preserved (``dx.doi.org/10.xxx`` stays ``dx.doi.org/…`` -
+    it is not rewritten to ``doi.org/…``). A value that already carries
+    ``http://`` / ``https://`` is passed through unchanged.
+
+    This loosened validator (vs. plain URLField) lets admins paste DOIs
+    directly off a publisher's page without manually typing the doi.org
+    prefix every time.
     """
     if not value:
         return
@@ -452,14 +459,22 @@ class Item(models.Model):
     def _normalize_doi_link(value):
         """Coerce admin-pasted DOI shorthands to an ``https://`` URL.
 
-        A bare DOI suffix (``10.xxx``) is rewritten to
-        ``https://doi.org/10.xxx``; a scheme-less ``doi.org/…`` or
-        ``dx.doi.org/…`` gets an ``https://`` prefix (so
-        ``dx.doi.org/10.xxx`` becomes ``https://dx.doi.org/10.xxx``,
-        NOT ``https://doi.org/10.xxx`` — the host isn't rewritten).
-        Any value that already starts with ``http://`` or ``https://``
-        is returned unchanged. See ``validate_doi_or_url`` for the
-        accepted input shapes."""
+        Leading and trailing whitespace is stripped from ``value``
+        before any scheme detection (``value = value.strip()``), so an
+        admin who pastes ``"  10.1234/foo\\n"`` off a publisher page still
+        gets the same normalisation as ``"10.1234/foo"``.
+
+        Branches (checked in order after the strip):
+
+        - Already carries ``http://`` / ``https://`` -> returned as-is.
+        - Scheme-less ``doi.org/…`` or ``dx.doi.org/…`` -> ``https://``
+          prepended; the host is preserved
+          (``dx.doi.org/10.xxx`` becomes ``https://dx.doi.org/10.xxx``,
+          NOT ``https://doi.org/10.xxx``).
+        - Bare DOI suffix ``10.xxx`` -> rewritten to
+          ``https://doi.org/10.xxx``.
+
+        See ``validate_doi_or_url`` for the accepted input shapes."""
         value = value.strip()
         if not value:
             return value
@@ -511,7 +526,15 @@ class Book(Item):
     def full_editor_listing(self):
         """Hyperlinked editor names, English-list-joined. Same shape as
         ``full_author_listing`` so the byline stays uniform between authored
-        and edited volumes."""
+        and edited volumes.
+
+        Order: alphabetical by ``last_name``. ``self.editors.all()`` has
+        no explicit ordering, so it inherits ``Author.Meta.ordering =
+        ["last_name"]``. Unlike ``full_author_listing``, which reads
+        authors via the ``AuthorGroup`` join table and sorts on
+        ``authorgroup__order`` to preserve author sequence, editors have
+        no per-book order column and simply render alphabetically.
+        """
         return self._format_authors_html(self.editors.all())
 
     def full_citation(self):
@@ -553,16 +576,31 @@ class ConferenceProceeding(Item):
 
     @property
     def full_editor_listing(self):
-        """Hyperlinked editor names — same shape as ``full_author_listing``."""
+        """Hyperlinked editor names - same shape as ``full_author_listing``.
+
+        Order: alphabetical by ``last_name`` (inherited from
+        ``Author.Meta.ordering``), not by any per-proceeding sequence.
+        See ``Book.full_editor_listing`` for the same caveat vs.
+        ``full_author_listing``, which uses the ``AuthorGroup.order``
+        join column to preserve author sequence.
+        """
         return self._format_authors_html(self.editors.all())
 
     def full_citation(self):
         """
-        Returns details about the conference in HTML form
+        Returns details about the conference in HTML form.
+
+        ``self.publisher`` is a ``Publisher`` model instance, not a
+        string, so it is coerced with ``str(...)`` before joining -
+        mirroring how ``Book.full_citation`` and
+        ``InCollection.full_citation`` already handle the same field.
+        Without the coercion any proceeding with a publisher set raised
+        ``TypeError: sequence item N: expected str instance, Publisher
+        found`` at render time.
         """
         first = '%s: "<i>%s</i>", ' % (self.author_list, self.title)
         rest = (
-            item
+            str(item)
             for item in [
                 self.conference_name,
                 self.organization,
@@ -642,9 +680,16 @@ class InCollection(Item):
 
     @property
     def full_editor_listing(self):
-        """Hyperlinked editor names — same shape as ``full_author_listing``.
+        """Hyperlinked editor names - same shape as ``full_author_listing``.
         Reuses ``Item._format_authors_html`` so the byline rendering is
-        identical to Book / ConferenceProceeding."""
+        identical to Book / ConferenceProceeding.
+
+        Order: alphabetical by ``last_name`` (inherited from
+        ``Author.Meta.ordering``), not by any per-chapter sequence.
+        Unlike ``full_author_listing``, which sorts on
+        ``authorgroup__order`` to preserve author sequence, editors
+        have no per-chapter order column and render alphabetically.
+        """
         return self._format_authors_html(self.editors.all())
 
     def full_citation(self):
