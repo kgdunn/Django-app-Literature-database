@@ -184,8 +184,16 @@ class Item(models.Model):
     )
 
     def upload_dest(instance, filename):
-        """``instance.slug`` has already been defined at this point (from
-        self.save()), so it can be safely used.
+        """Django ``upload_to`` callback: return the on-disk path for an
+        uploaded PDF, keyed off the item's slug.
+
+        Signature is Django's (``instance``, ``filename``) - there is no
+        ``self`` here, ``instance`` is the ``Item`` being saved. By the time
+        Django resolves ``upload_to``, ``Item.save()`` has already assigned
+        ``instance.slug`` (via ``unique_slugify`` on ``self.title``), so it
+        is safe to read here. ``filename`` (the original upload name) is
+        intentionally ignored; the destination path is fully derived from
+        the slug so uploads land at a predictable location.
         """
         return "literature/pdf/%s/%s.pdf" % (instance.slug[0], instance.slug)
 

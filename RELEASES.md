@@ -1,5 +1,27 @@
 # Releases
 
+## v1.6.5
+
+Two more docstring corrections found in a follow-up audit; no code
+behaviour changes.
+
+- **`items/models.py`** - `Item.upload_dest` docstring referred to
+  ``self.save()`` even though the function has no ``self`` (Django
+  ``upload_to`` callables receive ``instance`` and ``filename``).
+  Rewritten to name Django's signature explicitly, to say who sets
+  ``instance.slug`` (``Item.save`` via ``unique_slugify``), and to
+  note that ``filename`` is intentionally ignored - the destination
+  is derived entirely from the slug.
+- **`literature/urls.py`** - `_block_media_pdf` claimed to protect
+  "dev / staging / any future infra change", but the URL registration
+  is gated behind ``if settings.DEBUG:`` and therefore only runs in
+  local dev where Django's ``static()`` helper would otherwise let
+  runserver serve ``/media/literature/pdf/*`` off disk. In staging and
+  production (``DEBUG=False``) Django does not serve ``/media/*`` at
+  all - Caddy does, and Caddy has its own ``respond
+  /media/literature/pdf/* 404`` rule. Docstring rewritten to name the
+  DEBUG guard and to say clearly which environment each layer covers.
+
 ## v1.6.4
 
 Docstring corrections and one surgical bug fix, so the documentation
