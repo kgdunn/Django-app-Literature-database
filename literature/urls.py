@@ -24,9 +24,16 @@ def _block_media_pdf(request, *args, **kwargs):
     off the public title), so a visitor who downloads one *public* PDF could
     otherwise reconstruct the media URL for a *non-public* item. The only
     sanctioned way to read a PDF is the gated ``items.view_pdf`` view, which
-    checks ``Item.pdf_is_public`` first. Production enforces this in Caddy
-    (``respond /media/literature/pdf/* 404``); this mirrors it inside Django
-    so dev / staging / any future infra change can't leak a PDF either.
+    checks ``Item.pdf_is_public`` first.
+
+    This view is only wired into ``urlpatterns`` inside the ``if
+    settings.DEBUG:`` block below, i.e. in local dev where Django's
+    ``static()`` helper would otherwise let runserver serve
+    ``/media/literature/pdf/*`` off disk. In staging and production
+    (``DEBUG=False``), Django does not serve ``/media/*`` at all - Caddy
+    does, and its server block issues its own ``respond
+    /media/literature/pdf/* 404``. Between the two, no PDF is reachable
+    outside ``view_pdf`` in any environment.
     """
     raise Http404("Not available")
 
