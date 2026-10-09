@@ -1,5 +1,38 @@
 # Releases
 
+## v1.6.5
+
+Three more docstring corrections from a follow-up audit of the app
+packages (`items/`, `pagehit/`). Documentation only; no behaviour
+change.
+
+- **`items/models.py`** - `Item.author_slugs` said "spaces and commas
+  are kept", which was misleading. The per-author regex
+  ``[^\w\s-]`` strips anything that isn't a word character,
+  whitespace, or hyphen - so commas, apostrophes, and periods
+  inside a single author's last name are dropped before the
+  English-list-join. The ``, `` between authors comes from the
+  join itself, not from any input character that survived the
+  strip. Docstring rewritten to describe the strip explicitly and
+  to call out what actually survives it (spaces).
+- **`pagehit/models.py`** - the `PageHit` class docstring described
+  the row as a hit on "a link, code snippet or library, tag,
+  person's profile, etc." - legacy taxonomy from an unrelated
+  project. In the literature catalogue a `PageHit` row is either
+  an `item="item"` detail-page hit (with the real `Item.pk` in
+  `item_pk`) or one of the static-surface keys enumerated in
+  `pagehit.views.static_items` (front page, search, about, the
+  tag / author / year / journal landing pages, and the
+  show-all-items / show-all-tags listings; with a sentinel negative
+  in `item_pk` so they stay distinct in the admin filters).
+  Docstring rewritten to match.
+- **`items/views.py`** - `view_pdf` mentioned only the production
+  Caddy 404 rule as the defence against direct
+  `/media/literature/pdf/*` access. In local dev
+  (`DEBUG=True`) `literature.urls._block_media_pdf` also hard-404s
+  that subtree ahead of the `static()` media handler, so runserver
+  can't leak a PDF either. Docstring now describes both layers.
+
 ## v1.6.4
 
 Docstring corrections and one surgical bug fix, so the documentation

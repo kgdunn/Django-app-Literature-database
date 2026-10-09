@@ -317,11 +317,16 @@ class Item(models.Model):
     def author_slugs(self):
         """
         NFKD-normalised, ASCII-folded English-list-join of the item's author
-        last names. The output isn't a strict slug (spaces and commas are
-        kept); the point is only that every character is ASCII, so the
-        string is safe to embed anywhere an ASCII-only identifier is
-        needed. PDF filenames use ``Item.slug`` (see ``upload_dest``),
-        not this property.
+        last names. The per-author pass applies ``re.sub(r"[^\\w\\s-]", "", ...)``,
+        which strips anything that isn't a word character, whitespace, or
+        hyphen - so commas, apostrophes, and periods inside a last name are
+        dropped before the join. The ``, `` separators between authors come
+        from the English-list-join itself, not from any input character
+        that survived the per-author strip. Spaces inside a last name DO
+        survive, so the result isn't a strict slug; the point is only that
+        every character is ASCII, safe to embed anywhere an ASCII-only
+        identifier is needed. PDF filenames use ``Item.slug`` (see
+        ``upload_dest``), not this property.
 
         1: Duncan
         2: Smith and Weston
