@@ -1,5 +1,22 @@
 # Releases
 
+## v1.6.5
+
+Docs-only PATCH from the scheduled docstring audit. Two outdated
+docstrings touched; no code behaviour changes.
+
+- **`literature/settings/dev.py`** - module docstring claimed "Phase 7
+  will add a ``docker-compose.yml``" that brings up Postgres in a
+  container. Phase 7 is done and the file is already at the repo root;
+  rewritten to state that in the present tense.
+- **`items/models.py`** - `Book._book_byline` docstring said an
+  editors-only volume "renders as ``<editors> (eds.):``". Two
+  inaccuracies: the trailing colon is appended by `full_citation`, not
+  returned by this method, and the suffix is `(ed.)` for a single
+  editor (only `(eds.)` for more than one). Rewritten to describe both
+  singular and plural cases and to note that the colon is the caller's
+  responsibility.
+
 ## v1.6.4
 
 Docstring corrections and one surgical bug fix, so the documentation
