@@ -554,7 +554,10 @@ class Book(Item):
         """Compose the leading byline for ``full_citation``. Authors come
         first; if editors are also present (e.g. an authored monograph in an
         edited series) they're appended with the ``(ed.)`` / ``(eds.)``
-        suffix. An editors-only volume renders as "<editors> (eds.):"."""
+        suffix (singular for a single editor, plural otherwise). An
+        editors-only volume renders as ``<editors> (ed.)`` or
+        ``<editors> (eds.)``; the trailing colon that separates the
+        byline from the title is added by ``full_citation``, not here."""
         authors_html = self.full_author_listing
         editors_html = self.full_editor_listing
         if not editors_html:

@@ -15,8 +15,9 @@ To bootstrap the local DB once:
     sudo -u postgres psql -c "CREATE USER literature WITH PASSWORD 'literature';"
     sudo -u postgres psql -c "CREATE DATABASE literature OWNER literature;"
 
-Phase 7 will add a `docker-compose.yml` that brings up Postgres in a
-container so local dev no longer requires a host-installed Postgres.
+Phase 7 is done: the repo-root `docker-compose.yml` brings up Postgres
+in a container, so local dev no longer requires a host-installed
+Postgres.
 """
 
 from .base import *  # noqa: F401,F403
