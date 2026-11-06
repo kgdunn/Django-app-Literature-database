@@ -466,6 +466,7 @@ class Item(models.Model):
 
         Branches (checked in order after the strip):
 
+        - Empty after the strip -> returned as-is.
         - Already carries ``http://`` / ``https://`` -> returned as-is.
         - Scheme-less ``doi.org/…`` or ``dx.doi.org/…`` -> ``https://``
           prepended; the host is preserved
@@ -473,6 +474,8 @@ class Item(models.Model):
           NOT ``https://doi.org/10.xxx``).
         - Bare DOI suffix ``10.xxx`` -> rewritten to
           ``https://doi.org/10.xxx``.
+        - Anything else -> returned unchanged (defensive; the validator
+          would have already rejected it upstream).
 
         See ``validate_doi_or_url`` for the accepted input shapes."""
         value = value.strip()

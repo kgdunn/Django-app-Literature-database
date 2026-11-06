@@ -46,11 +46,12 @@ def _get_related_items(item, limit=5):
 
     Issue #36 — cheap precursor to the Phase-12 pgvector "Similar
     papers" panel. Tokenizes the current item's title + abstract into
-    alpha words ≥4 chars (filters most English stop words), caps at
-    20 words to keep the parse tree bounded, and OR-joins them as
-    individual ``plain`` SearchQuery objects. Cover-density ranking
-    then rewards items with multiple overlapping terms clustered
-    close together. Returns the top non-zero matches.
+    alpha words ≥4 chars (filters most English stop words), dedupes
+    them, caps the list at 20 unique words to keep the parse tree
+    bounded, and OR-joins them as individual ``plain`` SearchQuery
+    objects. Cover-density ranking then rewards items with multiple
+    overlapping terms clustered close together. Returns the top
+    non-zero matches.
 
     OR semantics matter here: a websearch-style AND of every word
     would require *all* words to match, so a sibling paper missing
