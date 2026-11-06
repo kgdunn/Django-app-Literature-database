@@ -360,8 +360,10 @@ class Command(BaseCommand):
         """Merge parent ``items.item`` fields with subclass fields. The
         subclass record's ``item_ptr`` is dropped (Django sets that
         automatically when we save the subclass with ``pk=<legacy id>``).
-        Tags / authors M2Ms are also dropped here — they're applied in a
-        separate pass after the parent rows exist.
+        Parent-level M2Ms (``tags`` / ``authors``, per ``_M2M_FIELDS``)
+        and the subclass-specific ``editors`` / ``supervisors`` M2Ms are
+        also dropped here — they're applied in a separate pass after the
+        parent rows exist.
         """
         merged = dict(parent_fields)
         merged.update(subclass_fields)

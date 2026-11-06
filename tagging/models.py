@@ -28,12 +28,15 @@ class Tag(models.Model):
         """Regenerate the slug from ``name`` on every save; raise loudly
         on a slug collision, but only when the row is new.
 
-        Two pieces of behaviour, split intentionally:
+        Three pieces of behaviour, split intentionally:
 
         - The slug is always derived from the current ``name`` (via
           ``slugify(self.name)`` -> ``self.slug``) and reassigned before
           delegating to ``Model.save``. So renaming a tag after creation
           moves its slug too.
+        - If ``slugify(self.name)`` produces an empty string (e.g. an
+          emoji-only tag name), ``ValidationError("Tag contains invalid
+          characters")`` is raised before the slug is assigned.
         - The collision check (``Tag.objects.filter(slug=new_slug).exists()``)
           is gated on ``self.pk is None`` so it only fires for new rows.
           On the update path the DB-level ``unique=True`` constraint on
