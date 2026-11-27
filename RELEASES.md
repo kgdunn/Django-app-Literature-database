@@ -1,5 +1,19 @@
 # Releases
 
+## v1.6.5
+
+Docs-only. `_year_count_series` in `items/views.py` claimed to power an
+"inline-SVG sparkline"; the render path switched to ECharts in
+`sparkline.js` (commit 5a44de1) without updating this docstring.
+Docstring rewritten to name the current ECharts implementation and
+point at `literature/static/literature/sparkline.js`.
+
+- **`items/views.py`** — `_year_count_series` docstring said the series
+  powers an "inline-SVG sparkline"; the actual render is an ECharts
+  line chart loaded via `sparkline.js` (confirmed by the
+  `test_tag_page_renders_sparkline` test and the show-entries template's
+  ECharts mount). Docstring updated to match.
+
 ## v1.6.4
 
 Docstring corrections and one surgical bug fix, so the documentation
