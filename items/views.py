@@ -33,8 +33,10 @@ def _track_hit(request, item_key, slug=""):
 def _year_count_series(items_qs):
     """Year → article-count distribution for a filtered Items queryset.
 
-    Issue #27: powers the small inline-SVG sparkline rendered above the
-    entries list on tag/author landing pages. Returns a list of
+    Issue #27: powers the small ECharts sparkline rendered above the
+    entries list on tag/author landing pages (originally inline SVG;
+    switched to ECharts so hover shows year + article count — see
+    ``literature/static/literature/sparkline.js``). Returns a list of
     ``(year, count)`` tuples ordered by year ascending — empty list if
     no items.
     """
